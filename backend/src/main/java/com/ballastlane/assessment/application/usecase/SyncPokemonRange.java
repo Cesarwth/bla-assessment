@@ -2,6 +2,7 @@ package com.ballastlane.assessment.application.usecase;
 
 import com.ballastlane.assessment.application.port.in.SyncPokemonRangeUseCase;
 import com.ballastlane.assessment.application.port.in.SyncPokemonUseCase;
+import com.ballastlane.assessment.domain.Actor;
 import com.ballastlane.assessment.domain.SyncOutcome;
 import com.ballastlane.assessment.domain.SyncReport;
 import com.ballastlane.assessment.domain.SyncResult;
@@ -24,7 +25,7 @@ public class SyncPokemonRange implements SyncPokemonRangeUseCase {
     }
 
     @Override
-    public SyncReport sync(int from, int to) {
+    public SyncReport sync(int from, int to, Actor actor) {
         if (from < 1 || to < from || to - from + 1 > MAX_RANGE) {
             throw new InvalidSyncRangeException(
                     "Range must satisfy 1 <= from <= to and contain at most " + MAX_RANGE + " ids");
@@ -35,7 +36,7 @@ public class SyncPokemonRange implements SyncPokemonRangeUseCase {
         String abortedReason = null;
         for (int id = from; id <= to; id++) {
             try {
-                SyncResult result = syncOne.sync(String.valueOf(id));
+                SyncResult result = syncOne.sync(String.valueOf(id), actor);
                 if (result.outcome() == SyncOutcome.CREATED) {
                     created++;
                 } else {

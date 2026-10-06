@@ -26,12 +26,21 @@ class PokemonPersistenceMapperTest {
     }
 
     @Test
+    void roundTripKeepsTheOwnerAndAnOwnerlessRecordStaysOwnerless() {
+        StoredPokemon owned = TestData.storedOwnedBy(42L, 7, 3, 25, "pikachu", LocalAttributes.empty());
+        StoredPokemon ownerless = TestData.storedOwnedBy(null, 8, 0, 26, "raichu", LocalAttributes.empty());
+
+        assertThat(mapper.toDomain(mapper.toEntity(owned)).ownerId()).isEqualTo(42L);
+        assertThat(mapper.toDomain(mapper.toEntity(ownerless)).ownerId()).isNull();
+    }
+
+    @Test
     void evolutionChainWithBranchesSurvivesTheJsonColumn() {
         EvolutionNode eevee = node(133, "eevee", List.of(),
                 node(134, "vaporeon", List.of("Use water-stone")),
                 node(135, "jolteon", List.of("Use thunder-stone"), node(1, "deep", List.of("Level up (level 5)"))));
         StoredPokemon pokemon = TestData.stored(1, 0, 133, "eevee", LocalAttributes.empty());
-        StoredPokemon withChain = new StoredPokemon(pokemon.id(), pokemon.version(), pokemon.pokeApiId(), pokemon.name(),
+        StoredPokemon withChain = new StoredPokemon(pokemon.id(), pokemon.version(), pokemon.ownerId(), pokemon.pokeApiId(), pokemon.name(),
                 pokemon.spriteUrl(), pokemon.imageUrl(), pokemon.types(), pokemon.abilities(), pokemon.stats(),
                 pokemon.weightKg(), pokemon.heightM(), pokemon.genus(), pokemon.description(), eevee,
                 pokemon.localAttributes(), pokemon.syncedAt());
@@ -42,7 +51,7 @@ class PokemonPersistenceMapperTest {
     @Test
     void nullEvolutionChainStaysNull() {
         StoredPokemon pokemon = TestData.stored(1, 0, 25, "pikachu", LocalAttributes.empty());
-        StoredPokemon noChain = new StoredPokemon(pokemon.id(), pokemon.version(), pokemon.pokeApiId(), pokemon.name(),
+        StoredPokemon noChain = new StoredPokemon(pokemon.id(), pokemon.version(), pokemon.ownerId(), pokemon.pokeApiId(), pokemon.name(),
                 pokemon.spriteUrl(), pokemon.imageUrl(), pokemon.types(), pokemon.abilities(), pokemon.stats(),
                 pokemon.weightKg(), pokemon.heightM(), pokemon.genus(), pokemon.description(), null,
                 pokemon.localAttributes(), pokemon.syncedAt());

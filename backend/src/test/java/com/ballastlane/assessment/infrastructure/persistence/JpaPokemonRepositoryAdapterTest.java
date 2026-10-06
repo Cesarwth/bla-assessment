@@ -3,17 +3,21 @@ package com.ballastlane.assessment.infrastructure.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.ballastlane.assessment.domain.Actor;
 import com.ballastlane.assessment.domain.EvolutionNode;
 import com.ballastlane.assessment.domain.LocalAttributes;
 import com.ballastlane.assessment.domain.PageResult;
 import com.ballastlane.assessment.domain.PokemonDetail;
 import com.ballastlane.assessment.domain.PokemonStat;
+import com.ballastlane.assessment.domain.Role;
 import com.ballastlane.assessment.domain.StoredPokemon;
+import com.ballastlane.assessment.domain.User;
 import com.ballastlane.assessment.domain.exception.DuplicateStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.support.TestData;
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -24,14 +28,25 @@ import org.springframework.test.context.ActiveProfiles;
 @DataJpaTest
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({JpaPokemonRepositoryAdapter.class, PokemonPersistenceMapper.class})
+@Import({JpaPokemonRepositoryAdapter.class, PokemonPersistenceMapper.class, JpaUserRepositoryAdapter.class,
+        UserPersistenceMapper.class})
 class JpaPokemonRepositoryAdapterTest {
 
     @Autowired JpaPokemonRepositoryAdapter adapter;
+    @Autowired JpaUserRepositoryAdapter users;
     @Autowired EntityManager em;
 
-    private static StoredPokemon newPokemon(int pokeApiId, String name) {
-        return StoredPokemon.fromDetail(TestData.detail(pokeApiId, name), TestData.NOW);
+    private Actor owner;
+
+    @BeforeEach
+    void createAnOwnerUser() {
+        // owner_id is a foreign key to users, so the owner has to be a real row
+        User saved = users.save(new User(null, "owner", "owner@pallet.town", "hash", Role.USER));
+        owner = new Actor(saved.id(), saved.username(), saved.role());
+    }
+
+    private StoredPokemon newPokemon(int pokeApiId, String name) {
+        return StoredPokemon.fromDetail(TestData.detail(pokeApiId, name), TestData.NOW, owner);
     }
 
     /** Forces the next read to hit the database instead of the persistence context. */
@@ -48,7 +63,7 @@ class JpaPokemonRepositoryAdapterTest {
         PokemonDetail withChain = new PokemonDetail(detail.id(), detail.name(), detail.imageUrl(), detail.spriteUrl(),
                 List.of("electric", "fairy"), 6.0, 0.4, List.of("static", "lightning-rod"),
                 List.of(new PokemonStat("hp", 35), new PokemonStat("speed", 90)), "Mouse Pokémon", "desc", chain);
-        StoredPokemon toSave = StoredPokemon.fromDetail(withChain, TestData.NOW)
+        StoredPokemon toSave = StoredPokemon.fromDetail(withChain, TestData.NOW, owner)
                 .withLocalAttributes(new LocalAttributes("Pika", "Kanto", List.of("starter", "electric")));
 
         StoredPokemon saved = adapter.save(toSave);
@@ -57,6 +72,25 @@ class JpaPokemonRepositoryAdapterTest {
         assertThat(saved.id()).isNotNull();
         assertThat(saved.version()).isZero();
         assertThat(adapter.findByPokeApiId(25)).hasValue(saved);
+    }
+
+    @Test
+    void theOwnerIsStoredAndLoaded() {
+        adapter.save(newPokemon(25, "pikachu"));
+        reloadFromDatabase();
+
+        assertThat(adapter.findByPokeApiId(25).orElseThrow().ownerId()).isEqualTo(owner.userId());
+    }
+
+    @Test
+    void deletingTheOwnerUserKeepsTheRecordButWithoutOwner() {
+        adapter.save(newPokemon(25, "pikachu"));
+        reloadFromDatabase();
+
+        em.createNativeQuery("delete from users where id = :id").setParameter("id", owner.userId()).executeUpdate();
+        em.clear();
+
+        assertThat(adapter.findByPokeApiId(25)).hasValueSatisfying(found -> assertThat(found.ownerId()).isNull());
     }
 
     @Test
@@ -79,7 +113,7 @@ class JpaPokemonRepositoryAdapterTest {
                 List.of("grass", "poison", "ghost"), 6.9, 0.7, List.of("overgrow", "chlorophyll", "x"),
                 List.of(new PokemonStat("hp", 45), new PokemonStat("attack", 49), new PokemonStat("defense", 49)),
                 "Seed Pokémon", "desc", null);
-        StoredPokemon saved = adapter.save(StoredPokemon.fromDetail(ordered, TestData.NOW));
+        StoredPokemon saved = adapter.save(StoredPokemon.fromDetail(ordered, TestData.NOW, owner));
         reloadFromDatabase();
 
         PokemonDetail reordered = new PokemonDetail(1, "bulbasaur", base.imageUrl(), base.spriteUrl(),

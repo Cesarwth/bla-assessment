@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.ballastlane.assessment.application.port.out.PokeApiGateway;
 import com.ballastlane.assessment.application.port.out.PokemonRepository;
+import com.ballastlane.assessment.domain.Actor;
 import com.ballastlane.assessment.domain.LocalAttributes;
 import com.ballastlane.assessment.domain.PokemonDetail;
 import com.ballastlane.assessment.domain.StoredPokemon;
@@ -35,6 +36,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SyncPokemonTest {
 
+    private static final Actor ACTOR = TestData.user(5);
+
     @Mock PokeApiGateway gateway;
     @Mock PokemonRepository repository;
     SyncPokemon syncPokemon;
@@ -45,17 +48,18 @@ class SyncPokemonTest {
     }
 
     @Test
-    void createsWhenNotStoredYetAndStampsSyncedAtFromTheClock() {
+    void createsWhenNotStoredYetOwnedByTheActorAndStampsSyncedAtFromTheClock() {
         when(gateway.findDetail("pikachu")).thenReturn(Optional.of(TestData.detail(25, "pikachu")));
         when(repository.findByPokeApiId(25)).thenReturn(Optional.empty());
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        SyncResult result = syncPokemon.sync("  Pikachu ");
+        SyncResult result = syncPokemon.sync("  Pikachu ", ACTOR);
 
         assertThat(result.outcome()).isEqualTo(SyncOutcome.CREATED);
         ArgumentCaptor<StoredPokemon> saved = ArgumentCaptor.forClass(StoredPokemon.class);
         verify(repository).save(saved.capture());
         assertThat(saved.getValue().id()).isNull();
+        assertThat(saved.getValue().ownerId()).isEqualTo(5L);
         assertThat(saved.getValue().localAttributes()).isEqualTo(LocalAttributes.empty());
         assertThat(saved.getValue().syncedAt()).isEqualTo(NOW);
     }
@@ -63,13 +67,13 @@ class SyncPokemonTest {
     @Test
     void refreshesWhenStoredKeepingLocalEdits() {
         LocalAttributes local = new LocalAttributes("Pika", "Kanto", List.of("starter"));
-        StoredPokemon existing = TestData.stored(7, 3, 25, "pikachu", local);
+        StoredPokemon existing = TestData.storedOwnedBy(5L, 7, 3, 25, "pikachu", local);
         PokemonDetail changed = TestData.detail(25, "pikachu-v2");
         when(gateway.findDetail("25")).thenReturn(Optional.of(changed));
         when(repository.findByPokeApiId(25)).thenReturn(Optional.of(existing));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        SyncResult result = syncPokemon.sync("25");
+        SyncResult result = syncPokemon.sync("25", ACTOR);
 
         assertThat(result.outcome()).isEqualTo(SyncOutcome.UPDATED);
         assertThat(result.pokemon().id()).isEqualTo(7L);
@@ -79,19 +83,33 @@ class SyncPokemonTest {
     }
 
     @Test
-    void retriesAsAnUpdateWhenAConcurrentFirstSyncWonTheRace() {
+    void refreshByAnotherUserNeverChangesTheOriginalOwner() {
+        StoredPokemon existing = TestData.storedOwnedBy(5L, 7, 3, 25, "pikachu", LocalAttributes.empty());
+        when(gateway.findDetail("25")).thenReturn(Optional.of(TestData.detail(25, "pikachu")));
+        when(repository.findByPokeApiId(25)).thenReturn(Optional.of(existing));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        SyncResult result = syncPokemon.sync("25", TestData.user(6));
+
+        assertThat(result.outcome()).isEqualTo(SyncOutcome.UPDATED);
+        assertThat(result.pokemon().ownerId()).isEqualTo(5L);
+    }
+
+    @Test
+    void retriesAsAnUpdateWhenAConcurrentFirstSyncWonTheRaceKeepingTheWinnersOwner() {
         LocalAttributes local = new LocalAttributes("Pika", null, List.of());
-        StoredPokemon winner = TestData.stored(7, 0, 25, "pikachu", local);
+        StoredPokemon winner = TestData.storedOwnedBy(6L, 7, 0, 25, "pikachu", local);
         when(gateway.findDetail("25")).thenReturn(Optional.of(TestData.detail(25, "pikachu")));
         when(repository.findByPokeApiId(25)).thenReturn(Optional.empty(), Optional.of(winner));
         when(repository.save(any()))
                 .thenThrow(new DuplicateStoredPokemonException(25))
                 .thenAnswer(inv -> inv.getArgument(0));
 
-        SyncResult result = syncPokemon.sync("25");
+        SyncResult result = syncPokemon.sync("25", ACTOR);
 
         assertThat(result.outcome()).isEqualTo(SyncOutcome.UPDATED);
         assertThat(result.pokemon().id()).isEqualTo(7L);
+        assertThat(result.pokemon().ownerId()).isEqualTo(6L);
         assertThat(result.pokemon().localAttributes()).isEqualTo(local);
     }
 
@@ -106,10 +124,10 @@ class SyncPokemonTest {
                 .thenThrow(new StaleStoredPokemonException(25))
                 .thenAnswer(inv -> inv.getArgument(0));
 
-        SyncResult result = syncPokemon.sync("25");
+        SyncResult result = syncPokemon.sync("25", ACTOR);
 
         assertThat(result.outcome()).isEqualTo(SyncOutcome.UPDATED);
-        assertThat(result.pokemon().version()).isEqualTo(1L); // re-read the fresh version, then refreshed it
+        assertThat(result.pokemon().version()).isEqualTo(1L);
         assertThat(result.pokemon().localAttributes()).isEqualTo(local);
     }
 
@@ -119,7 +137,7 @@ class SyncPokemonTest {
         when(repository.findByPokeApiId(25)).thenReturn(Optional.empty());
         when(repository.save(any())).thenThrow(new DuplicateStoredPokemonException(25));
 
-        assertThatThrownBy(() -> syncPokemon.sync("25")).isInstanceOf(DuplicateStoredPokemonException.class);
+        assertThatThrownBy(() -> syncPokemon.sync("25", ACTOR)).isInstanceOf(DuplicateStoredPokemonException.class);
         verify(repository, org.mockito.Mockito.times(SyncPokemon.MAX_ATTEMPTS)).save(any());
     }
 
@@ -127,13 +145,13 @@ class SyncPokemonTest {
     void throwsNotFoundWhenUpstreamHasNothingAndStoresNothing() {
         when(gateway.findDetail("missingno")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> syncPokemon.sync("missingno")).isInstanceOf(PokemonNotFoundException.class);
+        assertThatThrownBy(() -> syncPokemon.sync("missingno", ACTOR)).isInstanceOf(PokemonNotFoundException.class);
         verify(repository, never()).save(any());
     }
 
     @Test
     void rejectsInvalidIdentifierBeforeAnyIo() {
-        assertThatThrownBy(() -> syncPokemon.sync("../etc")).isInstanceOf(InvalidPokemonIdentifierException.class);
+        assertThatThrownBy(() -> syncPokemon.sync("../etc", ACTOR)).isInstanceOf(InvalidPokemonIdentifierException.class);
         verifyNoInteractions(gateway, repository);
     }
 }

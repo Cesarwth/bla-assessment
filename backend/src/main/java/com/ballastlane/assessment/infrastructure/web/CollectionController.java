@@ -17,6 +17,8 @@ import com.ballastlane.assessment.infrastructure.web.dto.SyncReportResponse;
 import com.ballastlane.assessment.infrastructure.web.dto.UpdatePokemonRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -68,21 +70,23 @@ public class CollectionController {
     }
 
     @PostMapping("/{idOrName}/sync")
-    public ResponseEntity<StoredPokemonResponse> sync(@PathVariable String idOrName) {
-        SyncResult result = syncOne.sync(idOrName);
+    public ResponseEntity<StoredPokemonResponse> sync(@PathVariable String idOrName, @AuthenticationPrincipal Jwt jwt) {
+        SyncResult result = syncOne.sync(idOrName, ActorResolver.from(jwt));
         HttpStatus status = result.outcome() == SyncOutcome.CREATED ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(StoredPokemonResponse.from(result.pokemon()));
     }
 
     @PostMapping("/sync")
-    public SyncReportResponse syncRange(@Valid @RequestBody SyncRangeRequest request) {
-        return SyncReportResponse.from(syncRange.sync(request.from(), request.to()));
+    public SyncReportResponse syncRange(@Valid @RequestBody SyncRangeRequest request, @AuthenticationPrincipal Jwt jwt) {
+        return SyncReportResponse.from(syncRange.sync(request.from(), request.to(), ActorResolver.from(jwt)));
     }
 
     @PatchMapping("/{pokeApiId}")
-    public StoredPokemonResponse update(@PathVariable int pokeApiId, @RequestBody UpdatePokemonRequest request) {
-        return StoredPokemonResponse.from(updateStored.update(
-                new UpdateStoredPokemonCommand(pokeApiId, request.nickname(), request.region(), request.tags())));
+    public StoredPokemonResponse update(
+            @PathVariable int pokeApiId, @Valid @RequestBody UpdatePokemonRequest request, @AuthenticationPrincipal Jwt jwt) {
+        return StoredPokemonResponse.from(updateStored.update(new UpdateStoredPokemonCommand(
+                pokeApiId, request.version(), request.nickname(), request.region(), request.tags(),
+                ActorResolver.from(jwt))));
     }
 
     @DeleteMapping("/{pokeApiId}")

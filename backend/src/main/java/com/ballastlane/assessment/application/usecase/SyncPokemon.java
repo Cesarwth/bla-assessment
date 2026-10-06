@@ -3,6 +3,7 @@ package com.ballastlane.assessment.application.usecase;
 import com.ballastlane.assessment.application.port.in.SyncPokemonUseCase;
 import com.ballastlane.assessment.application.port.out.PokeApiGateway;
 import com.ballastlane.assessment.application.port.out.PokemonRepository;
+import com.ballastlane.assessment.domain.Actor;
 import com.ballastlane.assessment.domain.PokemonDetail;
 import com.ballastlane.assessment.domain.PokemonIdentifier;
 import com.ballastlane.assessment.domain.StoredPokemon;
@@ -31,7 +32,7 @@ public class SyncPokemon implements SyncPokemonUseCase {
     }
 
     @Override
-    public SyncResult sync(String idOrName) {
+    public SyncResult sync(String idOrName, Actor actor) {
         PokemonIdentifier identifier = PokemonIdentifier.of(idOrName);
         PokemonDetail detail = gateway.findDetail(identifier.value())
                 .orElseThrow(() -> new PokemonNotFoundException(identifier.value()));
@@ -42,7 +43,7 @@ public class SyncPokemon implements SyncPokemonUseCase {
         // Pokemon is not an error: re-read the winner's row and apply the refresh on top of it.
         for (int attempt = 1; ; attempt++) {
             try {
-                return save(repository.findByPokeApiId(detail.id()), detail, now);
+                return save(repository.findByPokeApiId(detail.id()), detail, now, actor);
             } catch (DuplicateStoredPokemonException | StaleStoredPokemonException raced) {
                 if (attempt == MAX_ATTEMPTS) {
                     throw raced;
@@ -51,10 +52,10 @@ public class SyncPokemon implements SyncPokemonUseCase {
         }
     }
 
-    private SyncResult save(Optional<StoredPokemon> existing, PokemonDetail detail, Instant now) {
+    private SyncResult save(Optional<StoredPokemon> existing, PokemonDetail detail, Instant now, Actor actor) {
         StoredPokemon toSave = existing
                 .map(stored -> stored.refreshedFrom(detail, now))
-                .orElseGet(() -> StoredPokemon.fromDetail(detail, now));
+                .orElseGet(() -> StoredPokemon.fromDetail(detail, now, actor));
         return new SyncResult(existing.isPresent() ? SyncOutcome.UPDATED : SyncOutcome.CREATED, repository.save(toSave));
     }
 }

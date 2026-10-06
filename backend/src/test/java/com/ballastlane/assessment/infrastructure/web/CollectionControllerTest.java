@@ -1,6 +1,7 @@
 package com.ballastlane.assessment.infrastructure.web;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -20,6 +21,7 @@ import com.ballastlane.assessment.application.port.in.SyncPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.UpdateStoredPokemonCommand;
 import com.ballastlane.assessment.application.port.in.UpdateStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.out.TokenIssuer;
+import com.ballastlane.assessment.domain.Actor;
 import com.ballastlane.assessment.domain.LocalAttributes;
 import com.ballastlane.assessment.domain.PageResult;
 import com.ballastlane.assessment.domain.Role;
@@ -31,6 +33,7 @@ import com.ballastlane.assessment.domain.User;
 import com.ballastlane.assessment.domain.exception.InvalidLocalAttributesException;
 import com.ballastlane.assessment.domain.exception.InvalidStoredPokemonUpdateException;
 import com.ballastlane.assessment.domain.exception.InvalidSyncRangeException;
+import com.ballastlane.assessment.domain.exception.NotOwnerException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
 import com.ballastlane.assessment.infrastructure.security.JwtConfig;
@@ -64,6 +67,8 @@ class CollectionControllerTest {
     @MockitoBean UpdateStoredPokemonUseCase updateStored;
     @MockitoBean DeleteStoredPokemonUseCase deleteStored;
 
+    private static final Actor USER_ACTOR = new Actor(1L, "someone", Role.USER);
+
     private String bearer(Role role) {
         return "Bearer " + tokens.issue(new User(1L, "someone", "someone@pallet.town", "hash", role)).value();
     }
@@ -80,6 +85,7 @@ class CollectionControllerTest {
                 .andExpect(jsonPath("$.items[0].name").value("pikachu"))
                 .andExpect(jsonPath("$.items[0].nickname").value("Pika"))
                 .andExpect(jsonPath("$.items[0].tags[0]").value("starter"))
+                .andExpect(jsonPath("$.items[0].ownerId").value(1))
                 .andExpect(jsonPath("$.totalItems").value(1));
     }
 
@@ -91,6 +97,7 @@ class CollectionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(25))
                 .andExpect(jsonPath("$.version").value(2))
+                .andExpect(jsonPath("$.ownerId").value(1))
                 .andExpect(jsonPath("$.region").value("Kanto"))
                 .andExpect(jsonPath("$.stats[0].name").value("hp"))
                 .andExpect(jsonPath("$.evolutionChain.name").value("pikachu"))
@@ -117,8 +124,8 @@ class CollectionControllerTest {
 
     @Test
     void syncSingleReturns201WhenCreatedAnd200WhenRefreshed() throws Exception {
-        when(syncOne.sync("pikachu")).thenReturn(new SyncResult(SyncOutcome.CREATED, STORED));
-        when(syncOne.sync("raichu")).thenReturn(new SyncResult(SyncOutcome.UPDATED, STORED));
+        when(syncOne.sync(eq("pikachu"), any())).thenReturn(new SyncResult(SyncOutcome.CREATED, STORED));
+        when(syncOne.sync(eq("raichu"), any())).thenReturn(new SyncResult(SyncOutcome.UPDATED, STORED));
 
         mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isCreated())
@@ -129,7 +136,7 @@ class CollectionControllerTest {
 
     @Test
     void syncRangeReturnsTheReport() throws Exception {
-        when(syncRange.sync(1, 3)).thenReturn(new SyncReport(2, 0, List.of(new SyncReport.Failure("3", "Not found upstream"))));
+        when(syncRange.sync(eq(1), eq(3), any())).thenReturn(new SyncReport(2, 0, List.of(new SyncReport.Failure("3", "Not found upstream"))));
 
         mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"from\":1,\"to\":3}"))
@@ -143,7 +150,7 @@ class CollectionControllerTest {
 
     @Test
     void syncRangeTellsTheClientWhenTheRunWasCutShort() throws Exception {
-        when(syncRange.sync(1, 5)).thenReturn(new SyncReport(1, 0, List.of(), "Catalog unavailable at id 2"));
+        when(syncRange.sync(eq(1), eq(5), any())).thenReturn(new SyncReport(1, 0, List.of(), "Catalog unavailable at id 2"));
 
         mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"from\":1,\"to\":5}"))
@@ -162,7 +169,7 @@ class CollectionControllerTest {
 
     @Test
     void syncRange400WhenTheRangeIsInvalidOrFieldsAreMissing() throws Exception {
-        when(syncRange.sync(1, 500)).thenThrow(new InvalidSyncRangeException("too wide"));
+        when(syncRange.sync(eq(1), eq(500), any())).thenThrow(new InvalidSyncRangeException("too wide"));
 
         mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"from\":1,\"to\":500}"))
@@ -182,11 +189,11 @@ class CollectionControllerTest {
         when(updateStored.update(any())).thenReturn(STORED);
 
         mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
-                        .contentType(JSON).content("{\"nickname\":\"Pika\",\"region\":\"Kanto\",\"tags\":[\"starter\"]}"))
+                        .contentType(JSON).content("{\"version\":2,\"nickname\":\"Pika\",\"region\":\"Kanto\",\"tags\":[\"starter\"]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nickname").value("Pika"));
 
-        verify(updateStored).update(new UpdateStoredPokemonCommand(25, "Pika", "Kanto", List.of("starter")));
+        verify(updateStored).update(new UpdateStoredPokemonCommand(25, 2L, "Pika", "Kanto", List.of("starter"), USER_ACTOR));
     }
 
     @Test
@@ -194,10 +201,10 @@ class CollectionControllerTest {
         when(updateStored.update(any())).thenReturn(STORED);
 
         mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
-                        .contentType(JSON).content("{\"region\":\"Johto\"}"))
+                        .contentType(JSON).content("{\"version\":2,\"region\":\"Johto\"}"))
                 .andExpect(status().isOk());
 
-        verify(updateStored).update(new UpdateStoredPokemonCommand(25, null, "Johto", null));
+        verify(updateStored).update(new UpdateStoredPokemonCommand(25, 2L, null, "Johto", null, USER_ACTOR));
     }
 
     @Test
@@ -205,7 +212,7 @@ class CollectionControllerTest {
         when(updateStored.update(any())).thenThrow(new InvalidStoredPokemonUpdateException("nothing"));
 
         mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
-                        .contentType(JSON).content("{}"))
+                        .contentType(JSON).content("{\"version\":2}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_UPDATE"));
     }
@@ -215,7 +222,7 @@ class CollectionControllerTest {
         when(updateStored.update(any())).thenThrow(new InvalidLocalAttributesException("nickname too long"));
 
         mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
-                        .contentType(JSON).content("{\"nickname\":\"" + "x".repeat(80) + "\"}"))
+                        .contentType(JSON).content("{\"version\":2,\"nickname\":\"" + "x".repeat(80) + "\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_LOCAL_ATTRIBUTES"));
     }
@@ -227,7 +234,7 @@ class CollectionControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"));
         mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
-                        .contentType(JSON).content("{\"tags\":\"not-a-list\"}"))
+                        .contentType(JSON).content("{\"version\":2,\"tags\":\"not-a-list\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"));
         verifyNoInteractions(updateStored);
@@ -235,24 +242,24 @@ class CollectionControllerTest {
 
     @Test
     void patch404WhenMissingAnd409OnConcurrentModification() throws Exception {
-        when(updateStored.update(new UpdateStoredPokemonCommand(99, "x", null, null)))
+        when(updateStored.update(new UpdateStoredPokemonCommand(99, 2L, "x", null, null, USER_ACTOR)))
                 .thenThrow(new StoredPokemonNotFoundException(99));
-        when(updateStored.update(new UpdateStoredPokemonCommand(25, "x", null, null)))
+        when(updateStored.update(new UpdateStoredPokemonCommand(25, 2L, "x", null, null, USER_ACTOR)))
                 .thenThrow(new StaleStoredPokemonException(25));
 
         mvc.perform(patch("/api/v1/collection/99").header("Authorization", bearer(Role.USER))
-                        .contentType(JSON).content("{\"nickname\":\"x\"}"))
+                        .contentType(JSON).content("{\"version\":2,\"nickname\":\"x\"}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
         mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
-                        .contentType(JSON).content("{\"nickname\":\"x\"}"))
+                        .contentType(JSON).content("{\"version\":2,\"nickname\":\"x\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONCURRENT_MODIFICATION"));
     }
 
     @Test
     void patchRequiresAToken() throws Exception {
-        mvc.perform(patch("/api/v1/collection/25").contentType(JSON).content("{\"nickname\":\"x\"}"))
+        mvc.perform(patch("/api/v1/collection/25").contentType(JSON).content("{\"version\":2,\"nickname\":\"x\"}"))
                 .andExpect(status().isUnauthorized());
         verifyNoInteractions(updateStored);
     }
@@ -289,5 +296,54 @@ class CollectionControllerTest {
         mvc.perform(delete("/api/v1/collection/99").header("Authorization", bearer(Role.ADMIN)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
+    }
+
+    // ---- identity and ownership ----
+
+    @Test
+    void syncPassesTheActorBuiltFromTheTokenNotFromTheRequest() throws Exception {
+        when(syncOne.sync(eq("pikachu"), any())).thenReturn(new SyncResult(SyncOutcome.CREATED, STORED));
+        when(syncRange.sync(eq(1), eq(2), any())).thenReturn(new SyncReport(2, 0, List.of()));
+
+        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", bearer(Role.ADMIN)))
+                .andExpect(status().isCreated());
+        mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
+                        .contentType(JSON).content("{\"from\":1,\"to\":2}"))
+                .andExpect(status().isOk());
+
+        verify(syncOne).sync("pikachu", new Actor(1L, "someone", Role.ADMIN));
+        verify(syncRange).sync(1, 2, USER_ACTOR);
+    }
+
+    @Test
+    void patchRequiresTheVersionTheClientRead() throws Exception {
+        mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
+                        .contentType(JSON).content("{\"nickname\":\"x\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.fieldErrors[0].field").value("version"));
+        verifyNoInteractions(updateStored);
+    }
+
+    @Test
+    void patch403WhenTheUserDoesNotOwnTheRecord() throws Exception {
+        when(updateStored.update(any())).thenThrow(new NotOwnerException(25));
+
+        mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
+                        .contentType(JSON).content("{\"version\":2,\"nickname\":\"x\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_NOT_OWNER"));
+    }
+
+    @Test
+    void syncAndPatchResponsesExposeTheOwnerId() throws Exception {
+        when(syncOne.sync(eq("pikachu"), any())).thenReturn(new SyncResult(SyncOutcome.CREATED, STORED));
+        when(updateStored.update(any())).thenReturn(STORED);
+
+        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", bearer(Role.USER)))
+                .andExpect(jsonPath("$.ownerId").value(1));
+        mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
+                        .contentType(JSON).content("{\"version\":2,\"nickname\":\"x\"}"))
+                .andExpect(jsonPath("$.ownerId").value(1));
     }
 }

@@ -20,6 +20,7 @@ class PokemonPersistenceMapper {
         PokemonEntity entity = new PokemonEntity();
         entity.id = pokemon.id();
         entity.version = pokemon.version();
+        entity.ownerId = pokemon.ownerId();
         entity.pokeApiId = pokemon.pokeApiId();
         entity.name = pokemon.name();
         entity.spriteUrl = pokemon.spriteUrl();
@@ -43,6 +44,7 @@ class PokemonPersistenceMapper {
         return new StoredPokemon(
                 entity.id,
                 entity.version,
+                entity.ownerId,
                 entity.pokeApiId,
                 entity.name,
                 entity.spriteUrl,

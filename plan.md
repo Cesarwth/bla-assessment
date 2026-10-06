@@ -66,6 +66,8 @@ git log --follow --oneline backend/build.gradle | tail -2
 ## Phase 2: Actor, ownership and versioned update (domain + use cases)
 
 **Goal:** the rules work against mocked ports.
+**Status:** ✅ Complete 2026-10-06
+**Deviation:** phases 2, 3 and 4 were implemented test-first but verified together, because changing the use-case and `StoredPokemon` signatures makes domain, persistence and web tests compile (or fail to) as one unit; `ActorResolver` throws `BadCredentialsException` and `GlobalExceptionHandler` maps `AuthenticationException` to 401 so a token without `uid` cannot become a 500; `Actor` validation reuses `InvalidUserException`.
 
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
@@ -99,6 +101,8 @@ cd backend && ./gradlew test --tests '*ActorTest' --tests '*StoredPokemonTest' -
 ## Phase 3: Persistence — owner column
 
 **Goal:** the owner is stored and loaded; deleting a user cannot break records.
+**Status:** ✅ Complete 2026-10-06
+**Deviation:** phases 2, 3 and 4 were implemented test-first but verified together, because changing the use-case and `StoredPokemon` signatures makes domain, persistence and web tests compile (or fail to) as one unit; `ActorResolver` throws `BadCredentialsException` and `GlobalExceptionHandler` maps `AuthenticationException` to 401 so a token without `uid` cannot become a 500; `Actor` validation reuses `InvalidUserException`.
 
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
@@ -126,6 +130,8 @@ cd backend && ./gradlew test --tests '*JpaPokemonRepositoryAdapterTest' --tests 
 ## Phase 4: Web — actor from the JWT, version in PATCH, 403
 
 **Goal:** the API contract the frontend will use.
+**Status:** ✅ Complete 2026-10-06
+**Deviation:** phases 2, 3 and 4 were implemented test-first but verified together, because changing the use-case and `StoredPokemon` signatures makes domain, persistence and web tests compile (or fail to) as one unit; `ActorResolver` throws `BadCredentialsException` and `GlobalExceptionHandler` maps `AuthenticationException` to 401 so a token without `uid` cannot become a 500; `Actor` validation reuses `InvalidUserException`.
 
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
@@ -157,6 +163,9 @@ cd backend && ./gradlew test
 ## Phase 5: End-to-end ownership flows and Docker
 
 **Goal:** the rules hold through the real stack, including PostgreSQL.
+
+**Status:** ✅ Complete 2026-10-06
+**Deviation:** the concurrency e2e now asserts that exactly ONE of 8 edits sent from the same version wins (stricter than before); a second regular user is registered on demand inside the IT.
 
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
@@ -193,3 +202,23 @@ Feature branch: drop or `git revert`. The layout move is one commit (revert rest
 
 ## Out of Scope
 Frontend (D2); README content and demo data (Plan E); usernames in API responses; transferring ownership; per-user private collections; rate limiting (declined); the skipped review minors.
+
+## Implementation Status
+
+**Completed:** 2026-10-06
+**Branch:** feature/plan-d1-structure-ownership
+
+| Phase | Status | Deviations |
+| ----- | ------ | ---------- |
+| 1: Repository layout | ✅ | `HELP.md` moved with plain `mv`; root README stub |
+| 2: Actor + ownership + versioned update | ✅ | Verified together with 3-4 (shared compile unit) |
+| 3: Owner column (V3) | ✅ | none |
+| 4: Web: actor from JWT, version in PATCH, 403 | ✅ | `AuthenticationException` -> 401 handler |
+| 5: E2E + Docker | ✅ | stricter concurrency assertion |
+
+Verified: `cd backend && ./gradlew clean build` green (337 tests, 0 failures; coverage 98.2 % lines / 87.5 % branches, gate 90/80). Docker/PostgreSQL manual flow: sync by demo (owner = demo), PATCH by a stranger 403 `FORBIDDEN_NOT_OWNER`, by admin 200, with a stale version 409 `CONCURRENT_MODIFICATION`, without version 400 `VALIDATION_FAILED`, by the owner with the current version 200; Flyway V1-V3 applied; no errors in the logs.
+
+### Contract notes for Plan D2 (frontend)
+- `ownerId` is on collection list items, entries and sync/patch responses; compare it with the `uid` claim of the logged-in token.
+- PATCH body: `{version, nickname?, region?, tags?}`; send the `version` of the last read; 409 -> reload.
+- 403 `FORBIDDEN_NOT_OWNER` for a non-owner (an ADMIN may edit anything); DELETE stays ADMIN-only.

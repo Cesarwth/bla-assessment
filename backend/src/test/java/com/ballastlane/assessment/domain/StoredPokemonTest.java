@@ -14,10 +14,11 @@ class StoredPokemonTest {
 
     @Test
     void createdFromDetailHasNoIdentityAndEmptyLocalAttributes() {
-        StoredPokemon created = StoredPokemon.fromDetail(TestData.detail(25, "pikachu"), NOW);
+        StoredPokemon created = StoredPokemon.fromDetail(TestData.detail(25, "pikachu"), NOW, TestData.user(5));
 
         assertThat(created.id()).isNull();
         assertThat(created.version()).isNull();
+        assertThat(created.ownerId()).isEqualTo(5L);
         assertThat(created.pokeApiId()).isEqualTo(25);
         assertThat(created.name()).isEqualTo("pikachu");
         assertThat(created.localAttributes()).isEqualTo(LocalAttributes.empty());
@@ -69,6 +70,44 @@ class StoredPokemonTest {
         assertThat(refreshed.genus()).isEqualTo(existing.genus());
         assertThat(refreshed.description()).isEqualTo(existing.description());
         assertThat(refreshed.evolutionChain()).isEqualTo(existing.evolutionChain());
+    }
+
+    @Test
+    void refreshKeepsTheOriginalOwnerEvenWhenRefreshedByAnotherUser() {
+        StoredPokemon existing = TestData.storedOwnedBy(5L, 7, 3, 25, "pikachu", LocalAttributes.empty());
+
+        assertThat(existing.refreshedFrom(TestData.detail(25, "pikachu"), LATER).ownerId()).isEqualTo(5L);
+        assertThat(TestData.storedOwnedBy(null, 7, 3, 25, "pikachu", LocalAttributes.empty())
+                .refreshedFrom(TestData.detail(25, "pikachu"), LATER).ownerId()).isNull();
+    }
+
+    @Test
+    void canBeEditedByItsOwner() {
+        StoredPokemon owned = TestData.storedOwnedBy(5L, 7, 3, 25, "pikachu", LocalAttributes.empty());
+
+        assertThat(owned.canBeEditedBy(TestData.user(5))).isTrue();
+    }
+
+    @Test
+    void canBeEditedByAnyAdmin() {
+        StoredPokemon owned = TestData.storedOwnedBy(5L, 7, 3, 25, "pikachu", LocalAttributes.empty());
+
+        assertThat(owned.canBeEditedBy(TestData.admin(99))).isTrue();
+    }
+
+    @Test
+    void cannotBeEditedByAnotherUser() {
+        StoredPokemon owned = TestData.storedOwnedBy(5L, 7, 3, 25, "pikachu", LocalAttributes.empty());
+
+        assertThat(owned.canBeEditedBy(TestData.user(6))).isFalse();
+    }
+
+    @Test
+    void aRecordWithoutOwnerCanOnlyBeEditedByAnAdmin() {
+        StoredPokemon ownerless = TestData.storedOwnedBy(null, 7, 3, 25, "pikachu", LocalAttributes.empty());
+
+        assertThat(ownerless.canBeEditedBy(TestData.user(5))).isFalse();
+        assertThat(ownerless.canBeEditedBy(TestData.admin(1))).isTrue();
     }
 
     @Test

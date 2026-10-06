@@ -27,6 +27,10 @@ class PokemonEntity {
     @Version
     Long version;
 
+    // The user who first synced the record; plain column (no association) so loading a Pokemon never loads a user.
+    @Column(name = "owner_id")
+    Long ownerId;
+
     @Column(name = "pokeapi_id", nullable = false, unique = true)
     int pokeApiId;
 
