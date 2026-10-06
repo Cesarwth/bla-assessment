@@ -56,7 +56,7 @@ Rules:
 - Controllers never touch repositories or JPA entities; they call use case interfaces and map DTOs.
 - Never expose JPA entities or PokeAPI DTOs over the REST API.
 - Consistent error body from one `@RestControllerAdvice` (status, error code, message, field errors, timestamp). No stack traces to clients.
-- Versioned routes under `/api/v1`. Public: `/api/v1/auth/**`, `GET /api/v1/pokemon/**`, Swagger/health. Protected: the whole `/api/v1/collection/**` (each trainer only sees and edits their own entries: another trainer's entry is a 404).
+- Versioned routes under `/api/v1`. Public: `/api/v1/auth/**`, `GET /api/v1/pokemon/**`, `/actuator/health`. Protected: the whole `/api/v1/collection/**` (each trainer only sees and edits their own entries: another trainer's entry is a 404).
 
 ## TDD workflow (mandatory)
 

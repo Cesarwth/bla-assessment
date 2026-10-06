@@ -1,5 +1,8 @@
 # Research: Plan D — one repo, backend + frontend (ownership, versioned edits, React app)
 
+> **Superseded in part:** this plan describes the first collection model (one shared row per Pokémon, edit by owner or admin, admin-only delete). Collections are now per trainer (see `plan-e-delivery.md`, "Design change after manual testing: per-trainer collections"); the rest of the plan still applies.
+
+
 **Story/Problem:** the exercise requires a modern frontend (React or Vue) that is responsive, user-centric, executes the CRUD use cases, keeps clean component organization and efficient state management, and ships in the same delivery as the API. Review decisions also change the API (owner-based edits, versioned PATCH) and the delivery must be ONE link.
 **Date:** 2026-10-06
 **Builds on:** Plans A-C and review batches 1-2 (HEAD `5d1098d`). Earlier research in `docs/`.

@@ -49,7 +49,7 @@ Prefer to do it by hand? `cp .env.example .env`, put a random value in `JWT_SECR
 Check that everything works, the way a browser reaches it (through nginx):
 
 ```bash
-./scripts/smoke.sh        # 39 checks, exit code 0 when all pass (the same script runs in CI)
+./scripts/smoke.sh        # 40 checks, exit code 0 when all pass (the same script runs in CI)
 ```
 
 Stop it with `docker compose down` (add `-v` to also erase the database).
@@ -112,7 +112,7 @@ flowchart LR
   cfg --> uc
 ```
 
-- **`domain`** — entities, value objects and rules (`LocalAttributes` limits, `StoredPokemon.canBeEditedBy`, `PokemonIdentifier`). No framework imports.
+- **`domain`** — entities, value objects and rules (`LocalAttributes` limits, `PokemonSearchQuery`, `PokemonIdentifier`). No framework imports.
 - **`application`** — one class per use case, written as plain Java against **ports** it defines (`port.in` for what the outside asks, `port.out` for what it needs).
 - **`infrastructure`** — everything that touches a framework: REST controllers and DTOs, Spring Security + JWT, the PokeAPI HTTP client with Caffeine caching, JPA adapters and Flyway migrations, and the configuration that wires use cases into Spring (the only place that does).
 - The rule is **enforced, not just documented**: `ArchitectureTest` (ArchUnit) fails the build if `domain`/`application` import Spring/JPA/Jackson, if a controller touches an outbound port, an adapter or a use-case implementation, or if layers depend the wrong way.
@@ -221,7 +221,7 @@ frontend/src/
 
 - **State**: server state in TanStack Query (cache, retries only for network/5xx, previous page stays visible while the next loads); paging lives in the URL (shareable); auth in a small context; no global store. Features never import each other: `App.tsx` is the only place that composes them.
 - **One API client** turns every failure into an `ApiError` (status, code, field errors) using the backend's error shape, so components never parse responses. A `401` on a request that carried a token ends the session, shows a notice and refetches the data without the dead token.
-- **Styling**: Tailwind v4 with a single stylesheet. The design tokens (semantic colors, the 18 Pokémon type colors, radius, shadow) live in an `@theme` block; the dark palette overrides the same variables under `prefers-color-scheme`, so a class like `bg-surface` is right in both schemes. Repeated patterns are small components in `shared/ui` instead of long class lists or `@apply`. The build emits one static CSS file (≈ 28 kB, 6.5 kB gzip), so the strict CSP (`style-src 'self'`) still holds.
+- **Styling**: Tailwind v4 with a single stylesheet. The design tokens (semantic colors, the 18 Pokémon type colors, radius, shadow) live in an `@theme` block; the dark palette overrides the same variables under `prefers-color-scheme`, so a class like `bg-surface` is right in both schemes. Repeated patterns are small components in `shared/ui` instead of long class lists or `@apply`. The build emits one static CSS file (≈ 44 kB, 9 kB gzip), so the strict CSP (`style-src 'self'`) still holds.
 - **Background**: an original forest scene drawn as SVG (a misty morning in the light scheme, a night forest with fireflies in the dark one; 15–27 kB each, no third-party artwork). Text always sits on glass panels over it, and a test checks the contrast against the art's lightest and darkest tones. Buttons are deliberately light (thin borders, soft tints).
 - **Accounts**: "Create profile" (register), "Forgot your password?" on the login page (the e-mail link opens `/reset-password`; the token is removed from the address bar as soon as the page reads it) and a **profile page** (`/profile`, reached by clicking your username) to change username, e-mail (asks for the current password) and password. After a username change the app adopts the new token the API returns, so the header updates at once. A wrong current password is a form error and never logs you out.
 - **Cards**: each Pokémon card has a gradient taken from its primary type, a glass number pill (`#0025`), the official artwork with a soft glow, and an inset panel with solid type pills; stat bars change colour with the value. The list endpoints carry `imageUrl` (official artwork, falling back to the sprite). Every type palette is checked for WCAG AA contrast by a unit test.
@@ -273,7 +273,7 @@ cd frontend && npm ci && npm run dev      # http://localhost:5173
 
 ## Testing and quality
 
-Tests were written **first** (red → green → refactor); the git history and the `docs/plan-*.md` files show the test list of every phase.
+The core (domain, use cases, persistence and PokeAPI adapters, the first web and frontend phases) was built **test-first** (red → green → refactor), and each phase's planned tests are listed in `docs/plan-*.md`. Later iterations (collections per trainer, filter, selection, password recovery, restyling) were done with tests and code written in the same change and verified by running the whole suite, the stack smoke test and a real-browser check; the commit history does not always show a separate failing-test commit for those.
 
 | Suite | Command | What it covers |
 | --- | --- | --- |
@@ -282,7 +282,7 @@ Tests were written **first** (red → green → refactor); the git history and t
 | Frontend | `cd frontend && npm test` | **325 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
 | Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99 % / 93 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
 | Static checks | `npm run typecheck && npm run lint` | strict TypeScript, ESLint with zero warnings |
-| Whole stack | `./scripts/smoke.sh` | 39 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, private collections, two trainers with the same Pokémon, versions |
+| Whole stack | `./scripts/smoke.sh` | 40 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, private collections, two trainers with the same Pokémon, versions |
 | CI | `.github/workflows/ci.yml` | on every push to `main` and every pull request: backend `build` (tests + coverage gate), frontend typecheck/lint/coverage/build/audit, and the whole stack with `start.sh` + `smoke.sh` |
 
 Beyond what jsdom can see (real CORS, CSP, nginx, layout) the delivered stack was also checked in Chrome through the DevTools protocol on desktop, mobile and dark mode, logged in and out: **no console warnings or errors, no CSP violations, no failed requests**. That pass found and fixed a real bug (nginx dropped the port from `Host`, so the API treated the browser's `Origin` as foreign and refused every `POST`/`PATCH`/`DELETE`); the smoke script now guards it.
@@ -306,7 +306,7 @@ Beyond what jsdom can see (real CORS, CSP, nginx, layout) the delivered stack wa
 ## Security notes
 
 - Passwords: BCrypt, with a 72-byte limit checked in bytes; unknown users cost the same hash work as wrong passwords; usernames/emails are normalized so look-alike accounts cannot exist.
-- **Password recovery**: the reset token is 32 random bytes; only its SHA-256 hash is stored, it is valid 30 minutes and works once, a newer request invalidates the older links, and a successful reset invalidates the rest. The request endpoint answers the same for known and unknown e-mails, and the reset link never appears in a log. Changing the e-mail address requires the current password, so a stolen session cannot redirect future resets. Known limit: tokens are stateless JWTs, so after a password change or reset an already issued token stays valid until it expires (60 minutes by default); a token deny-list would close that. There is no rate limiting on these endpoints (a conscious choice for this scope).
+- **Password recovery**: the reset token is 32 random bytes; only its SHA-256 hash is stored, it is valid 30 minutes and works once, a newer request invalidates the older links, and a successful reset invalidates the rest. The request endpoint answers the same for known and unknown e-mails, and the reset link appears in no log (the API never logs it, and nginx does not log the request that opens it). Changing the e-mail address requires the current password, so a stolen session cannot redirect future resets. Known limit: tokens are stateless JWTs, so after a password change or reset an already issued token stays valid until it expires (60 minutes by default); a token deny-list would close that. There is no rate limiting on these endpoints (a conscious choice for this scope).
 - No secrets in code or git: the JWT secret and database password come from the environment (the API refuses a short, missing or placeholder secret, and `start.sh` generates random ones); `.env` is git-ignored.
 - **Transport**: everything here is plain HTTP on `localhost` — the API (`8080`) and the app (`8081`) are published on `127.0.0.1` only and the database is not published at all. For anything beyond a local demo, terminate **TLS in front of nginx** (a reverse proxy or load balancer): nginx honours `X-Forwarded-Proto` and then sends `Strict-Transport-Security`. Without TLS, passwords and tokens would cross the network in clear text.
 - Errors never leak internals (fixed `500` message, upstream text only in logs; database messages that could quote personal data are not logged).

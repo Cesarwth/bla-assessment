@@ -1,5 +1,8 @@
 # Plan D1: one repo (`backend/` + `frontend/`), owner-based edits, versioned PATCH
 
+> **Superseded in part:** this plan describes the first collection model (one shared row per Pokémon, edit by owner or admin, admin-only delete). Collections are now per trainer (see `plan-e-delivery.md`, "Design change after manual testing: per-trainer collections"); the rest of the plan still applies.
+
+
 **Research:** research.md
 **Date:** 2026-10-06
 **Scope:** part of an epic (frontend + backend, 6+ phases, endpoints changed) -> split: **D1 = this file** (repo layout + API contract, backend only), **D2 = `docs/plan-d2-frontend.md`** (React app). Run D1 first: the frontend consumes the final contract and the final folder layout.

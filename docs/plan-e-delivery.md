@@ -1,5 +1,8 @@
 # Plan E: demo data, one-command start, README, GenAI document, publication
 
+> **Read this with the later sections:** the first part of this document (Plan E and its code-review follow-up) describes the original ownership model (owner or admin edit, admin-only delete, a public shared collection). It was superseded on 2026-10-06; see "Design change after manual testing: per-trainer collections" and the sections after it for the current behaviour.
+
+
 **Research:** research.md
 **Date:** 2026-10-06
 **Scope:** Task (2/6 indicators). 5 phases.
@@ -261,4 +264,4 @@ Requested last: trainers can recover a lost password and edit their own details.
 - **Profile:** `GET/PATCH /users/me`, `POST /users/me/password`. Changing the e-mail needs the current password; a wrong current password is a `400` (never a `401`, which the web client treats as an expired session). A username change returns a new JWT because the token carries the username.
 - **E-mail in the demo:** a Mailpit container (`axllent/mailpit`) receives the messages at http://localhost:8025; production would point `MAIL_HOST` at a real SMTP server. The mail health indicator is disabled so a missing mail server never makes the API unhealthy.
 - **Known limits:** stateless JWTs stay valid after a password change until they expire; no rate limiting (a conscious scope decision, as for login).
-- **Verified live:** register → forgot → read the e-mail in Mailpit → weak password refused → reset → the link works once → old password rejected, new one accepted → profile read and rename; the reset token appears in no log. The smoke test now covers this (39 checks).
+- **Verified live:** register → forgot → read the e-mail in Mailpit → weak password refused → reset → the link works once → old password rejected, new one accepted → profile read and rename; the reset token appears in no log. The smoke test now covers this (40 checks).
