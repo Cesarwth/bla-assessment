@@ -33,6 +33,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**", "/actuator/health/**", "/actuator/health", "/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/pokemon", "/api/v1/pokemon/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/collection", "/api/v1/collection/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/collection/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))

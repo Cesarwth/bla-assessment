@@ -1,79 +1,85 @@
-# Research: Plan B — Pokemon list (US-01) and detail (US-02) from PokeAPI
+# Research: Plan C — local collection: sync (US-03) and update (US-04)
 
-**Story/Problem:** US-01 paginated list (sprite, category, mass, abilities) with caching; US-02 detail (image, stats, description, evolution chain).
+**Story/Problem:** persist PokeAPI data in a relational store with room for proprietary fields (US-03); update stored Pokemon with 404 / 400 / defensive checks (US-04); CRUD over the stored dataset.
 **Date:** 2026-10-05
-**Builds on:** Plan A (auth, error model, security, Docker) — see `docs/plan-a-foundation.md`. Overall research kept in `docs/research-overall.md`.
+**Builds on:** Plans A and B (commit `b9dbbde`). Earlier research: `docs/research-plan-b.md`, `docs/research-overall.md`.
 
 ## Problem Statement
 
-Expose two public read endpoints that aggregate several PokeAPI calls into clean domain models, behind a port so the domain never sees PokeAPI JSON. Responses must be cached because a single list page costs many upstream calls.
+Add a local, editable copy of Pokemon. Sync reads from the existing `PokeApiGateway` and upserts into the DB; users edit local-only attributes; reads are public, writes need a token, deletes need ADMIN. Re-syncing must refresh PokeAPI-owned data without destroying local edits.
 
 ## Affected Code
 
 | File | Layer | Role | Key Symbols |
 | ---- | ----- | ---- | ----------- |
-| `infrastructure/security/SecurityConfig.java:35` | infra | already permits `GET /api/v1/pokemon` and `/**` | route rules (no change needed) |
-| `infrastructure/web/GlobalExceptionHandler.java` | infra | single error mapper; needs new domain exceptions | `unexpected()` falls back to 500 |
-| `infrastructure/config/UseCaseConfig.java` | infra | where use cases are wired | `@Bean` methods |
-| `ArchitectureTest.java` | test | layering guard that new code must satisfy | 3 rules |
-| `application.yml` | config | needs `app.pokeapi.*` (base URL, timeouts, cache TTL) | — |
-| `build.gradle` | build | needs `starter-cache`, `caffeine` | — |
+| `application/port/out/PokeApiGateway.java` | application | source of truth for sync | `findDetail(String)` (returns `PokemonDetail`, includes evolution chain) |
+| `application/usecase/GetPokemonDetail.java:14-27 (VALID_IDENTIFIER L14, get() L23-25)` | application | owns identifier normalization/validation | `VALID_IDENTIFIER`, `get()` — logic Sync must also use (DRY) |
+| `domain/PokemonDetail.java` | domain | shape to replicate | 12 fields |
+| `infrastructure/persistence/{UserEntity,JpaUserRepositoryAdapter,UserPersistenceMapper}.java` | infra | pattern to follow: package-private entity + Spring Data repo + adapter + mapper | `saveAndFlush`, mapper per aggregate |
+| `src/main/resources/db/migration/V1__create_users.sql` | infra | only migration; `ddl-auto: validate` means schema and entities must match exactly | |
+| `infrastructure/security/SecurityConfig.java:34-36` | infra | `anyRequest().authenticated()`; no method/role rule yet | add GET public + DELETE `hasRole("ADMIN")` for the new path |
+| `infrastructure/web/GlobalExceptionHandler.java` | infra | single error mapper | needs new domain exceptions + optimistic-lock + integrity cases |
+| `infrastructure/config/{UseCaseConfig,DemoUserSeeder}.java` | infra | wiring; seeder only creates role USER | admin demo user needed for the 403/204 demo |
+| `ArchitectureTest.java` | test | layer guard | candidate new rule: web must not touch persistence |
 
-New (does not exist): `domain` models, `PokeApiGateway` port, list/detail use cases, PokeAPI client + DTOs + mapper, cache config, `PokemonController`.
+New (does not exist): stored-Pokemon domain model, `PokemonRepository` port, 6 use cases, V2 migration, entities, `CollectionController`.
 
 ## Data Flow (target)
 
-1. GET `/api/v1/pokemon?page&size` -> `PokemonController` -> `ListPokemonUseCase` (validates page/size) -> `PokeApiGateway.findPage` -> adapter
-2. Adapter: 1 call `/pokemon?limit&offset` (names+urls) -> **N detail calls** `/pokemon/{id}` -> mapper -> `PokemonSummary` — *why: the list endpoint has no sprite/type/weight/abilities*
-3. GET `/api/v1/pokemon/{idOrName}` -> `GetPokemonDetailUseCase` -> gateway -> `/pokemon/{x}` then `/pokemon-species/{id}` then `/evolution-chain/{id}` — *why sequential: species URL comes from the pokemon payload, chain URL from species*
-4. Mapper converts units and cleans text; web layer maps domain -> response DTO.
+1. `POST /api/v1/collection/{idOrName}/sync` (auth) -> `SyncPokemonUseCase` -> normalize id -> `PokeApiGateway.findDetail` -> `PokemonRepository.findByPokeApiId` -> merge (refresh PokeAPI fields, keep local ones) -> `save` — *why merge: a plain overwrite would erase nickname/region/tags*
+2. `POST /api/v1/collection/sync {from,to}` -> loop over ids, same path per id, collect `{created, updated, failures}`; ids in the 1026-10000 gap return 404 upstream and must become failures, not an abort.
+3. `GET /api/v1/collection[/{pokeApiId}]` (public) -> read use cases -> repository only (no upstream call).
+4. `PATCH /api/v1/collection/{pokeApiId}` (auth) -> validate -> load -> apply -> save; 404 missing, 400 invalid/empty payload, 409 on concurrent edit.
+5. `DELETE /api/v1/collection/{pokeApiId}` (ADMIN) -> 204; 403 for USER; 404 missing.
 
-## External Contract (verified live 2026-10-05)
+## External Contract (PokeAPI, verified 2026-10-05)
 
-- **List:** `{count:1351,next,previous,results:[{name,url}]}`; id = last path segment of `url`. Includes alternate forms (ids > 10000, e.g. `deoxys-attack`, `*-mega`), so ids are NOT contiguous. `offset` beyond count returns 200 with empty `results`.
-- **Detail input:** by id or lowercase name; `Pikachu` (uppercase) works, `pokemon/0` -> 404, trailing space -> **400**, unknown name -> 404.
-- **Units:** `weight` in hectograms (60 -> 6.0 kg), `height` in decimeters.
-- **Sprites:** `sprites.front_default` and `sprites.other["official-artwork"].front_default` present on 5/5 sampled (incl. forms); still treat as nullable.
-- **Forms:** `pokemon/10001` (deoxys-attack) -> `species.url` = `/pokemon-species/386/` (species id != pokemon id), so species must be resolved from the pokemon payload, never by reusing the id.
-- **Species:** `genera[]` (filter en), `flavor_text_entries[]` (28-33 English entries, text has `\n` and `\f`), `evolution_chain.url`.
-- **Evolution chain:** recursive `chain{species{name,url},evolution_details[],evolves_to[]}`. Eevee (chain 67) has **8 branches**; details mix triggers (`use-item` + item, `level-up` + `min_happiness` + `time_of_day`), some with `min_level` null and empty details; duplicates inside `evolution_details` occur.
-- **Stats:** `stats[].stat.name` + `base_stat` (hp, attack, defense, special-attack, special-defense, speed).
-- **Latency:** 1 list + 12 sequential detail calls = **1.09 s** (~85 ms each) -> a cold page is ~1 s sequentially; parallel fetch + cache is worthwhile.
-- **Etiquette:** public, no key, asks for caching. A default Python UA is blocked (403); Java UAs are fine; send a descriptive `User-Agent` anyway.
+- Ids `1..1025` exist (25/25 sampled), `1026..10000` -> 404, alternate forms start at `10001` -> sync by range will hit the gap and must report per-id failures.
+- Each `findDetail` costs up to 3 upstream calls (pokemon, species, chain), all cached (Plan B); a cold range of 20 is ~60 calls, acceptable only with a cap.
+- Sync must use `PokemonDetail` from the gateway, not raw DTOs, so mapping stays in one place.
 
 ## Current Behavior
 
-Only auth exists. `GET /api/v1/pokemon` is public in `SecurityConfig` but no controller handles it (returns 404 via the shared handler).
+`/api/v1/pokemon/**` is read-only and pass-through to PokeAPI (cached). No `pokemon` table, no admin user, no role rules; the only role check available is the `ROLE_` authority derived from the JWT `role` claim (`SecurityConfig` converter).
 
 ## Constraints
 
-- **Architecture:** `domain`/`application` free of Spring/Jackson/HTTP; ArchUnit enforces it. PokeAPI DTOs and cache annotations live in `infrastructure`.
-- **Spring Boot 4:** `RestClient` is the HTTP client; Jackson 3 (`tools.jackson.databind`) but Jackson annotations remain `com.fasterxml.jackson.annotation` (to verify); `@WebMvcTest` is in `org.springframework.boot.webmvc.test.autoconfigure`; `@MockitoBean` for mocks.
-- **Errors:** every failure must use `ErrorResponse`. Unmapped exceptions become 500, so type-mismatch on `?size=abc` (`MethodArgumentTypeMismatchException`, not a Spring `ErrorResponse`) would wrongly be 500 today.
-- **Security:** read endpoints stay public; no PII involved; outbound calls only to the configured PokeAPI base URL (SSRF: never follow arbitrary URLs from payloads, build paths from validated ids).
-- **Upstream abuse:** unbounded `size` multiplies upstream calls -> cap page size.
-- **Testing:** tests never call the real PokeAPI.
+- **Database:** `ddl-auto: validate` -> V2 migration must match entities exactly on both H2 (tests) and PostgreSQL (Docker). Never edit V1; later changes are new `V<n>` files (this is the first version; updates will follow). Portable types only: `BIGINT GENERATED BY DEFAULT AS IDENTITY`, `DOUBLE PRECISION`, `TEXT`, `TIMESTAMP WITH TIME ZONE`.
+- **Primary entity + 2 descriptive attributes + unique PK:** satisfied by `pokemon` (PK + unique `pokeapi_id` + name, etc.); users table already covers the secondary collection requirement.
+- **Hibernate 7 / Boot 4:** element collections map types/abilities/stats/tags; collection loading is lazy and must be read inside a transaction in the adapter; page listing needs batch fetching (`hibernate.default_batch_fetch_size`) or it is N+1 per collection.
+- **Optimistic locking:** `@Version` only protects if the version travels through the domain (adapter `save` -> merge). Use cases are plain Java, so no `@Transactional` there.
+- **Security:** GET public; PATCH/POST authenticated; DELETE ADMIN; roles come from JWT `role` claim; `RegisterUser` always creates `USER`, so an admin can only come from seeding.
+- **Input:** nickname/region/tag length and count limits, trimmed, tags lower-cased and de-duplicated, to avoid junk and oversized rows (bounded input = defensive logic required by US-04).
+- **PII/secrets:** none stored; demo admin password only via env var, never hardcoded beyond the documented demo default.
+- **Docker:** compose already runs Postgres; V2 will run there on startup.
 
 ## Existing Patterns
 
-Ports in `application/port/{in,out}`, plain-Java use cases wired in `UseCaseConfig`, records for DTOs, one `@RestControllerAdvice`, `@WebMvcTest` + `@Import(SecurityConfig, JwtConfig, GlobalExceptionHandler)` for controller tests, H2 per-context for integration tests (`application-test.yml`).
+Ports in `application/port/{in,out}`; plain-Java use cases wired in `UseCaseConfig`; one `@RestControllerAdvice`; records + `from(domain)` factories for responses; package-private JPA entity + Spring Data repo + public adapter + mapper (see users); `@DataJpaTest` with `@Import(adapter, mapper)`; `@WebMvcTest` + `@Import(SecurityConfig, JwtConfig, GlobalExceptionHandler)`; `@SpringBootTest` e2e with an in-test upstream for PokeAPI.
 
 ## Risks
 
-- **Regression:** a new `GlobalExceptionHandler` branch could change existing auth error codes; existing tests cover them.
-- **Data integrity:** none (read-only). The domain `Pokemon` shape chosen here is reused by sync/persistence in Plan C — a bad shape propagates.
-- **Performance:** N+1 upstream calls per page; cold cache latency; thundering herd if many users request the same cold page.
-- **Coupling:** PokeAPI JSON leaking into domain; `weight` unit; evolution detail variety (triggers) leaking into UI.
-- **Availability:** PokeAPI down/slow must not hang threads: need timeouts and a mapped 502/504.
-- **Test blindspot:** mapper edge cases (null sprite, missing English flavor text, branching chain, duplicated details) are invisible without explicit fixtures; cache correctness (hit/miss, no caching of failures/404s) needs its own test.
-- **Challenge (should this exist?):** list/detail are pass-through while Plan C stores the same data. Chosen stance: keep the gateway as the single mapping point and have sync reuse it (DRY).
+- **Regression:** extracting identifier validation from `GetPokemonDetail` could change Plan B behavior; its 11 tests guard it.
+- **Data integrity:** (a) re-sync overwriting local edits; (b) two concurrent syncs of the same Pokemon both inserting -> unique `pokeapi_id` violation (409 today, ideally idempotent); (c) lost update on concurrent PATCH without a version.
+- **Performance:** range sync is sequential upstream calls; list of stored Pokemon touches 4 collections per row.
+- **Coupling:** persisting `evolutionChain`: normalizing a recursive tree into tables is heavy; a JSON text column couples storage to the domain record shape.
+- **Test blindspot:** H2 vs PostgreSQL differences for element collections and `TIMESTAMP WITH TIME ZONE`; only the Docker smoke exercises PostgreSQL.
+- **Authorization:** forgetting the ADMIN rule on a new path silently leaves DELETE open to any user; needs a test per verb/role.
+- **Challenge (should this exist?):** list/detail from PokeAPI (Plan B) and from the local DB overlap. Kept separate on purpose: the catalog is the source, the collection is the editable replica required by US-03/04.
 
 ## Test Coverage
 
-- **Covered:** nothing for this area; auth tests unaffected.
-- **Gaps:** everything in Plan B.
-- **Test patterns to follow:** unit tests with Mockito on ports; `MockRestServiceServer` bound to `RestClient.Builder` for the client (replaces the WireMock idea in `CLAUDE.md`; fewer deps, Boot 4 safe); fixtures captured from the real API under `src/test/resources/pokeapi/`.
+- **Covered:** user persistence, catalog use cases/adapters, error mapping, security rules for public/protected.
+- **Gaps:** everything about stored Pokemon, role-based 403, optimistic locking, migration V2 on PostgreSQL.
+- **Test patterns to follow:** Mockito on ports for use cases; `@DataJpaTest` for the adapter; `@WebMvcTest` for the controller with tokens minted by `TokenIssuer`; `@SpringBootTest` + local upstream stand-in for e2e.
+
+## Decisions (resolved with the user)
+
+1. Base (Plans A+B) committed locally (`b9dbbde`); remote repo to be added later by the user; no push.
+2. Local resource path: `/api/v1/collection` (id in the URL = PokeAPI id).
+3. Update: `PATCH` (partial), no `PUT`.
+4. Permissions: any authenticated user syncs and edits; only ADMIN deletes; reads are public.
 
 ## Open Questions
 
-None — ready for planning. (Defaults assumed and listed in plan.md: page size default 12, max 50, 0-based pages; description language English; evolution nodes carry id/name/sprite by URL pattern.)
+None — ready for planning. (Assumptions listed in plan.md: editable fields, sync limits, evolution chain stored as JSON.)

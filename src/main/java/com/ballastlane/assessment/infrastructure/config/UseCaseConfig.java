@@ -1,17 +1,31 @@
 package com.ballastlane.assessment.infrastructure.config;
 
 import com.ballastlane.assessment.application.port.in.AuthenticateUserUseCase;
+import com.ballastlane.assessment.application.port.in.DeleteStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.GetPokemonDetailUseCase;
+import com.ballastlane.assessment.application.port.in.GetStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.ListPokemonUseCase;
+import com.ballastlane.assessment.application.port.in.ListStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.RegisterUserUseCase;
+import com.ballastlane.assessment.application.port.in.SyncPokemonRangeUseCase;
+import com.ballastlane.assessment.application.port.in.SyncPokemonUseCase;
+import com.ballastlane.assessment.application.port.in.UpdateStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.out.PasswordHasher;
 import com.ballastlane.assessment.application.port.out.PokeApiGateway;
+import com.ballastlane.assessment.application.port.out.PokemonRepository;
 import com.ballastlane.assessment.application.port.out.TokenIssuer;
 import com.ballastlane.assessment.application.port.out.UserRepository;
 import com.ballastlane.assessment.application.usecase.AuthenticateUser;
+import com.ballastlane.assessment.application.usecase.DeleteStoredPokemon;
 import com.ballastlane.assessment.application.usecase.GetPokemonDetail;
+import com.ballastlane.assessment.application.usecase.GetStoredPokemon;
 import com.ballastlane.assessment.application.usecase.ListPokemon;
+import com.ballastlane.assessment.application.usecase.ListStoredPokemon;
 import com.ballastlane.assessment.application.usecase.RegisterUser;
+import com.ballastlane.assessment.application.usecase.SyncPokemon;
+import com.ballastlane.assessment.application.usecase.SyncPokemonRange;
+import com.ballastlane.assessment.application.usecase.UpdateStoredPokemon;
+import java.time.Clock;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -43,8 +57,44 @@ public class UseCaseConfig {
     }
 
     @Bean
+    Clock clock() {
+        return Clock.systemUTC();
+    }
+
+    @Bean
+    SyncPokemonUseCase syncPokemonUseCase(PokeApiGateway gateway, PokemonRepository repository, Clock clock) {
+        return new SyncPokemon(gateway, repository, clock);
+    }
+
+    @Bean
+    SyncPokemonRangeUseCase syncPokemonRangeUseCase(SyncPokemonUseCase syncPokemon) {
+        return new SyncPokemonRange(syncPokemon);
+    }
+
+    @Bean
+    ListStoredPokemonUseCase listStoredPokemonUseCase(PokemonRepository repository) {
+        return new ListStoredPokemon(repository);
+    }
+
+    @Bean
+    GetStoredPokemonUseCase getStoredPokemonUseCase(PokemonRepository repository) {
+        return new GetStoredPokemon(repository);
+    }
+
+    @Bean
+    UpdateStoredPokemonUseCase updateStoredPokemonUseCase(PokemonRepository repository) {
+        return new UpdateStoredPokemon(repository);
+    }
+
+    @Bean
+    DeleteStoredPokemonUseCase deleteStoredPokemonUseCase(PokemonRepository repository) {
+        return new DeleteStoredPokemon(repository);
+    }
+
+    @Bean
     @ConditionalOnProperty(prefix = "app.seed.demo-user", name = "enabled", havingValue = "true")
-    DemoUserSeeder demoUserSeeder(RegisterUserUseCase registerUser, UserRepository users, DemoUserProperties properties) {
-        return new DemoUserSeeder(registerUser, users, properties);
+    DemoUserSeeder demoUserSeeder(
+            RegisterUserUseCase registerUser, UserRepository users, PasswordHasher hasher, DemoUserProperties properties) {
+        return new DemoUserSeeder(registerUser, users, hasher, properties);
     }
 }

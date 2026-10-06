@@ -7,6 +7,10 @@ spring:
     password: ${DB_PASSWORD:}
   jpa:
     open-in-view: false
+    properties:
+      hibernate:
+        # Loads the lazy element collections of a whole page in a few queries instead of 4 per row.
+        default_batch_fetch_size: 50
     hibernate:
       ddl-auto: validate
 
@@ -36,3 +40,7 @@ app:
       username: demo
       email: demo@pokemon.dev
       password: ${DEMO_USER_PASSWORD:Demo12345}
+      admin-username: demo-admin
+      admin-email: admin@pokemon.dev
+      # No default: the admin account only exists when this variable is set.
+      admin-password: ${DEMO_ADMIN_PASSWORD:}

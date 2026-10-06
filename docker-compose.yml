@@ -26,6 +26,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?copy .env.example to .env}
       SEED_DEMO_USER: ${SEED_DEMO_USER:-true}
       DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:?copy .env.example to .env}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:?copy .env.example to .env}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
     ports:
       - "8080:8080"

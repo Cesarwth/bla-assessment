@@ -29,4 +29,17 @@ class ArchitectureTest {
             .should().dependOnClassesThat().resideInAnyPackage(
                     "org.springframework..", "jakarta.persistence..", "tools.jackson..", "com.fasterxml.jackson..")
             .allowEmptyShould(true);
+
+    // Controllers talk to use cases; only adapters know about JPA, and the reverse.
+    @ArchTest
+    static final ArchRule webDoesNotDependOnPersistence = noClasses()
+            .that().resideInAPackage("..infrastructure.web..")
+            .should().dependOnClassesThat().resideInAPackage("..infrastructure.persistence..")
+            .allowEmptyShould(true);
+
+    @ArchTest
+    static final ArchRule persistenceDoesNotDependOnWeb = noClasses()
+            .that().resideInAPackage("..infrastructure.persistence..")
+            .should().dependOnClassesThat().resideInAPackage("..infrastructure.web..")
+            .allowEmptyShould(true);
 }

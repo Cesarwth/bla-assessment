@@ -11,6 +11,11 @@ import com.ballastlane.assessment.domain.exception.InvalidPaginationException;
 import com.ballastlane.assessment.domain.exception.InvalidPokemonIdentifierException;
 import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
 import com.ballastlane.assessment.domain.exception.InvalidCredentialsException;
+import com.ballastlane.assessment.domain.exception.InvalidLocalAttributesException;
+import com.ballastlane.assessment.domain.exception.InvalidStoredPokemonUpdateException;
+import com.ballastlane.assessment.domain.exception.InvalidSyncRangeException;
+import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
+import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
 import com.ballastlane.assessment.domain.exception.InvalidUserException;
 import com.ballastlane.assessment.domain.exception.UsernameAlreadyExistsException;
 import com.ballastlane.assessment.domain.exception.WeakPasswordException;
@@ -67,6 +72,20 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void mapsCollectionExceptionsToStatusAndStableCode() throws Exception {
+        mvc.perform(get("/boom/stored-missing")).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
+        mvc.perform(get("/boom/bad-attributes")).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_LOCAL_ATTRIBUTES"));
+        mvc.perform(get("/boom/bad-update")).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_UPDATE"));
+        mvc.perform(get("/boom/bad-range")).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_SYNC_RANGE"));
+        mvc.perform(get("/boom/stale")).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONCURRENT_MODIFICATION"));
+    }
+
+    @Test
     void returns400WhenARequestParameterHasTheWrongType() throws Exception {
         mvc.perform(get("/boom/typed").param("n", "abc")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
@@ -118,6 +137,11 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/boom/bad-identifier") void j() { throw new InvalidPokemonIdentifierException("bad"); }
         @GetMapping("/boom/catalog-down") void k() { throw new CatalogUnavailableException("down", false, null); }
         @GetMapping("/boom/catalog-timeout") void l() { throw new CatalogUnavailableException("slow", true, null); }
+        @GetMapping("/boom/stored-missing") void n() { throw new StoredPokemonNotFoundException(25); }
+        @GetMapping("/boom/bad-attributes") void o() { throw new InvalidLocalAttributesException("bad"); }
+        @GetMapping("/boom/bad-update") void q() { throw new InvalidStoredPokemonUpdateException("bad"); }
+        @GetMapping("/boom/bad-range") void r() { throw new InvalidSyncRangeException("bad"); }
+        @GetMapping("/boom/stale") void t() { throw new StaleStoredPokemonException(25); }
         @GetMapping("/boom/typed") void m(@RequestParam int n) { }
         @PostMapping("/boom/validate") void g(@Valid @RequestBody Payload payload) { }
     }

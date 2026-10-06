@@ -2,9 +2,14 @@ package com.ballastlane.assessment.infrastructure.web;
 
 import com.ballastlane.assessment.domain.exception.CatalogUnavailableException;
 import com.ballastlane.assessment.domain.exception.EmailAlreadyExistsException;
+import com.ballastlane.assessment.domain.exception.InvalidLocalAttributesException;
 import com.ballastlane.assessment.domain.exception.InvalidPaginationException;
 import com.ballastlane.assessment.domain.exception.InvalidPokemonIdentifierException;
+import com.ballastlane.assessment.domain.exception.InvalidStoredPokemonUpdateException;
+import com.ballastlane.assessment.domain.exception.InvalidSyncRangeException;
 import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
+import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
+import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
 import com.ballastlane.assessment.domain.exception.InvalidCredentialsException;
 import com.ballastlane.assessment.domain.exception.InvalidUserException;
 import com.ballastlane.assessment.domain.exception.UsernameAlreadyExistsException;
@@ -59,6 +64,32 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PokemonNotFoundException.class)
     ResponseEntity<ErrorResponse> pokemonNotFound(PokemonNotFoundException ex) {
         return respond(HttpStatus.NOT_FOUND, "POKEMON_NOT_FOUND", ex.getMessage());
+    }
+
+    @ExceptionHandler(StoredPokemonNotFoundException.class)
+    ResponseEntity<ErrorResponse> storedPokemonNotFound(StoredPokemonNotFoundException ex) {
+        return respond(HttpStatus.NOT_FOUND, "STORED_POKEMON_NOT_FOUND", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidLocalAttributesException.class)
+    ResponseEntity<ErrorResponse> invalidLocalAttributes(InvalidLocalAttributesException ex) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_LOCAL_ATTRIBUTES", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidStoredPokemonUpdateException.class)
+    ResponseEntity<ErrorResponse> invalidUpdate(InvalidStoredPokemonUpdateException ex) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_UPDATE", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidSyncRangeException.class)
+    ResponseEntity<ErrorResponse> invalidSyncRange(InvalidSyncRangeException ex) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_SYNC_RANGE", ex.getMessage());
+    }
+
+    @ExceptionHandler(StaleStoredPokemonException.class)
+    ResponseEntity<ErrorResponse> staleRecord(StaleStoredPokemonException ex) {
+        return respond(HttpStatus.CONFLICT, "CONCURRENT_MODIFICATION",
+                "The record was modified by someone else; reload it and try again");
     }
 
     @ExceptionHandler(InvalidPaginationException.class)
