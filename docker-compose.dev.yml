@@ -1,0 +1,6 @@
+# Development override: publishes the database on localhost:5433 only (5432 is often taken by a local Postgres), so the API can run from your IDE or `./gradlew bootRun`.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
+services:
+  db:
+    ports:
+      - "127.0.0.1:5433:5432"

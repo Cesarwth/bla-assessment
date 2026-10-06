@@ -93,6 +93,9 @@ docker compose down -v; ./scripts/start.sh && ./scripts/smoke.sh
 
 **Goal:** a reader can run, understand, test and evaluate the project from the README alone.
 
+**Status:** ✅ Complete 2026-10-06
+**Deviation:** every command in the README was executed (start, smoke, `bootRun` against the Dockerized DB, `npm run dev` with the proxy); that exposed a second collision on this machine (a local Postgres on 5432), so the development override publishes the database on **5433**; screenshots were captured from the seeded app in Chrome and stored in `docs/screenshots/`.
+
 ### Checks (documentation is verified by running it)
 | Check | Asserts |
 | ----- | ------- |
@@ -116,6 +119,9 @@ docker compose down -v; ./scripts/start.sh && ./scripts/smoke.sh
 ## Phase 4: GenAI document
 
 **Goal:** answer the GenAI section of the brief truthfully and verifiably.
+
+**Status:** ✅ Complete 2026-10-06
+**Deviation:** the sample was kept as documentation under `docs/genai/task-api-sample/` (outside the build) instead of being deleted; three deliberate mutations (owner filter, due-date check, status workflow) were run and each was caught by 2–3 tests; the first controller test had a wrong expectation (status on POST) and was corrected — used as a real example in the document.
 
 ### Tests to Write First (RED)
 The sample code is real: written test-first in a scratch location inside `backend/` test sources, run, then copied into the document.
