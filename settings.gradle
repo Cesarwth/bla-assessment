@@ -1,0 +1,6 @@
+plugins {
+	// Lets the Java 21 toolchain be downloaded automatically (local JDK is not required to match).
+	id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+rootProject.name = 'bla-assessment'

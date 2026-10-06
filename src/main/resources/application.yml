@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: bla-assessment
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pokemon}
+    username: ${DB_USER:pokemon}
+    password: ${DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+app:
+  pokeapi:
+    base-url: ${POKEAPI_BASE_URL:https://pokeapi.co/api/v2}
+    connect-timeout: 2s
+    read-timeout: 5s
+    cache-ttl: 1h
+    cache-max-size: 2000
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  jwt:
+    # No default on purpose: the secret must come from the environment.
+    secret: ${JWT_SECRET:}
+    ttl-minutes: ${JWT_TTL_MINUTES:60}
+  seed:
+    # Demo-only account for the interview; documented in the README. Disable in real deployments.
+    demo-user:
+      enabled: ${SEED_DEMO_USER:false}
+      username: demo
+      email: demo@pokemon.dev
+      password: ${DEMO_USER_PASSWORD:Demo12345}
