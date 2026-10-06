@@ -209,6 +209,30 @@ describe('PokemonDetailPage', () => {
       expect(await screen.findByRole('status')).toHaveTextContent('Already in the collection. Its data was refreshed.')
     })
 
+    it('tells you it already belongs to another trainer and stays theirs', async () => {
+      mockDetail('25', pikachu)
+      syncReturns(200, stored(25, 'pikachu', { ownerId: 2 }))
+      renderApp(<App />, { route: '/pokemon/25', token: makeToken({ uid: 1 }) })
+      await screen.findByRole('heading', { name: 'Pikachu' })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Add to my collection' }))
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        'Already in the collection, added by another trainer, so it stays theirs. Its data was refreshed.',
+      )
+    })
+
+    it('does not mention another trainer when the entry has no owner', async () => {
+      mockDetail('25', pikachu)
+      syncReturns(200, stored(25, 'pikachu', { ownerId: null }))
+      renderApp(<App />, { route: '/pokemon/25', token: makeToken({ uid: 1 }) })
+      await screen.findByRole('heading', { name: 'Pikachu' })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Add to my collection' }))
+
+      expect(await screen.findByRole('status')).toHaveTextContent('Already in the collection. Its data was refreshed.')
+    })
+
     it('disables the button while adding', async () => {
       mockDetail('25', pikachu)
       server.use(
