@@ -13,7 +13,7 @@ A full-stack take on the Ballast Lane Java exercise. A **REST API** (Java 21, Sp
 1. [Quick start](#quick-start)
 2. [Demo accounts and data](#demo-accounts-and-data)
 3. [What it does (user stories)](#what-it-does-user-stories)
-4. [Architecture](#architecture)
+4. [Architecture](#architecture) (with the SOLID / DRY notes)
 5. [API reference](#api-reference)
 6. [Trainers, privacy and concurrency](#trainers-privacy-and-concurrency)
 7. [The web app](#the-web-app)
@@ -28,31 +28,62 @@ A full-stack take on the Ballast Lane Java exercise. A **REST API** (Java 21, Sp
 
 ## Quick start
 
-You need **Docker** (with Compose) and **curl**. Nothing else.
+**You need:** Docker (Docker Desktop, or Docker Engine with the Compose plugin), `curl`, and a terminal with `bash` (macOS, Linux, WSL or Git Bash). No Java, Node or database installed; no accounts, no keys, nothing to configure.
 
 ```bash
+git clone https://github.com/Cesarwth/bla-assessment.git
+cd bla-assessment
 ./scripts/start.sh
 ```
 
-That creates `.env` from `.env.example` if it is missing — **with a random JWT secret and database password** (the example file is public, so its secrets are never used as they are) — then builds and starts PostgreSQL, the API and the web app, waits until they answer, and prints the URLs and accounts. The first build takes a few minutes.
+That single command does everything (the first build takes a few minutes):
 
-| What | Where |
-| --- | --- |
-| Web app | http://localhost:8081 |
-| API | http://localhost:8080 (health: `/actuator/health`) |
-| Mailbox (demo) | http://localhost:8025 — the password-reset e-mails arrive here ([Mailpit](https://mailpit.axllent.org/), a local test inbox; nothing is sent to the internet) |
+1. checks that Docker is installed and **running** (and says what to do if not);
+2. creates `.env` with **random secrets** for the JWT and the database (the example file is public, so its secrets are never used as they are);
+3. **picks free ports**: it prefers `8081` (web), `8080` (API) and `8025` (mailbox) and, if something else on your machine already uses one, moves to the next free port and tells you;
+4. builds and starts PostgreSQL, the API, the web app and a local test mailbox, waits until they answer, and **prints the real addresses and the demo accounts**.
 
-Both ports are bound to **this machine only** (`127.0.0.1`); see [Security notes](#security-notes) before exposing them.
+```text
+Ready. Open the web app and log in with a demo account.
 
-Prefer to do it by hand? `cp .env.example .env`, put a random value in `JWT_SECRET` (`openssl rand -hex 32`; the API refuses the placeholder on purpose), then `docker compose up --build`.
+  Web app : http://localhost:8081
+  API     : http://localhost:8080   (health: /actuator/health)
+  Mailbox : http://localhost:8025   (the password-reset e-mails of the demo arrive here)
 
-Check that everything works, the way a browser reaches it (through nginx):
-
-```bash
-./scripts/smoke.sh        # 40 checks, exit code 0 when all pass (the same script runs in CI)
+  Demo accounts (for testing only):
+    user  : demo       / Demo12345   a trainer with their own collection
+    admin : demo-admin / Admin12345   a trainer with their own collection
 ```
 
-Stop it with `docker compose down` (add `-v` to also erase the database).
+Open the **Web app** address that was printed (it can differ from the one above if a port was busy) and log in. The system is **not empty**: both demo trainers already have Pokémon in their collection.
+
+| What | Default address | Notes |
+| --- | --- | --- |
+| Web app | http://localhost:8081 | the only door for the browser (nginx serves the app and proxies `/api`) |
+| API | http://localhost:8080 | health: `/actuator/health` |
+| Mailbox (demo) | http://localhost:8025 | the password-reset e-mails arrive here ([Mailpit](https://mailpit.axllent.org/), a local test inbox; nothing is sent to the internet) |
+
+All ports are bound to **this machine only** (`127.0.0.1`); see [Security notes](#security-notes) before exposing them. The accounts and sample data are **for testing only**: a real deployment turns them off (see [Configuration](#configuration)).
+
+### A two-minute tour (what to try)
+
+1. **Log in** as `demo` → *Catalog*: type `char` in the filter (it narrows the list as you type), or a number such as `25`.
+2. Press **Select Pokémon**, tick a few cards (the chosen names appear in a tray) and **Add** them to your collection; cards you already have are marked *In my collection*.
+3. Open **My collection**, click a card, **Edit notes** (nickname, region, tags) and save. Use the **Back** arrow to return to the list exactly as you left it.
+4. Log out and log in as `demo-admin`: its collection is separate, and the same Pokémon can carry different notes.
+5. **Create profile** (register) with any name and e-mail, then try **Forgot your password?**: open the *Mailbox* address, click the link in the e-mail and choose a new password. Your **profile** page (click your username) changes your details and password.
+6. Resize the window or open it on a phone: the layout is responsive; dark mode follows the system setting.
+
+### Check it, stop it, other cases
+
+```bash
+./scripts/smoke.sh        # 40 checks against the running stack, exit code 0 when all pass (the same script runs in CI)
+docker compose down       # stop (add -v to also erase the database)
+```
+
+- **Re-running** `./scripts/start.sh` is safe: it keeps your `.env` and the ports the stack already uses.
+- **Windows without bash:** `copy .env.example .env`, put a random value in `JWT_SECRET` (the API refuses the placeholder on purpose), then `docker compose up --build`. To use other ports set `WEB_PORT`, `API_PORT` and `MAIL_UI_PORT` in `.env`.
+- **By hand:** `cp .env.example .env`, set `JWT_SECRET` (`openssl rand -hex 32`), `docker compose up --build`.
 
 ## Demo accounts and data
 
@@ -85,6 +116,10 @@ Technical requirements from the brief: public repository ✔ · tests ✔ · pro
 
 Clean Architecture: dependencies point **inward only**. The business rules know nothing about Spring, JPA, HTTP or JSON.
 
+![Architecture: infrastructure adapters depend on the application layer (use cases and ports), which depends on the pure Java domain](docs/architecture.svg)
+
+The same idea as a diagram you can read in text:
+
 ```mermaid
 flowchart LR
   subgraph infra[infrastructure — adapters and frameworks]
@@ -116,6 +151,20 @@ flowchart LR
 - **`application`** — one class per use case, written as plain Java against **ports** it defines (`port.in` for what the outside asks, `port.out` for what it needs).
 - **`infrastructure`** — everything that touches a framework: REST controllers and DTOs, Spring Security + JWT, the PokeAPI HTTP client with Caffeine caching, JPA adapters and Flyway migrations, and the configuration that wires use cases into Spring (the only place that does).
 - The rule is **enforced, not just documented**: `ArchitectureTest` (ArchUnit) fails the build if `domain`/`application` import Spring/JPA/Jackson, if a controller touches an outbound port, an adapter or a use-case implementation, or if layers depend the wrong way.
+
+### SOLID, DRY and clean code: where to look
+
+| Principle | How it shows in the code | How it is checked |
+| --- | --- | --- |
+| **S**ingle responsibility | one class per behaviour: 16 use cases (`SyncPokemon`, `ResetPassword`, `UpdateStoredPokemon`…); controllers only translate HTTP to a use-case call; `GlobalExceptionHandler` is the only place that turns exceptions into the error body; the largest backend class has about 200 lines | `ArchitectureTest` (a controller may only use input ports), code review |
+| **O**pen/closed | new behaviour is added by new classes, not by editing old ones: `SyncSelectedPokemon` composes the existing `SyncPokemon`; the reset e-mail is a port (`PasswordResetNotifier`) with an SMTP adapter, so another channel is another adapter | `SyncSelectedPokemonTest` exercises it by mocking only the single-sync use case |
+| **L**iskov substitution | any adapter that honours a port can replace another: the tests swap the real PokeAPI client for a stand-in HTTP server, and the mail adapter for a capturing fake, without touching the use cases | integration tests run the same use cases against fakes and against the real adapters |
+| **I**nterface segregation | 16 small input ports (one per use case) and 8 narrow output ports (`PokeApiGateway`, `PokemonRepository`, `UserRepository`, `PasswordHasher`, `TokenIssuer`…): a class depends only on what it uses | `ArchitectureTest` |
+| **D**ependency inversion | use cases depend on ports they define themselves; Spring, JPA and Jackson appear only in `infrastructure`; the wiring lives in `UseCaseConfig` | **ArchUnit fails the build** if `domain`/`application` import a framework or an adapter |
+| **DRY** | one password policy for register, reset and change (`PasswordPolicy`); one place for the limits and normalization of nickname/region/tags (`LocalAttributes`); one error shape and one handler; one API client in the web app; shared UI primitives and card frame; design tokens defined once | tests on each shared piece |
+| **Clean code** | small intention-revealing names, comments that say *why* (and `SHORTCUT:` notes for conscious simplifications), no dead code, TypeScript `strict`, ESLint with zero warnings (and a lint rule that forbids features importing each other) | `./gradlew build`, `npm run lint`, CI |
+
+Honest limits: some rules are repeated on purpose (the password policy exists in the API *and* in the form, and DTO validation repeats what the use case enforces: defence in depth, kept in line by tests on both sides); `UseCaseConfig` is a long but boring wiring class; the use cases are plain Java without transactions (the adapters own them), which the code documents where it matters.
 
 Runtime view:
 
@@ -238,6 +287,7 @@ Set in `.env` (copied from `.env.example`); Docker Compose passes them to the co
 | `JWT_SECRET` | API | — | **required**, at least 32 bytes and not the `change-me…` placeholder of `.env.example`; the API refuses to start otherwise (`./scripts/start.sh` generates one) |
 | `JWT_TTL_MINUTES` | API | `60` | token lifetime |
 | `CORS_ALLOWED_ORIGINS` | API | `http://localhost:5173` | only needed when a browser calls the API directly (e.g. `npm run dev`) |
+| `WEB_PORT`, `API_PORT`, `MAIL_UI_PORT` | Compose | `8081`, `8080`, `8025` | the ports on this machine (`127.0.0.1`) for the web app, the API and the test mailbox; `./scripts/start.sh` rewrites them in `.env` when one is busy |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM` | API | `mailpit`, `1025`, `no-reply@pokedex.local` | where the password-reset e-mails go. Real SMTP: also `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_AUTH=true`, `MAIL_STARTTLS=true`, and drop the `mailpit` service |
 | `APP_PUBLIC_URL` | API | `http://localhost:8081` | the address the reset link in the e-mail points to |
 | `PASSWORD_RESET_TTL_MINUTES` | API | `30` | how long a reset link is valid |
@@ -278,9 +328,9 @@ The core (domain, use cases, persistence and PokeAPI adapters, the first web and
 
 | Suite | Command | What it covers |
 | --- | --- | --- |
-| Backend | `cd backend && ./gradlew test` | **540 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
+| Backend | `cd backend && ./gradlew test` | **540 tests**, by kind (approximate grouping): about **167 unit** tests of the domain and the use cases (pure Java, Mockito only on ports), **164 web-slice** tests (`@WebMvcTest` controllers, the table-driven security rules, the error handler), **49 persistence** tests (`@DataJpaTest` on H2 with the production Flyway migrations, including a migration that upgrades real data), **113 adapter and configuration** tests (PokeAPI client against a stand-in HTTP server, JWT, cache, mail, wiring), **40 integration** tests that boot the whole Spring context and exercise complete flows over HTTP (register → sync → edit → delete; password recovery; two trainers with the same Pokémon; the catalog filter; the demo data), and **7 ArchUnit** architecture rules |
 | Backend gate | `./gradlew build` | JaCoCo: fails below **90 % lines / 80 % branches** (actual ≈ 97 % / 88 %) |
-| Frontend | `cd frontend && npm test` | **350 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
+| Frontend | `cd frontend && npm test` | **350 tests**: Vitest + React Testing Library with the API mocked at the network level (MSW), so each page is tested together with its real data layer (this is the integration level of the web app); accessibility checks with axe; contrast checks of the colour palettes |
 | Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99.6 % / 95 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
 | Static checks | `npm run typecheck && npm run lint` | strict TypeScript, ESLint with zero warnings |
 | Whole stack | `./scripts/smoke.sh` | 40 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, private collections, two trainers with the same Pokémon, versions |
@@ -331,7 +381,9 @@ CLAUDE.md           the conventions the code follows (architecture rules, TDD po
 
 | Symptom | Fix |
 | --- | --- |
-| `port is already allocated` / `address already in use` | something else uses `8080`, `8081` (or `5433` for the dev override). Stop it, or change the left side of the port mapping in `docker-compose.yml` |
+| A port is taken (`port is already allocated`) | `./scripts/start.sh` already avoids this: it moves to the next free port and prints the real addresses. With a plain `docker compose up`, set `WEB_PORT`, `API_PORT` or `MAIL_UI_PORT` in `.env` (the dev override also uses `5433`) |
+| `Docker is installed but not running` | start Docker Desktop (or the docker service) and run `./scripts/start.sh` again |
+| The web page shows an old version | hard-reload the browser (Cmd/Ctrl + Shift + R) after rebuilding |
 | Compose says `copy .env.example to .env` | run `./scripts/start.sh` (it creates `.env`) or `cp .env.example .env` |
 | The API exits at startup mentioning `app.jwt.secret` | `JWT_SECRET` is missing or shorter than 32 bytes |
 | Catalog shows "not answering right now" | PokeAPI is unreachable from your network; the collection and demo data still work. Check connectivity and retry |

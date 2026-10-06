@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Smoke test of the running stack (`docker compose up --build`), through the same door a browser uses: nginx on :8081.
+# Smoke test of the running stack (`docker compose up --build`), through the same door a browser uses: nginx on WEB_PORT (8081 by default).
 # Needs only curl. Reads the demo password from .env. Exit code 0 = everything passed.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 if [ -f .env ]; then set -a; . ./.env; set +a; fi
 
-BASE="${BASE:-http://localhost:8081}"
+BASE="${BASE:-http://localhost:${WEB_PORT:-8081}}"
 USERNAME="${DEMO_USERNAME:-demo}"
 PASSWORD="${DEMO_USER_PASSWORD:?set DEMO_USER_PASSWORD (copy .env.example to .env)}"
 JSON='Content-Type: application/json'
@@ -87,7 +87,7 @@ check "but the other trainer still has theirs" 200 "$(status "$COLLECTION/151" -
 check "the other trainer cleans up" 204 "$(status -X DELETE "$COLLECTION/151" -H "$OTHER_AUTH")"
 
 echo "Password recovery and profile"
-MAILBOX="${MAILBOX:-http://localhost:8025}"
+MAILBOX="${MAILBOX:-http://localhost:${MAIL_UI_PORT:-8025}}"
 # Bodies are built in variables first (bash 3.2 mangles escaped quotes nested in "$(...)").
 forgot_known="{\"email\":\"$OTHER@example.com\"}"
 forgot_unknown='{"email":"nobody-here@example.com"}'

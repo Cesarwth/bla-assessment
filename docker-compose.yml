@@ -14,13 +14,13 @@ services:
       retries: 10
     # No published port: only the app container can reach the database.
 
-  # A local mailbox for the demo: the password-reset e-mails land here (http://localhost:8025) instead of going out to
+  # A local mailbox for the demo: the password-reset e-mails land here (MAIL_UI_PORT, 8025 by default) instead of going out to
   # the internet. In-memory, no auth: strictly a development tool, bound to this machine only. A real deployment
   # points MAIL_HOST at a real SMTP server and drops this service.
   mailpit:
     image: axllent/mailpit:v1.31
     ports:
-      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:${MAIL_UI_PORT:-8025}:8025"
 
   app:
     build: ./backend
@@ -49,7 +49,7 @@ services:
       MAIL_HOST: ${MAIL_HOST:-mailpit}
       MAIL_PORT: ${MAIL_PORT:-1025}
       MAIL_FROM: ${MAIL_FROM:-no-reply@pokedex.local}
-      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:8081}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:${WEB_PORT:-8081}}
       # Only for a real SMTP server (the bundled Mailpit needs none of these).
       MAIL_USERNAME: ${MAIL_USERNAME:-}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
@@ -58,7 +58,7 @@ services:
     # Bound to this machine only: the browser goes through nginx (below), and a plain-HTTP API must not be reachable
     # from the network. Publish it more widely only behind a TLS-terminating proxy.
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${API_PORT:-8080}:8080"
 
   frontend:
     build: ./frontend
@@ -67,7 +67,7 @@ services:
         condition: service_healthy
     # The only door for the browser: nginx serves the app and proxies /api to the backend (no CORS needed).
     ports:
-      - "127.0.0.1:8081:8080"
+      - "127.0.0.1:${WEB_PORT:-8081}:8080"
 
 volumes:
   pgdata:
