@@ -65,7 +65,8 @@ class AuthControllerTest {
 
         mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(VALID_REGISTER))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("USERNAME_TAKEN"));
+                .andExpect(jsonPath("$.code").value("USERNAME_TAKEN"))
+                .andExpect(jsonPath("$.message").value("Username is already taken"));
     }
 
     @Test

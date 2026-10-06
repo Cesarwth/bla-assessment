@@ -2,7 +2,10 @@ package com.ballastlane.assessment.infrastructure.persistence;
 
 import com.ballastlane.assessment.application.port.out.UserRepository;
 import com.ballastlane.assessment.domain.User;
+import com.ballastlane.assessment.domain.exception.EmailAlreadyExistsException;
+import com.ballastlane.assessment.domain.exception.UsernameAlreadyExistsException;
 import java.util.Optional;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,6 +37,20 @@ public class JpaUserRepositoryAdapter implements UserRepository {
     // saveAndFlush so unique-constraint violations surface here, not at some later commit.
     @Override
     public User save(User user) {
-        return mapper.toDomain(repository.saveAndFlush(mapper.toEntity(user)));
+        try {
+            return mapper.toDomain(repository.saveAndFlush(mapper.toEntity(user)));
+        } catch (DataIntegrityViolationException e) {
+            // The use case checks first, but two simultaneous registrations can both pass that check.
+            if (UniqueViolations.isUnique(e)) {
+                String details = UniqueViolations.details(e);
+                if (details.contains("uq_users_username")) {
+                    throw new UsernameAlreadyExistsException(user.username());
+                }
+                if (details.contains("uq_users_email")) {
+                    throw new EmailAlreadyExistsException(user.email());
+                }
+            }
+            throw e;
+        }
     }
 }

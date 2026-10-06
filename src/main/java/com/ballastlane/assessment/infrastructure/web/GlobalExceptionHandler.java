@@ -1,6 +1,7 @@
 package com.ballastlane.assessment.infrastructure.web;
 
 import com.ballastlane.assessment.domain.exception.CatalogUnavailableException;
+import com.ballastlane.assessment.domain.exception.DuplicateStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.EmailAlreadyExistsException;
 import com.ballastlane.assessment.domain.exception.InvalidLocalAttributesException;
 import com.ballastlane.assessment.domain.exception.InvalidPaginationException;
@@ -84,6 +85,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidSyncRangeException.class)
     ResponseEntity<ErrorResponse> invalidSyncRange(InvalidSyncRangeException ex) {
         return respond(HttpStatus.BAD_REQUEST, "INVALID_SYNC_RANGE", ex.getMessage());
+    }
+
+    @ExceptionHandler(DuplicateStoredPokemonException.class)
+    ResponseEntity<ErrorResponse> duplicateStoredPokemon(DuplicateStoredPokemonException ex) {
+        return respond(HttpStatus.CONFLICT, "CONFLICT", "Resource already exists");
     }
 
     @ExceptionHandler(StaleStoredPokemonException.class)

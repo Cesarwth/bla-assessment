@@ -16,8 +16,10 @@ import com.ballastlane.assessment.infrastructure.pokeapi.dto.PokeApiPage;
 import com.ballastlane.assessment.infrastructure.pokeapi.dto.PokeApiPokemon;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,14 +52,22 @@ class PokeApiGatewayAdapterTest {
     }
 
     @Test
-    void listKeepsPageOrderEvenWhenEarlierCallsAreSlower() {
+    void listKeepsPageOrderEvenWhenEarlierCallsFinishLast() {
         when(client.getPage(3, 0)).thenReturn(Fixtures.page("list.json"));
+        // Id 1 only finishes after 2 and 3 did, so completion order is the reverse of page order.
+        CountDownLatch othersFinished = new CountDownLatch(2);
         when(client.getPokemon("1")).thenAnswer(inv -> {
-            Thread.sleep(150);
+            othersFinished.await(5, TimeUnit.SECONDS);
             return Optional.of(named(1, "bulbasaur"));
         });
-        when(client.getPokemon("2")).thenReturn(Optional.of(named(2, "ivysaur")));
-        when(client.getPokemon("3")).thenReturn(Optional.of(named(3, "venusaur")));
+        when(client.getPokemon("2")).thenAnswer(inv -> {
+            othersFinished.countDown();
+            return Optional.of(named(2, "ivysaur"));
+        });
+        when(client.getPokemon("3")).thenAnswer(inv -> {
+            othersFinished.countDown();
+            return Optional.of(named(3, "venusaur"));
+        });
 
         PageResult<PokemonSummary> page = adapter.findPage(0, 3);
 

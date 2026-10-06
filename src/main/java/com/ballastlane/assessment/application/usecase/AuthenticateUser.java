@@ -8,17 +8,26 @@ import com.ballastlane.assessment.application.port.out.TokenIssuer;
 import com.ballastlane.assessment.application.port.out.UserRepository;
 import com.ballastlane.assessment.domain.User;
 import com.ballastlane.assessment.domain.exception.InvalidCredentialsException;
+import java.util.Optional;
 
 public class AuthenticateUser implements AuthenticateUserUseCase {
 
     private final UserRepository users;
     private final PasswordHasher hasher;
     private final TokenIssuer tokens;
+    private String dummyHash; // created lazily: hashing is slow and only the unknown-user path needs it
 
     public AuthenticateUser(UserRepository users, PasswordHasher hasher, TokenIssuer tokens) {
         this.users = users;
         this.hasher = hasher;
         this.tokens = tokens;
+    }
+
+    private synchronized String dummyHash() {
+        if (dummyHash == null) {
+            dummyHash = hasher.hash("timing-equalizer-not-a-real-password");
+        }
+        return dummyHash;
     }
 
     @Override
@@ -27,9 +36,15 @@ public class AuthenticateUser implements AuthenticateUserUseCase {
         if (command.rawPassword() == null || !PasswordLimits.fitsBcrypt(command.rawPassword())) {
             throw new InvalidCredentialsException();
         }
-        return users.findByUsername(User.normalizeUsername(command.username()))
-                .filter(user -> hasher.matches(command.rawPassword(), user.passwordHash()))
-                .map(tokens::issue)
-                .orElseThrow(InvalidCredentialsException::new);
+        Optional<User> user = users.findByUsername(User.normalizeUsername(command.username()));
+        if (user.isEmpty()) {
+            // Spend the same time as a real check so response time does not reveal which usernames exist.
+            hasher.matches(command.rawPassword(), dummyHash());
+            throw new InvalidCredentialsException();
+        }
+        if (!hasher.matches(command.rawPassword(), user.get().passwordHash())) {
+            throw new InvalidCredentialsException();
+        }
+        return tokens.issue(user.get());
     }
 }

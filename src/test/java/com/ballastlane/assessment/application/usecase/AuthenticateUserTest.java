@@ -2,6 +2,9 @@ package com.ballastlane.assessment.application.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -54,6 +57,16 @@ class AuthenticateUserTest {
         when(tokens.issue(ASH)).thenReturn(token);
 
         assertThat(authenticateUser.authenticate(new AuthenticateCommand("  ASH ", "Pikachu123"))).isEqualTo(token);
+    }
+
+    @Test
+    void anUnknownUserStillPaysForAHashComparisonSoResponseTimeDoesNotRevealWhoExists() {
+        when(users.findByUsername("ghost")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authenticateUser.authenticate(new AuthenticateCommand("ghost", "whatever1")))
+                .isInstanceOf(InvalidCredentialsException.class);
+
+        verify(hasher).matches(eq("whatever1"), any());
     }
 
     @Test

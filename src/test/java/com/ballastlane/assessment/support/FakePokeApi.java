@@ -8,12 +8,15 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Local stand-in for PokeAPI serving the captured fixtures over real HTTP (so real client timeouts apply).
- * Special names: {@code glitch} answers 503, {@code slowpoke} answers after 1.5 s, unknown paths answer 404.
+ * Special names: {@code glitch} answers 503, {@code slowpoke} never answers until the stub is stopped (so a client
+ * timeout is the only way out, with no dependence on how long a sleep lasts), unknown paths answer 404.
  * Numeric ids 1..1025 (except 25, which is the Pikachu fixture) return the Pikachu fixture with that id.
  */
 public final class FakePokeApi {
@@ -22,6 +25,7 @@ public final class FakePokeApi {
 
     private final HttpServer server;
     private final Map<String, AtomicInteger> hits = new ConcurrentHashMap<>();
+    private final CountDownLatch release = new CountDownLatch(1);
 
     private FakePokeApi(HttpServer server) {
         this.server = server;
@@ -53,6 +57,7 @@ public final class FakePokeApi {
     }
 
     public void stop() {
+        release.countDown();
         server.stop(0);
     }
 
@@ -74,7 +79,7 @@ public final class FakePokeApi {
                 case "/evolution-chain/10" -> respond(exchange, 200, fixture("evolution-10.json"));
                 case "/pokemon/glitch" -> respond(exchange, 503, "{}");
                 case "/pokemon/slowpoke" -> {
-                    Thread.sleep(1500);
+                    release.await(30, TimeUnit.SECONDS);
                     respond(exchange, 200, fixture("pokemon-25.json"));
                 }
                 default -> respond(exchange, 404, "Not Found");

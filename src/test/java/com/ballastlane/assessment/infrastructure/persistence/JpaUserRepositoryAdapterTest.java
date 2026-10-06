@@ -5,12 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.ballastlane.assessment.domain.Role;
 import com.ballastlane.assessment.domain.User;
+import com.ballastlane.assessment.domain.exception.EmailAlreadyExistsException;
+import com.ballastlane.assessment.domain.exception.UsernameAlreadyExistsException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
@@ -58,7 +59,7 @@ class JpaUserRepositoryAdapterTest {
         adapter.save(user("ash", "ash@pallet.town"));
 
         assertThatThrownBy(() -> adapter.save(user("ash", "other@pallet.town")))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                .isInstanceOf(UsernameAlreadyExistsException.class);
     }
 
     @Test
@@ -66,6 +67,6 @@ class JpaUserRepositoryAdapterTest {
         adapter.save(user("ash", "ash@pallet.town"));
 
         assertThatThrownBy(() -> adapter.save(user("ash2", "ash@pallet.town")))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                .isInstanceOf(EmailAlreadyExistsException.class);
     }
 }

@@ -263,3 +263,25 @@ Fixed test-first (each finding had a failing test before the fix). 242 tests, 0 
 - T1 JaCoCo + coverage gate; T2 role/verb matrix test; T3 tests for `ApiSecurityErrorHandler`/wiring; T4 remove `Thread.sleep` from tests.
 - S2 user enumeration (register 409 echoes the username; login skips BCrypt for unknown users).
 - Decisions for the owner: S1 (any registered user can edit the shared collection), S3 (rate limiting / password length 12), A3 (`version` exposed but PATCH does not take it).
+
+## Code review follow-up — batch 2 (2026-10-06)
+
+Test-first as in batch 1 (every item started with a failing test).
+
+| Finding | Fix |
+| ------- | --- |
+| T1 no coverage measurement | JaCoCo with a gate in `check`: line >= 90 %, branch >= 80 % (actual: 98 % / 87 %). Verified the gate fails when the floor is raised |
+| T2 role/verb rules only partly tested | `SecurityRulesMatrixTest`: every (verb, path) x (anonymous, USER, ADMIN), incl. trailing slash, case variants, lookalike prefix and non-GET on the public catalog |
+| T3 untested wiring/handlers | `ApiSecurityErrorHandlerTest`, `UseCaseConfigTest` (all 10 ports wired; seeder only when enabled), `PokeApiConfigTest` (properties, caches, executor shutdown) |
+| T4 timing-based tests | No `Thread.sleep` left: the slow-upstream stub blocks on a latch until stopped; ordering test uses a latch |
+| A4 unique violations leaked as generic 409 | User adapter -> `UsernameAlreadyExists`/`EmailAlreadyExists`; Pokemon adapter -> `DuplicateStoredPokemonException` (SQLState 23505, works on H2 and PostgreSQL) |
+| First-sync race | `SyncPokemon` re-reads and retries (max 3) when it loses to a concurrent sync (duplicate or stale); sync is idempotent so this is safe. PATCH is never retried |
+| S2 user enumeration | Conflict messages no longer echo the input; unknown user pays a dummy hash comparison at login |
+
+Measured on Docker/PostgreSQL: 8 simultaneous registrations -> 1x201 + 7x`USERNAME_TAKEN`; 2-3 simultaneous syncs of the same Pokemon -> no conflicts, always 1 row. Known limit: 4+ simultaneous writers on the same Pokemon can still get a safe, retryable 409 `CONCURRENT_MODIFICATION` (retries have no backoff).
+
+### Still open — decisions for the owner
+- S1: any registered user can edit the shared collection (current choice) vs ADMIN-only / per-owner.
+- S3: login rate limiting and 12-character passwords.
+- A3: `version` is exposed but PATCH does not accept it (lost-update protection is server-side only).
+- Minor review notes not done: repeated exception handlers, `RegisterAdmin` use case, cache stampede (`sync=true`), pinning Docker image digests / read-only filesystem.

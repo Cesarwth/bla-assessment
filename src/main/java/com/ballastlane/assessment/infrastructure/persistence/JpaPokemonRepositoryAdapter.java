@@ -3,9 +3,11 @@ package com.ballastlane.assessment.infrastructure.persistence;
 import com.ballastlane.assessment.application.port.out.PokemonRepository;
 import com.ballastlane.assessment.domain.PageResult;
 import com.ballastlane.assessment.domain.StoredPokemon;
+import com.ballastlane.assessment.domain.exception.DuplicateStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -51,6 +53,11 @@ public class JpaPokemonRepositoryAdapter implements PokemonRepository {
             return mapper.toDomain(repository.saveAndFlush(mapper.toEntity(pokemon)));
         } catch (OptimisticLockingFailureException e) {
             throw new StaleStoredPokemonException(pokemon.pokeApiId());
+        } catch (DataIntegrityViolationException e) {
+            if (UniqueViolations.isUnique(e)) {
+                throw new DuplicateStoredPokemonException(pokemon.pokeApiId());
+            }
+            throw e;
         }
     }
 

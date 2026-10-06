@@ -9,6 +9,7 @@ import com.ballastlane.assessment.domain.PageResult;
 import com.ballastlane.assessment.domain.PokemonDetail;
 import com.ballastlane.assessment.domain.PokemonStat;
 import com.ballastlane.assessment.domain.StoredPokemon;
+import com.ballastlane.assessment.domain.exception.DuplicateStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.support.TestData;
 import jakarta.persistence.EntityManager;
@@ -18,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
@@ -69,7 +69,7 @@ class JpaPokemonRepositoryAdapterTest {
         adapter.save(newPokemon(25, "pikachu"));
 
         assertThatThrownBy(() -> adapter.save(newPokemon(25, "pikachu-clone")))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                .isInstanceOf(DuplicateStoredPokemonException.class);
     }
 
     @Test

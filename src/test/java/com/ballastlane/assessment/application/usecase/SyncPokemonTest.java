@@ -16,8 +16,10 @@ import com.ballastlane.assessment.domain.PokemonDetail;
 import com.ballastlane.assessment.domain.StoredPokemon;
 import com.ballastlane.assessment.domain.SyncOutcome;
 import com.ballastlane.assessment.domain.SyncResult;
+import com.ballastlane.assessment.domain.exception.DuplicateStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.InvalidPokemonIdentifierException;
 import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
+import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.support.TestData;
 import java.time.Clock;
 import java.time.ZoneOffset;
@@ -74,6 +76,51 @@ class SyncPokemonTest {
         assertThat(result.pokemon().version()).isEqualTo(3L);
         assertThat(result.pokemon().name()).isEqualTo("pikachu-v2");
         assertThat(result.pokemon().localAttributes()).isEqualTo(local);
+    }
+
+    @Test
+    void retriesAsAnUpdateWhenAConcurrentFirstSyncWonTheRace() {
+        LocalAttributes local = new LocalAttributes("Pika", null, List.of());
+        StoredPokemon winner = TestData.stored(7, 0, 25, "pikachu", local);
+        when(gateway.findDetail("25")).thenReturn(Optional.of(TestData.detail(25, "pikachu")));
+        when(repository.findByPokeApiId(25)).thenReturn(Optional.empty(), Optional.of(winner));
+        when(repository.save(any()))
+                .thenThrow(new DuplicateStoredPokemonException(25))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        SyncResult result = syncPokemon.sync("25");
+
+        assertThat(result.outcome()).isEqualTo(SyncOutcome.UPDATED);
+        assertThat(result.pokemon().id()).isEqualTo(7L);
+        assertThat(result.pokemon().localAttributes()).isEqualTo(local);
+    }
+
+    @Test
+    void retriesWhenAnotherSyncRefreshedTheRowFirstBecauseSyncIsIdempotent() {
+        LocalAttributes local = new LocalAttributes("Pika", null, List.of());
+        StoredPokemon v0 = TestData.stored(7, 0, 25, "pikachu", local);
+        StoredPokemon v1 = TestData.stored(7, 1, 25, "pikachu", local);
+        when(gateway.findDetail("25")).thenReturn(Optional.of(TestData.detail(25, "pikachu")));
+        when(repository.findByPokeApiId(25)).thenReturn(Optional.of(v0), Optional.of(v1));
+        when(repository.save(any()))
+                .thenThrow(new StaleStoredPokemonException(25))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        SyncResult result = syncPokemon.sync("25");
+
+        assertThat(result.outcome()).isEqualTo(SyncOutcome.UPDATED);
+        assertThat(result.pokemon().version()).isEqualTo(1L); // re-read the fresh version, then refreshed it
+        assertThat(result.pokemon().localAttributes()).isEqualTo(local);
+    }
+
+    @Test
+    void givesUpAfterABoundedNumberOfAttemptsInsteadOfLoopingForever() {
+        when(gateway.findDetail("25")).thenReturn(Optional.of(TestData.detail(25, "pikachu")));
+        when(repository.findByPokeApiId(25)).thenReturn(Optional.empty());
+        when(repository.save(any())).thenThrow(new DuplicateStoredPokemonException(25));
+
+        assertThatThrownBy(() -> syncPokemon.sync("25")).isInstanceOf(DuplicateStoredPokemonException.class);
+        verify(repository, org.mockito.Mockito.times(SyncPokemon.MAX_ATTEMPTS)).save(any());
     }
 
     @Test
