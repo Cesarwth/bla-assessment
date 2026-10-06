@@ -9,6 +9,8 @@ import styles from './AddToCollection.module.css'
 export function AddToCollection({ pokemonId }: { pokemonId: number }) {
   const { user } = useAuth()
   const location = useLocation()
+  // Set by the edit form when it sends you here after saving.
+  const saved = (location.state as { saved?: string } | null)?.saved
   const entry = useCollectionEntry(pokemonId, user !== null)
   const sync = useSyncPokemon()
 
@@ -24,7 +26,7 @@ export function AddToCollection({ pokemonId }: { pokemonId: number }) {
 
   if (entry.data) {
     const { ownerId } = entry.data
-    const message =
+    const ownership =
       sync.data?.status === 201
         ? 'Added to the collection.'
         : ownerId === user.id
@@ -32,6 +34,7 @@ export function AddToCollection({ pokemonId }: { pokemonId: number }) {
           : ownerId === null
             ? 'In the collection, with no owner (only admins can edit it).'
             : 'In the collection, added by another trainer.'
+    const message = saved ? `Saved changes to ${saved}. ${ownership}` : ownership
     return (
       <div className={styles.box}>
         <p role="status" className={styles.status}>

@@ -72,7 +72,7 @@ export function CollectionEntryPage() {
               <EditForm
                 entry={entry}
                 onReload={() => void query.refetch()}
-                onSaved={() => navigate('/collection', { state: { saved: name } })}
+                onSaved={() => navigate(`/pokemon/${entry.id}`, { state: { saved: name } })}
               />
             ) : (
               <>

@@ -4,8 +4,8 @@ import { delay, http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { App } from '../../app/App'
 import { expectNoA11yViolations } from '../../test/axe'
-import { pageOf, stored, storedSummary } from '../../test/fixtures'
-import { apiUrl, failWith, mockCollection, mockEntry } from '../../test/handlers'
+import { pageOf, pikachu, stored, storedSummary } from '../../test/fixtures'
+import { apiUrl, failWith, mockCollection, mockDetail, mockEntry } from '../../test/handlers'
 import { server } from '../../test/server'
 import { makeToken, renderApp } from '../../test/utils'
 
@@ -106,8 +106,8 @@ describe('CollectionEntryPage', () => {
   })
 
   describe('editing', () => {
-    // Saving leads back to the collection, which loads its list.
-    beforeEach(() => mockCollection(() => pageOf([storedSummary(25, 'pikachu')], { totalItems: 1 })))
+    // Saving leads to the Pokémon's page, which loads its PokeAPI detail.
+    beforeEach(() => mockDetail('25', pikachu))
 
     it('starts with nothing to save', async () => {
       mockEntry(25, entry())
@@ -126,7 +126,7 @@ describe('CollectionEntryPage', () => {
       await userEvent.type(nickname, 'Sparky')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-      expect(await screen.findByText('Saved changes to Pikachu.')).toBeInTheDocument()
+      expect(await screen.findByText(/Saved changes to Pikachu\./)).toBeInTheDocument()
       expect(bodies).toEqual([{ version: 3, nickname: 'Sparky' }])
     })
 
@@ -140,7 +140,7 @@ describe('CollectionEntryPage', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Remove tag starter' }))
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-      await screen.findByText('Saved changes to Pikachu.')
+      await screen.findByText(/Saved changes to Pikachu\./)
       expect(bodies).toEqual([{ version: 3, nickname: '', region: '', tags: [] }])
     })
 
@@ -158,7 +158,7 @@ describe('CollectionEntryPage', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
       expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled()
-      await screen.findByText('Saved changes to Pikachu.')
+      await screen.findByText(/Saved changes to Pikachu\./)
     })
 
     it('normalizes tags as they are added and ignores duplicates', async () => {
@@ -171,7 +171,7 @@ describe('CollectionEntryPage', () => {
       await userEvent.type(input, 'ELECTRIC{Enter}')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-      await screen.findByText('Saved changes to Pikachu.')
+      await screen.findByText(/Saved changes to Pikachu\./)
       expect(bodies).toEqual([{ version: 3, tags: ['starter', 'electric'] }])
     })
 
@@ -246,7 +246,7 @@ describe('CollectionEntryPage', () => {
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
       expect(nickname).toHaveValue('Sparky') // ...while what the user typed is kept
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
-      await screen.findByText('Saved changes to Pikachu.')
+      await screen.findByText(/Saved changes to Pikachu\./)
       expect(bodies[1]).toEqual({ version: 4, nickname: 'Sparky' }) // based on the latest version, and only what the user changed
     })
 
@@ -277,11 +277,11 @@ describe('CollectionEntryPage', () => {
 
       expect(await screen.findByLabelText('Nickname')).toHaveValue('Renamed by someone else')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
-      await screen.findByText('Saved changes to Pikachu.')
+      await screen.findByText(/Saved changes to Pikachu\./)
       expect(bodies[1]).toEqual({ version: 4, region: 'Hoenn' }) // the nickname is not sent: nobody's change is lost
     })
 
-    it('goes back to the collection and confirms the save', async () => {
+    it('goes to the Pokémon page and confirms the save there', async () => {
       mockEntry(25, entry())
       mockPatch()
       renderApp(<App />, asOwner())
@@ -289,8 +289,9 @@ describe('CollectionEntryPage', () => {
       await userEvent.type(await screen.findByLabelText('Nickname'), 'x')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-      expect(await screen.findByRole('heading', { name: 'Collection' })).toBeInTheDocument()
-      expect(screen.getByRole('status')).toHaveTextContent('Saved changes to Pikachu.')
+      expect(await screen.findByText(/Saved changes to Pikachu\. In the collection, added by you\./)).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Pikachu' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'View it in the collection' })).toHaveAttribute('href', '/collection/25')
     })
 
     it('saves a tag that was typed but not confirmed with “Add tag”', async () => {
@@ -301,7 +302,7 @@ describe('CollectionEntryPage', () => {
       await userEvent.type(await screen.findByLabelText('Add a tag'), 'Test')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-      await screen.findByText('Saved changes to Pikachu.')
+      await screen.findByText(/Saved changes to Pikachu\./)
       expect(bodies).toEqual([{ version: 3, tags: ['starter', 'test'] }])
     })
 
