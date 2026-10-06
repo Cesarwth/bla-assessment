@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { isApiError } from '../../shared/api/errors'
 import { formatId, formatName } from '../../shared/format'
@@ -13,6 +14,32 @@ import { EditForm } from './components/EditForm'
 import styles from './CollectionEntryPage.module.css'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useCollectionEntry } from './queries'
+import type { StoredPokemon } from '../../shared/api/types'
+
+function NotesList({ entry }: { entry: StoredPokemon }) {
+  return (
+    <dl className={styles.readOnly}>
+      <dt>Nickname</dt>
+      <dd>{entry.nickname ? `“${entry.nickname}”` : <span className={styles.muted}>None</span>}</dd>
+      <dt>Region</dt>
+      <dd>{entry.region ?? <span className={styles.muted}>None</span>}</dd>
+      <dt>Tags</dt>
+      <dd>
+        {entry.tags.length > 0 ? (
+          <ul className={styles.tags} aria-label="Tags">
+            {entry.tags.map((tag) => (
+              <li key={tag} className={styles.tag}>
+                {tag}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <span className={styles.muted}>None</span>
+        )}
+      </dd>
+    </dl>
+  )
+}
 
 function NotInCollection() {
   return (
@@ -31,6 +58,7 @@ export function CollectionEntryPage() {
   const { user, isAdmin } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  const [editing, setEditing] = useState(false)
   const query = useCollectionEntry(entryId, validId)
   useDocumentTitle(query.data ? formatName(query.data.name) : undefined)
 
@@ -68,35 +96,21 @@ export function CollectionEntryPage() {
 
           <section className={`${styles.notes} ${styles.section}`} aria-labelledby="notes-heading">
             <h2 id="notes-heading">Trainer notes</h2>
-            {canEdit ? (
+            {canEdit && editing ? (
               <EditForm
                 entry={entry}
                 onReload={() => void query.refetch()}
                 onSaved={() => navigate(`/pokemon/${entry.id}`, { state: { saved: name } })}
+                onCancel={() => setEditing(false)}
               />
             ) : (
               <>
-                <dl className={styles.readOnly}>
-                  <dt>Nickname</dt>
-                  <dd>{entry.nickname ? `“${entry.nickname}”` : <span className={styles.muted}>None</span>}</dd>
-                  <dt>Region</dt>
-                  <dd>{entry.region ?? <span className={styles.muted}>None</span>}</dd>
-                  <dt>Tags</dt>
-                  <dd>
-                    {entry.tags.length > 0 ? (
-                      <ul className={styles.tags} aria-label="Tags">
-                        {entry.tags.map((tag) => (
-                          <li key={tag} className={styles.tag}>
-                            {tag}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <span className={styles.muted}>None</span>
-                    )}
-                  </dd>
-                </dl>
-                {user ? (
+                <NotesList entry={entry} />
+                {canEdit ? (
+                  <button type="button" className={styles.editButton} onClick={() => setEditing(true)}>
+                    Edit notes
+                  </button>
+                ) : user ? (
                   entry.ownerId === null ? null : (
                     <p className={styles.muted}>You can’t edit this entry because another trainer added it.</p>
                   )

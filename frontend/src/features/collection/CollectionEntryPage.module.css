@@ -101,3 +101,18 @@
   color: var(--color-muted);
   font-size: 0.875rem;
 }
+
+.editButton {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.editButton:hover {
+  background: var(--color-surface-muted);
+}

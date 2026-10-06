@@ -34,6 +34,9 @@ function mockPatch(base = entry()) {
   return bodies
 }
 
+/** The notes are shown read-only; the form only opens on request. */
+const startEditing = async () => userEvent.click(await screen.findByRole('button', { name: 'Edit notes' }))
+
 describe('CollectionEntryPage', () => {
   it('shows a loading state, then the full record with its trainer notes', async () => {
     mockEntry(25, entry())
@@ -68,10 +71,13 @@ describe('CollectionEntryPage', () => {
   })
 
   describe('who can edit', () => {
-    it('the owner sees the edit form with the current values and no delete button', async () => {
+    it('the owner sees the notes first, and the form with the current values once they choose to edit', async () => {
       mockEntry(25, entry())
       renderApp(<App />, asOwner())
 
+      expect(await screen.findByText('“Pika”')).toBeInTheDocument()
+      expect(screen.queryByRole('form', { name: 'Edit trainer notes' })).not.toBeInTheDocument()
+      await startEditing()
       const form = await screen.findByRole('form', { name: 'Edit trainer notes' })
       expect(within(form).getByLabelText('Nickname')).toHaveValue('Pika')
       expect(within(form).getByLabelText('Region')).toHaveValue('Kanto')
@@ -92,7 +98,7 @@ describe('CollectionEntryPage', () => {
       mockEntry(25, entry())
       renderApp(<App />, asAdmin())
 
-      expect(await screen.findByRole('form', { name: 'Edit trainer notes' })).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: 'Edit notes' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Delete from the collection' })).toBeInTheDocument()
     })
 
@@ -112,6 +118,7 @@ describe('CollectionEntryPage', () => {
     it('starts with nothing to save', async () => {
       mockEntry(25, entry())
       renderApp(<App />, asOwner())
+      await startEditing()
 
       expect(await screen.findByRole('button', { name: 'Save changes' })).toBeDisabled()
     })
@@ -120,6 +127,7 @@ describe('CollectionEntryPage', () => {
       mockEntry(25, entry())
       const bodies = mockPatch()
       renderApp(<App />, asOwner())
+      await startEditing()
       const nickname = await screen.findByLabelText('Nickname')
 
       await userEvent.clear(nickname)
@@ -134,6 +142,7 @@ describe('CollectionEntryPage', () => {
       mockEntry(25, entry())
       const bodies = mockPatch()
       renderApp(<App />, asOwner())
+      await startEditing()
 
       await userEvent.clear(await screen.findByLabelText('Nickname'))
       await userEvent.clear(screen.getByLabelText('Region'))
@@ -153,6 +162,7 @@ describe('CollectionEntryPage', () => {
         }),
       )
       renderApp(<App />, asOwner())
+      await startEditing()
       await userEvent.type(await screen.findByLabelText('Nickname'), 'x')
 
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
@@ -165,6 +175,7 @@ describe('CollectionEntryPage', () => {
       mockEntry(25, entry())
       const bodies = mockPatch()
       renderApp(<App />, asOwner())
+      await startEditing()
       const input = await screen.findByLabelText('Add a tag')
 
       await userEvent.type(input, '  Electric {Enter}')
@@ -178,6 +189,7 @@ describe('CollectionEntryPage', () => {
     it('stops at ten tags and says why', async () => {
       mockEntry(25, entry({ tags: Array.from({ length: 10 }, (_, index) => `tag${index}`) }))
       renderApp(<App />, asOwner())
+      await startEditing()
 
       await userEvent.type(await screen.findByLabelText('Add a tag'), 'eleventh{Enter}')
 
@@ -193,6 +205,7 @@ describe('CollectionEntryPage', () => {
         ),
       )
       renderApp(<App />, asOwner())
+      await startEditing()
       await userEvent.type(await screen.findByLabelText('Nickname'), 'x')
 
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
@@ -208,6 +221,7 @@ describe('CollectionEntryPage', () => {
         ),
       )
       renderApp(<App />, asOwner())
+      await startEditing()
       await userEvent.type(await screen.findByLabelText('Nickname'), 'x')
 
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
@@ -234,6 +248,7 @@ describe('CollectionEntryPage', () => {
         }),
       )
       renderApp(<App />, asOwner())
+      await startEditing()
       const nickname = await screen.findByLabelText('Nickname')
       await userEvent.clear(nickname)
       await userEvent.type(nickname, 'Sparky')
@@ -269,6 +284,7 @@ describe('CollectionEntryPage', () => {
         }),
       )
       renderApp(<App />, asOwner())
+      await startEditing()
       const region = await screen.findByLabelText('Region')
       await userEvent.clear(region)
       await userEvent.type(region, 'Hoenn') // the user only edits the region
@@ -285,6 +301,7 @@ describe('CollectionEntryPage', () => {
       mockEntry(25, entry())
       mockPatch()
       renderApp(<App />, asOwner())
+      await startEditing()
 
       await userEvent.type(await screen.findByLabelText('Nickname'), 'x')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
@@ -298,6 +315,7 @@ describe('CollectionEntryPage', () => {
       mockEntry(25, entry())
       const bodies = mockPatch()
       renderApp(<App />, asOwner())
+      await startEditing()
 
       await userEvent.type(await screen.findByLabelText('Add a tag'), 'Test')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
@@ -309,6 +327,7 @@ describe('CollectionEntryPage', () => {
     it('does not save while the typed tag is invalid, and says why', async () => {
       mockEntry(25, entry())
       renderApp(<App />, asOwner())
+      await startEditing()
 
       await userEvent.type(await screen.findByLabelText('Add a tag'), 'x'.repeat(31))
 
@@ -316,9 +335,26 @@ describe('CollectionEntryPage', () => {
       expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled()
     })
 
+    it('cancelling closes the form, discards what was typed and shows the saved notes again', async () => {
+      mockEntry(25, entry())
+      const bodies = mockPatch()
+      renderApp(<App />, asOwner())
+      await startEditing()
+      await userEvent.type(screen.getByLabelText('Nickname'), 'xyz')
+
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+      expect(screen.queryByRole('form', { name: 'Edit trainer notes' })).not.toBeInTheDocument()
+      expect(screen.getByText('“Pika”')).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: 'Edit notes' }))
+      expect(screen.getByLabelText('Nickname')).toHaveValue('Pika')
+      expect(bodies).toEqual([])
+    })
+
     it('undoing a change leaves nothing to save', async () => {
       mockEntry(25, entry())
       renderApp(<App />, asOwner())
+      await startEditing()
       const nickname = await screen.findByLabelText('Nickname')
 
       await userEvent.type(nickname, 'x')
@@ -402,6 +438,7 @@ describe('CollectionEntryPage', () => {
   it('has no accessibility violations (owner view with the form)', async () => {
     mockEntry(25, entry())
     const { container } = renderApp(<App />, asOwner())
+    await startEditing()
     await screen.findByRole('form', { name: 'Edit trainer notes' })
 
     await expectNoA11yViolations(container)

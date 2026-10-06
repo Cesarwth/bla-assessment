@@ -49,3 +49,18 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+.cancel {
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

@@ -43,9 +43,11 @@ interface Props {
   onReload: () => void
   /** Called once the changes are saved; the page leaves the form. */
   onSaved: () => void
+  /** Closes the form without saving. */
+  onCancel: () => void
 }
 
-export function EditForm({ entry, onReload, onSaved }: Props) {
+export function EditForm({ entry, onReload, onSaved, onCancel }: Props) {
   // `edits` holds only the fields the user touched; every other field shows the entry as it is now, so after a
   // reload the form follows the latest version while keeping what the user typed.
   const [edits, setEdits] = useState<Partial<Draft>>({})
@@ -109,6 +111,9 @@ export function EditForm({ entry, onReload, onSaved }: Props) {
       <div className={styles.actions}>
         <button type="submit" className={styles.save} disabled={!dirty || update.isPending}>
           {update.isPending ? 'Saving…' : 'Save changes'}
+        </button>
+        <button type="button" className={styles.cancel} onClick={onCancel} disabled={update.isPending}>
+          Cancel
         </button>
       </div>
     </form>
