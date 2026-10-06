@@ -8,7 +8,7 @@
 
 ## Summary
 
-A single-page React + TypeScript app in `frontend/`, organised by the same domains as the API (`auth`, `catalog`, `collection`). Server state lives in TanStack Query, auth in a small context, paging and filters in the URL. Tests use Vitest + React Testing Library + MSW so the real API client runs against mocked HTTP; console errors fail the tests. Docker serves the build with nginx and proxies `/api/` to the backend, so `docker compose up` gives the whole product on http://localhost:3000.
+A single-page React + TypeScript app in `frontend/`, organised by the same domains as the API (`auth`, `catalog`, `collection`). Server state lives in TanStack Query, auth in a small context, paging and filters in the URL. Tests use Vitest + React Testing Library + MSW so the real API client runs against mocked HTTP; console errors fail the tests. Docker serves the build with nginx and proxies `/api/` to the backend, so `docker compose up` gives the whole product on http://localhost:8081.
 
 ## Defaults assumed (change now if you disagree)
 
@@ -17,7 +17,7 @@ A single-page React + TypeScript app in `frontend/`, organised by the same domai
 - **Pages:** `/` catalog (paginated cards, "go to name or id" box), `/pokemon/:idOrName` detail (artwork, stat bars, description, genus, branching evolution tree, "Add to my collection"), `/collection` (cards with nickname/region/tags, "mine" badge, import range 1-20 for logged users), `/collection/:id` (view + edit form for owner/admin, delete for admin), `/login`, `/register`.
 - **Auth:** token in `sessionStorage` (survives reload, dies with the tab; documented trade-off), `uid`/`sub`/`role` read from the JWT payload; expired token -> logged out and redirected with a message. No refresh tokens.
 - **Search:** no list search exists in the API; the box navigates to the detail by name/id (404 handled). Not building client-side filtering of 1300 items.
-- **Ports:** UI on 3000 (nginx), API stays on 8080.
+- **Ports:** UI on 8081 (nginx; 3000 is too often taken by other dev servers), API stays on 8080.
 
 ## Design principles (what to say in the interview)
 
@@ -164,19 +164,22 @@ cd frontend && npm test -- collection && npm run typecheck && npm run lint
 
 **Goal:** the whole product starts with one command and meets the "no console warnings, responsive, accessible" criteria.
 
+**Status:** ✅ Complete 2026-10-06
+**Deviation:** UI port is **8081** (3000 collided with another dev server on the machine); added `scripts/smoke.sh` (13 checks through nginx); a manual Chrome pass over desktop/mobile/dark/authenticated pages through the DevTools protocol (control page proved the capture works) found **0 console warnings/errors, CSP violations or failed requests** (the browser itself logs one line for the deliberate 404 on a missing Pokémon). That pass also found and fixed a real bug jsdom could not see: nginx forwarded `Host` without the port, so the API treated the browser's `Origin` as a foreign origin and answered 403 to every POST/PATCH/DELETE (fixed with `Host $http_host`; foreign origins are still refused). Other additions: on a 401 with a token the cache is *reset* (not invalidated, because an in-flight query with no data is not restarted), route focus management, per-page titles, an error boundary keyed by route, and a frontend coverage gate (lines/statements/functions 90 %, branches 85 %; actual 99.5 % / 95 %).
+
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
 | ----- | --------- | --------- | ------- |
 | Component | `app/App.test.tsx` (extend) | `sessionExpiryShowsMessageAndLogsOut`, `errorBoundaryShowsFallback`, `titleChangesPerRoute` | resilience |
 | Config | `vite.config.ts` | coverage thresholds (lines 85 %, branches 75 %) | gate like the backend |
-| Smoke | compose | `curl localhost:3000/` serves the SPA, `/api/v1/pokemon?size=2` returns JSON through nginx, deep link `/collection/25` falls back to `index.html` | proxy + SPA fallback |
+| Smoke | compose | `curl localhost:8081/` serves the SPA, `/api/v1/pokemon?size=2` returns JSON through nginx, deep link `/collection/25` falls back to `index.html` | proxy + SPA fallback |
 
 ### File Changes
 | File | Action | What Changes |
 | ---- | ------ | ------------ |
 | `frontend/Dockerfile` | Create | multi-stage: `node:22-alpine` build -> `nginxinc/nginx-unprivileged` runtime |
 | `frontend/nginx.conf` | Create | SPA fallback, `/api/` proxy to `app:8080`, security headers (CSP, nosniff, frame-deny), cache for hashed assets |
-| `docker-compose.yml` | Modify | `frontend` service on `3000`, depends on `app` |
+| `docker-compose.yml` | Modify | `frontend` service on `8081`, depends on `app` |
 | `frontend/.dockerignore`, `.env.example` | Create/Modify | exclude `node_modules`, `dist` |
 | `frontend/src/app/ErrorBoundary.tsx` | Create | fallback UI |
 
@@ -187,7 +190,7 @@ Check the real browser console once by hand (Chrome devtools) on each page at ph
 ```bash
 cd frontend && npm run typecheck && npm run lint && npm run test:coverage && npm run build && cd ..
 docker compose up --build -d
-curl -s -o /dev/null -w "%{http_code}\n" localhost:3000/ && curl -s "localhost:3000/api/v1/pokemon?size=2" | head -c 200 && curl -s -o /dev/null -w "%{http_code}\n" localhost:3000/collection/25
+curl -s -o /dev/null -w "%{http_code}\n" localhost:8081/ && curl -s "localhost:8081/api/v1/pokemon?size=2" | head -c 200 && curl -s -o /dev/null -w "%{http_code}\n" localhost:8081/collection/25
 docker compose down -v
 ```
 **Expected result:** all gates green; 200 / JSON / 200 (SPA fallback); no console warnings in the manual browser check.
@@ -204,3 +207,18 @@ Feature branch; the frontend is additive (`frontend/` + one compose service). Dr
 
 ## Out of Scope
 README and GenAI document, curated demo data (Plan E); i18n; refresh tokens; client-side catalog search; end-to-end browser automation (Playwright); PWA/offline; analytics.
+
+## Implementation Status
+
+**Completed:** 2026-10-06
+**Branch:** feature/plan-d2-frontend
+
+| Phase | Status | Deviations |
+| ----- | ------ | ---------- |
+| 1: Scaffold, tooling, API client, auth, shell | ✅ | Vitest 3.2.7 (Vitest 4 crashes npm 10.9); no `RequireAuth` |
+| 2: Catalog list and detail | ✅ | 1-based URL pages; shared UI moved to `shared/` |
+| 3: Login/register and the collection | ✅ | `renderActions` composition; safe return path |
+| 4: Collection entry, edit and delete | ✅ | inline delete confirmation; draft kept after 409 |
+| 5: Docker, nginx, quality gates | ✅ | port 8081; `Host $http_host` CORS fix; session-expiry cache reset |
+
+Verified: frontend `typecheck`, `lint` (0 warnings), `test:coverage` (168 tests, 99.5 % lines / 95 % branches, gate 90/85) and `build` green; backend `clean build` unchanged (337 tests); `docker compose up --build` serves the app on :8081 and `scripts/smoke.sh` passes 13/13.

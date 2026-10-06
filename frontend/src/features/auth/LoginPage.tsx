@@ -4,11 +4,13 @@ import { TextField } from '../../shared/ui/TextField'
 import styles from './AuthForm.module.css'
 import { toFormErrors, type FormErrors } from './formErrors'
 import { safeReturnPath } from './redirect'
+import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useAuth } from './useAuth'
 
 export function LoginPage() {
   const { user, login } = useAuth()
   const location = useLocation()
+  useDocumentTitle('Log in')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<FormErrors>({ fields: {} })

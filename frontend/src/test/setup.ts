@@ -3,11 +3,10 @@ import { cleanup } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll, beforeEach, expect, vi } from 'vitest'
 import * as axeMatchers from 'vitest-axe/matchers'
 import { resetClient } from '../shared/api/client'
+import { consoleOutput } from './console'
 import { server } from './server'
 
 expect.extend(axeMatchers)
-
-const consoleOutput: string[] = []
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 

@@ -11,6 +11,7 @@ import { useAuth } from '../auth/useAuth'
 import { DeleteEntry } from './components/DeleteEntry'
 import { EditForm } from './components/EditForm'
 import styles from './CollectionEntryPage.module.css'
+import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useCollectionEntry } from './queries'
 
 function NotInCollection() {
@@ -30,6 +31,7 @@ export function CollectionEntryPage() {
   const { user, isAdmin } = useAuth()
   const location = useLocation()
   const query = useCollectionEntry(entryId, validId)
+  useDocumentTitle(query.data ? formatName(query.data.name) : undefined)
 
   if (!validId) return <NotInCollection />
   if (query.isPending) return <LoadingStatus label="Loading the entry…" />

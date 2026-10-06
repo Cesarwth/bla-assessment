@@ -31,5 +31,14 @@ services:
     ports:
       - "8080:8080"
 
+  frontend:
+    build: ./frontend
+    depends_on:
+      app:
+        condition: service_healthy
+    # The only door for the browser: nginx serves the app and proxies /api to the backend (no CORS needed).
+    ports:
+      - "8081:8080"
+
 volumes:
   pgdata:

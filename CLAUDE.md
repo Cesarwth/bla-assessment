@@ -21,7 +21,7 @@ All Java paths below (`src/main/...`, `src/test/...`) are relative to `backend/`
 - Security: Spring Security + JWT (register / login, public vs protected routes)
 - Cache: Spring Cache + Caffeine for PokeAPI responses
 - Tests: JUnit 5, Mockito, AssertJ, MockMvc, `MockRestServiceServer` + captured JSON fixtures (PokeAPI stub), ArchUnit
-- Frontend: React + Vite + TypeScript in `frontend/` (responsive, consumes the API)
+- Frontend: React 19 + Vite 7 + TypeScript 5.9 (strict) in `frontend/`; TanStack Query for server state, React Router, CSS Modules with design tokens; Vitest + React Testing Library + MSW + axe
 - Delivery: `Dockerfile` (multi-stage) + `docker-compose.yml`, README, seeded demo data and demo credentials
 
 ## User Stories (the backlog)
@@ -78,9 +78,19 @@ cd backend
 ./gradlew build                # compile + test + jacoco verification (line >= 90%, branch >= 80%)
 ./gradlew bootRun              # run locally (needs DB_* and JWT_SECRET env vars)
 cd ..
-docker compose up --build      # postgres + backend (+ frontend once it exists)
-cd frontend && npm test && npm run build
+docker compose up --build      # postgres + backend + frontend; the app is on http://localhost:8081, the API on :8080
+./scripts/smoke.sh             # checks the running stack through nginx, the way a browser reaches it
+cd frontend && npm ci && npm run typecheck && npm run lint && npm run test:coverage && npm run build
+cd frontend && npm run dev     # Vite on :5173, proxies /api to localhost:8080
 ```
+
+## Frontend rules
+
+- Feature folders mirror the API domains (`features/auth`, `catalog`, `collection`); `shared/` holds the API client and UI atoms. Features never import each other: `app/App.tsx` is the only place that composes them (e.g. the detail page receives `AddToCollection` through a prop).
+- One API client (`shared/api/client.ts`) is the only code that calls `fetch`; it turns every failure into `ApiError` using the backend's error shape. Server state lives in TanStack Query, paging in the URL, auth in `AuthProvider`; no global store.
+- Text from the API (descriptions, nicknames, tags) is rendered as text, never as HTML.
+- Tests are written first and use MSW at the network level. Any `console.error`/`console.warn` fails a test; pages are checked with axe. Coverage gate: lines/statements/functions 90 %, branches 85 %.
+- Things jsdom cannot see (real CORS, CSP, nginx, layout) are covered by `scripts/smoke.sh` and a manual check in Chrome.
 
 ## Code standards
 

@@ -37,3 +37,31 @@
   color: var(--color-muted);
   font-size: 0.875rem;
 }
+
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-warning-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.notice p {
+  margin: 0;
+}
+
+.dismiss {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.dismiss:hover {
+  background: var(--color-border);
+}

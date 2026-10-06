@@ -6,11 +6,13 @@ import { PAGE_SIZES, usePaging } from '../../shared/usePaging'
 import styles from './CatalogPage.module.css'
 import { GoToBox } from './components/GoToBox'
 import { PokemonCard } from './components/PokemonCard'
+import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useCatalogPage } from './queries'
 
 export function CatalogPage() {
   const { page, apiPage, size, hrefFor, setSize } = usePaging()
   const query = useCatalogPage(apiPage, size)
+  useDocumentTitle('Catalog')
 
   function renderResults() {
     if (query.isError) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />

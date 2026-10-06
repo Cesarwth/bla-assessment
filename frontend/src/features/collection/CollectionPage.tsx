@@ -7,12 +7,14 @@ import { useAuth } from '../auth/useAuth'
 import { CollectionCard } from './components/CollectionCard'
 import { ImportRangeForm } from './components/ImportRangeForm'
 import styles from './CollectionPage.module.css'
+import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useCollectionPage } from './queries'
 
 export function CollectionPage() {
   const { user } = useAuth()
   const { page, apiPage, size, hrefFor, setSize } = usePaging()
   const query = useCollectionPage(apiPage, size)
+  useDocumentTitle('Collection')
 
   function renderResults() {
     if (query.isError) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />

@@ -10,6 +10,7 @@ import { StatBars } from '../../shared/ui/StatBars'
 import { TypeChip } from '../../shared/ui/TypeChip'
 import { formatHeight, formatId, formatList, formatName, formatWeight } from '../../shared/format'
 import styles from './PokemonDetailPage.module.css'
+import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { usePokemonDetail } from './queries'
 
 const MISSING_CODES = ['POKEMON_NOT_FOUND', 'INVALID_POKEMON_IDENTIFIER']
@@ -25,6 +26,7 @@ interface Props {
 export function PokemonDetailPage({ renderActions }: Props) {
   const { idOrName = '' } = useParams()
   const query = usePokemonDetail(idOrName)
+  useDocumentTitle(query.data ? formatName(query.data.name) : undefined)
 
   if (query.isPending) return <LoadingStatus />
 
