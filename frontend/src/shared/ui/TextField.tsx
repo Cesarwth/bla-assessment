@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import styles from './TextField.module.css'
+import { fieldClass } from './fieldClass'
 
 interface Props {
   label: string
@@ -33,12 +33,14 @@ export function TextField({
   const describedBy = error ? errorId : hint ? hintId : undefined
 
   return (
-    <div className={styles.field}>
-      <label htmlFor={id}>{label}</label>
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="text-sm font-semibold">
+        {label}
+      </label>
       <input
         id={id}
         name={name}
-        className={styles.input}
+        className={`${fieldClass} p-3`}
         type={type}
         value={value}
         min={min}
@@ -49,12 +51,12 @@ export function TextField({
         aria-describedby={describedBy}
       />
       {error ? (
-        <p id={errorId} className={styles.error}>
+        <p id={errorId} className="mb-0 text-sm text-danger">
           {error}
         </p>
       ) : (
         hint && (
-          <p id={hintId} className={styles.hint}>
+          <p id={hintId} className="mb-0 text-xs text-muted">
             {hint}
           </p>
         )

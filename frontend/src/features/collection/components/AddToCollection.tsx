@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'react-router'
+import { Button } from '../../../shared/ui/Button'
 import { ErrorState } from '../../../shared/ui/ErrorState'
 import { useAuth } from '../../auth/useAuth'
 import { useCollectionIds, useSyncPokemon } from '../queries'
-import styles from './AddToCollection.module.css'
 
 /** Each trainer has their own collection: the button exists while this Pokémon is not in the logged-in trainer's. */
+const boxClass = 'my-4 flex flex-wrap items-center gap-x-4 gap-y-3'
+
 export function AddToCollection({ pokemonId }: { pokemonId: number }) {
   const { user } = useAuth()
   const location = useLocation()
@@ -15,7 +17,7 @@ export function AddToCollection({ pokemonId }: { pokemonId: number }) {
 
   if (!user) {
     return (
-      <p className={styles.box}>
+      <p className={boxClass}>
         <Link to="/login" state={{ from: location.pathname }}>
           Log in to add this Pokémon to the collection
         </Link>
@@ -27,8 +29,8 @@ export function AddToCollection({ pokemonId }: { pokemonId: number }) {
     const status = sync.data?.status === 201 ? 'Added to your collection.' : 'In your collection.'
     const message = saved ? `Saved changes to ${saved}. ${status}` : status
     return (
-      <div className={styles.box}>
-        <p role="status" className={styles.status}>
+      <div className={boxClass}>
+        <p role="status" className="mb-0 rounded-sm bg-success-surface px-4 py-2">
           {message}
         </p>
         <Link to={`/collection/${pokemonId}`}>View it in my collection</Link>
@@ -37,27 +39,27 @@ export function AddToCollection({ pokemonId }: { pokemonId: number }) {
   }
 
   if (ids.isPending) {
-    return <p className={styles.box}>Checking the collection…</p>
+    return <p className={boxClass}>Checking the collection…</p>
   }
 
   if (ids.isError) {
     return (
-      <div className={styles.box}>
+      <div className={boxClass}>
         <ErrorState error={ids.error} onRetry={() => void ids.refetch()} />
       </div>
     )
   }
 
   return (
-    <div className={styles.box}>
-      <button
-        type="button"
-        className={styles.button}
+    <div className={boxClass}>
+      <Button
+        variant="primary"
+        size="lg"
         disabled={sync.isPending}
         onClick={() => sync.mutate(pokemonId)}
       >
         {sync.isPending ? 'Adding…' : 'Add to my collection'}
-      </button>
+      </Button>
       {sync.isError && <ErrorState error={sync.error} onRetry={() => sync.mutate(pokemonId)} />}
     </div>
   )

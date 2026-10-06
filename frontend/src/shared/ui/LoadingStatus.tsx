@@ -2,7 +2,7 @@
 export function LoadingStatus({ label = 'Loading Pokémon…' }: { label?: string }) {
   return (
     <div role="status">
-      <span className="visually-hidden">{label}</span>
+      <span className="sr-only">{label}</span>
     </div>
   )
 }

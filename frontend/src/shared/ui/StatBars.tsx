@@ -1,6 +1,5 @@
 import type { PokemonStat } from '../api/types'
 import { formatLabel } from '../format'
-import styles from './StatBars.module.css'
 
 // 255 is the highest base stat any Pokémon has, so bars across different Pokémon are comparable.
 const MAX_BASE_STAT = 255
@@ -9,13 +8,16 @@ const statLabel = (name: string) => (name === 'hp' ? 'HP' : formatLabel(name))
 
 export function StatBars({ stats }: { stats: PokemonStat[] }) {
   return (
-    <ul className={styles.list} aria-label="Base stats">
+    <ul className="grid gap-2" aria-label="Base stats">
       {stats.map((stat) => (
-        <li key={stat.name} className={styles.row}>
-          <span className={styles.name}>{statLabel(stat.name)}</span>
-          <span className={styles.value}>{stat.baseValue}</span>
+        <li
+          key={stat.name}
+          className="grid grid-cols-[6.5rem_2rem_1fr] items-center gap-2 sm:grid-cols-[8rem_2.5rem_1fr] sm:gap-3"
+        >
+          <span className="text-sm text-muted">{statLabel(stat.name)}</span>
+          <span className="text-right font-bold tabular-nums">{stat.baseValue}</span>
           <meter
-            className={styles.meter}
+            className="stat-meter h-[0.65rem] w-full overflow-hidden rounded-full border-0"
             min={0}
             max={MAX_BASE_STAT}
             value={stat.baseValue}

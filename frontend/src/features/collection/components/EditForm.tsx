@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { describeError, isApiError } from '../../../shared/api/errors'
 import type { StoredPokemon } from '../../../shared/api/types'
+import { Alert } from '../../../shared/ui/Alert'
+import { Button } from '../../../shared/ui/Button'
 import { TextField } from '../../../shared/ui/TextField'
 import type { EntryChanges } from '../api'
 import { useUpdateEntry } from '../queries'
-import styles from './EditForm.module.css'
 import { TagInput } from './TagInput'
 import { addTag } from '../tags'
 
@@ -83,7 +84,12 @@ export function EditForm({ entry, onReload, onSaved, onCancel }: Props) {
   }
 
   return (
-    <form className={styles.form} onSubmit={submit} noValidate aria-label="Edit trainer notes">
+    <form
+      className="grid max-w-lg gap-4"
+      onSubmit={submit}
+      noValidate
+      aria-label="Edit trainer notes"
+    >
       <TextField
         label="Nickname"
         name="nickname"
@@ -107,32 +113,37 @@ export function EditForm({ entry, onReload, onSaved, onCancel }: Props) {
       />
 
       {conflict ? (
-        <p role="alert" className={styles.alert}>
+        <Alert>
           Someone else changed this entry while you were editing it. Your changes are still here.
-          <button type="button" onClick={loadLatest}>
+          <Button
+            className="mt-2 block border-danger sm:mt-0 sm:ml-3 sm:inline-flex"
+            onClick={loadLatest}
+          >
             Load the latest version
-          </button>
-        </p>
+          </Button>
+        </Alert>
       ) : (
-        update.isError && (
-          <p role="alert" className={styles.alert}>
-            {describeError(update.error)}
-          </p>
-        )
+        update.isError && <Alert>{describeError(update.error)}</Alert>
       )}
 
-      <div className={styles.actions}>
-        <button type="submit" className={styles.save} disabled={!dirty || update.isPending}>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          className="flex-1 sm:flex-none"
+          disabled={!dirty || update.isPending}
+        >
           {update.isPending ? 'Saving…' : 'Save changes'}
-        </button>
-        <button
-          type="button"
-          className={styles.cancel}
+        </Button>
+        <Button
+          size="lg"
+          className="flex-1 sm:flex-none"
           onClick={onCancel}
           disabled={update.isPending}
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   )

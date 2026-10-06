@@ -456,7 +456,7 @@ describe('CollectionEntryPage', () => {
     expect(
       await screen.findByRole('heading', { name: 'This Pokémon isn’t in your collection' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Back to the collection' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Back to my collection' })).toHaveAttribute(
       'href',
       '/collection',
     )

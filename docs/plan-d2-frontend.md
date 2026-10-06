@@ -1,5 +1,8 @@
 # Plan D2: React frontend (catalog, detail, collection, login)
 
+> **Superseded in part:** this plan chose CSS Modules with design tokens. The styling layer was later migrated to Tailwind CSS v4 (see `plan-e-delivery.md`, "Tailwind CSS, responsive design and back navigation"); the folder structure and rules below still apply.
+
+
 **Research:** research.md
 **Date:** 2026-10-06
 **Scope:** part of an epic; runs after Plan D1 (needs `backend/` layout, `ownerId` and versioned PATCH). Copy this file to `plan.md` when D1 is done.

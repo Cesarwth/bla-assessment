@@ -225,3 +225,13 @@ Not done on purpose: an admin view of every trainer's collection (not in the bri
 ### Selecting Pokémon instead of importing a number range (2026-10-06)
 
 The "Import Pokémon" form asked for a Pokédex number range (1–20), which nobody can use without knowing the numbers. It was replaced by selection in the catalog: logged-in trainers tick cards (or "select all on this page") and add them with one button. The API changed accordingly: `POST /collection/sync` takes `{ids:[…]}` (1–50 distinct ids, 50 = the largest catalog page) instead of `{from,to}`; the report shape is unchanged. Cards already collected carry the "In my collection" mark and no checkbox.
+
+### Tailwind CSS, responsive design and back navigation (2026-10-06)
+
+Feedback while trying the app: detail pages had no way back to the list, the design had to be responsive, and the team standard for styling is Tailwind.
+
+- **Back navigation:** `shared/ui/BackLink` on every detail page. With in-app history it calls `navigate(-1)` (the list returns with its page, filter and selection); on a deep link it is a normal link to the catalog or to my collection. Visible text "Back"; the destination is added for screen readers only when it is certain (WCAG label-in-name).
+- **Tailwind v4 instead of CSS Modules:** 29 `*.module.css` files and the old token files were replaced by one `src/index.css` (`@import "tailwindcss"`, `@theme` tokens, dark palette via variables under `prefers-color-scheme`, a few `@utility` blocks). Components use semantic utilities; repeated patterns became primitives in `shared/ui` (`Button`, `Card`, `Badge`, `Alert`, `RemovableChip`, `TagList`, field classes). No `@apply` sprawl, no runtime style injection, so the nginx CSP is unchanged (`style-src 'self'`).
+- **Responsive:** mobile-first from 375 px with `sm`/`md` breakpoints, tap targets ≥ 44 px on phones, two-row header on phones, sticky selection tray on phones, vertical evolution tree on phones.
+- **Verification in real Chrome:** 15 page variants × 375/768/1280 px × light/dark, plus 320 px: no horizontal overflow in any of the 105 combinations and no console or network problems apart from the two deliberate 404s (a missing Pokémon and a missing entry).
+- **Documentation updated:** `CLAUDE.md` (stack and frontend rules), README (stack, structure, styling and UX notes, test counts).

@@ -1,5 +1,5 @@
 import { describeError } from '../api/errors'
-import styles from './ErrorState.module.css'
+import { Button } from './Button'
 
 interface Props {
   error: unknown
@@ -8,12 +8,15 @@ interface Props {
 
 export function ErrorState({ error, onRetry }: Props) {
   return (
-    <div role="alert" className={styles.error}>
-      <p className={styles.message}>{describeError(error)}</p>
+    <div
+      role="alert"
+      className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-md border border-danger bg-danger-surface px-4 py-4 text-fg sm:px-6"
+    >
+      <p className="mb-0 min-w-0 flex-[1_1_16rem] wrap-break-word">{describeError(error)}</p>
       {onRetry && (
-        <button type="button" className={styles.retry} onClick={onRetry}>
+        <Button className="border-danger" onClick={onRetry}>
           Try again
-        </button>
+        </Button>
       )}
     </div>
   )

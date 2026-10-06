@@ -1,0 +1,282 @@
+@import 'tailwindcss';
+
+/*
+ * The single stylesheet of the app. Tailwind generates the utilities from the class names found in src/.
+ *
+ * Design tokens live here, in @theme, and nowhere else. Colors are semantic (bg-surface, text-muted,
+ * border-border, bg-primary...): components never use raw hex. The light values are declared in @theme; the dark
+ * values replace the same variables inside `prefers-color-scheme: dark` further down, so a component written once
+ * (`bg-surface`) is correct in both schemes and needs no `dark:` variant.
+ * Spacing uses Tailwind's default scale (1 = 0.25rem); breakpoints are Tailwind's (sm 40rem, md 48rem, lg 64rem).
+ */
+@theme {
+  --color-canvas: #f5f6fa;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eef0f6;
+  --color-fg: #1a1f2b;
+  --color-muted: #566074;
+  --color-border: #dfe3ec;
+  --color-primary: #c4290a; /* Pokéball red; white text on it passes WCAG AA (5.7:1) */
+  --color-primary-hover: #a62008;
+  --color-primary-contrast: #ffffff;
+  --color-accent: #2f3fb8;
+  --color-danger: #b3261e;
+  --color-danger-surface: #fdecea;
+  --color-success: #1b6e3c;
+  --color-success-surface: #e6f4ea;
+  --color-warning-surface: #fff4d6;
+  --color-focus: #2f3fb8;
+
+  /* One color per Pokémon type; the data-type attribute (below) exposes it to the chips and glows as --type-color. */
+  --color-type-unknown: #8a8fa3;
+  --color-type-normal: #a8a77a;
+  --color-type-fire: #ee8130;
+  --color-type-water: #6390f0;
+  --color-type-electric: #f7d02c;
+  --color-type-grass: #7ac74c;
+  --color-type-ice: #96d9d6;
+  --color-type-fighting: #c22e28;
+  --color-type-poison: #a33ea1;
+  --color-type-ground: #e2bf65;
+  --color-type-flying: #a98ff3;
+  --color-type-psychic: #f95587;
+  --color-type-bug: #a6b91a;
+  --color-type-rock: #b6a136;
+  --color-type-ghost: #735797;
+  --color-type-dragon: #6f35fc;
+  --color-type-dark: #705746;
+  --color-type-steel: #b7b7ce;
+  --color-type-fairy: #d685ad;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  /* The shadow colors are variables of their own: Tailwind inlines the shadow values, so only the colors can
+     change with the color scheme. */
+  --shadow-sm: 0 1px 2px var(--shadow-ink-sm);
+  --shadow-md: 0 6px 18px var(--shadow-ink-md);
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --container-content: 72rem;
+
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  @keyframes shimmer {
+    to {
+      background-position-x: -200%;
+    }
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+    --shadow-ink-sm: rgb(16 24 40 / 8%);
+    --shadow-ink-md: rgb(16 24 40 / 10%);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-canvas: #0f121a;
+      --color-surface: #181c27;
+      --color-surface-muted: #212636;
+      --color-fg: #eef0f6;
+      --color-muted: #a3acc0;
+      --color-border: #2c3347;
+      --color-primary: #e5503a;
+      --color-primary-hover: #f06a56;
+      --color-primary-contrast: #14080a;
+      --color-accent: #8f9bff;
+      --color-danger: #ff8a80;
+      --color-danger-surface: #3a1a18;
+      --color-success: #7ddc9e;
+      --color-success-surface: #14301f;
+      --color-warning-surface: #3a3010;
+      --color-focus: #8f9bff;
+      --shadow-ink-sm: rgb(0 0 0 / 40%);
+      --shadow-ink-md: rgb(0 0 0 / 45%);
+    }
+  }
+
+  /* Tailwind's reset removes the default borders' color and all heading/paragraph styling: restore the few
+     defaults the app relies on, once, instead of repeating them on every element. */
+  *,
+  ::after,
+  ::before,
+  ::backdrop {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-fg);
+  }
+
+  h1,
+  h2,
+  h3 {
+    margin-bottom: 0.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.17rem;
+  }
+
+  p {
+    margin-bottom: 0.75rem;
+  }
+
+  a {
+    color: var(--color-accent);
+    text-decoration: underline;
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  [data-type] {
+    --type-color: var(--color-type-unknown);
+  }
+  [data-type='normal'] {
+    --type-color: var(--color-type-normal);
+  }
+  [data-type='fire'] {
+    --type-color: var(--color-type-fire);
+  }
+  [data-type='water'] {
+    --type-color: var(--color-type-water);
+  }
+  [data-type='electric'] {
+    --type-color: var(--color-type-electric);
+  }
+  [data-type='grass'] {
+    --type-color: var(--color-type-grass);
+  }
+  [data-type='ice'] {
+    --type-color: var(--color-type-ice);
+  }
+  [data-type='fighting'] {
+    --type-color: var(--color-type-fighting);
+  }
+  [data-type='poison'] {
+    --type-color: var(--color-type-poison);
+  }
+  [data-type='ground'] {
+    --type-color: var(--color-type-ground);
+  }
+  [data-type='flying'] {
+    --type-color: var(--color-type-flying);
+  }
+  [data-type='psychic'] {
+    --type-color: var(--color-type-psychic);
+  }
+  [data-type='bug'] {
+    --type-color: var(--color-type-bug);
+  }
+  [data-type='rock'] {
+    --type-color: var(--color-type-rock);
+  }
+  [data-type='ghost'] {
+    --type-color: var(--color-type-ghost);
+  }
+  [data-type='dragon'] {
+    --type-color: var(--color-type-dragon);
+  }
+  [data-type='dark'] {
+    --type-color: var(--color-type-dark);
+  }
+  [data-type='steel'] {
+    --type-color: var(--color-type-steel);
+  }
+  [data-type='fairy'] {
+    --type-color: var(--color-type-fairy);
+  }
+}
+
+/* What utilities cannot express readably: values mixed from --type-color, the shimmer gradient, <meter> parts. */
+@utility type-glow {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--type-color) 35%, transparent),
+    transparent 70%
+  );
+}
+
+@utility type-glow-art {
+  background:
+    radial-gradient(
+      circle at 50% 40%,
+      color-mix(in srgb, var(--type-color) 35%, transparent),
+      transparent 70%
+    ),
+    var(--color-surface);
+}
+
+@utility type-tint {
+  border-color: color-mix(in srgb, var(--type-color) 50%, transparent);
+  background: color-mix(in srgb, var(--type-color) 22%, var(--color-surface));
+}
+
+@utility skeleton-shimmer {
+  background: linear-gradient(
+    100deg,
+    var(--color-surface-muted) 40%,
+    var(--color-surface) 50%,
+    var(--color-surface-muted) 60%
+  );
+  background-size: 200% 100%;
+}
+
+@utility stat-meter {
+  appearance: none;
+  background: var(--color-surface-muted);
+  &::-webkit-meter-bar {
+    height: 0.65rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-surface-muted);
+  }
+  &::-webkit-meter-optimum-value,
+  &::-webkit-meter-suboptimum-value,
+  &::-webkit-meter-even-less-good-value {
+    border-radius: 999px;
+    background: var(--color-accent);
+  }
+  &::-moz-meter-bar {
+    border-radius: 999px;
+    background: var(--color-accent);
+  }
+}
+
+/* Unlayered on purpose: it must beat every utility's transition and animation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::after,
+  ::before {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

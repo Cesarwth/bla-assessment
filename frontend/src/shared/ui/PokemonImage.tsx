@@ -1,5 +1,3 @@
-import styles from './PokemonImage.module.css'
-
 interface Props {
   src: string | null
   alt: string
@@ -10,10 +8,15 @@ interface Props {
 }
 
 export function PokemonImage({ src, alt, size, fallback, priority = false }: Props) {
-  if (!src) return <div className={styles.placeholder}>{fallback}</div>
+  if (!src)
+    return (
+      <div className="grid size-full place-items-center text-center text-sm text-muted">
+        {fallback}
+      </div>
+    )
   return (
     <img
-      className={styles.image}
+      className="block size-full object-contain"
       src={src}
       alt={alt}
       width={size}

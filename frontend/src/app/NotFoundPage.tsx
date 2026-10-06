@@ -7,7 +7,9 @@ export function NotFoundPage() {
     <section>
       <h1>Page not found</h1>
       <p>The page you are looking for does not exist or has moved.</p>
-      <Link to="/">Back to the catalog</Link>
+      <Link to="/" className="inline-flex min-h-11 items-center sm:min-h-0">
+        Back to the catalog
+      </Link>
     </section>
   )
 }

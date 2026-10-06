@@ -2,50 +2,43 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { isApiError } from '../../shared/api/errors'
 import { formatId, formatName } from '../../shared/format'
+import { BackLink } from '../../shared/ui/BackLink'
+import { Button } from '../../shared/ui/Button'
+import { Card } from '../../shared/ui/Card'
 import { EvolutionTree } from '../../shared/ui/EvolutionTree'
 import { ErrorState } from '../../shared/ui/ErrorState'
 import { LoadingStatus } from '../../shared/ui/LoadingStatus'
 import { PokemonImage } from '../../shared/ui/PokemonImage'
 import { StatBars } from '../../shared/ui/StatBars'
+import { TagList } from '../../shared/ui/TagList'
 import { TypeChip } from '../../shared/ui/TypeChip'
 import { DeleteEntry } from './components/DeleteEntry'
 import { EditForm } from './components/EditForm'
-import styles from './CollectionEntryPage.module.css'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useCollectionEntry } from './queries'
 import type { StoredPokemon } from '../../shared/api/types'
 
+const None = () => <span className="text-muted">None</span>
+
 function NotesList({ entry }: { entry: StoredPokemon }) {
   return (
-    <dl className={styles.readOnly}>
-      <dt>Nickname</dt>
-      <dd>{entry.nickname ? `“${entry.nickname}”` : <span className={styles.muted}>None</span>}</dd>
-      <dt>Region</dt>
-      <dd>{entry.region ?? <span className={styles.muted}>None</span>}</dd>
-      <dt>Tags</dt>
-      <dd>
-        {entry.tags.length > 0 ? (
-          <ul className={styles.tags} aria-label="Tags">
-            {entry.tags.map((tag) => (
-              <li key={tag} className={styles.tag}>
-                {tag}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <span className={styles.muted}>None</span>
-        )}
-      </dd>
+    <dl className="mb-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
+      <dt className="text-muted">Nickname</dt>
+      <dd className="wrap-break-word">{entry.nickname ? `“${entry.nickname}”` : <None />}</dd>
+      <dt className="text-muted">Region</dt>
+      <dd className="wrap-break-word">{entry.region ?? <None />}</dd>
+      <dt className="text-muted">Tags</dt>
+      <dd>{entry.tags.length > 0 ? <TagList tags={entry.tags} /> : <None />}</dd>
     </dl>
   )
 }
 
 function NotInCollection() {
   return (
-    <section className={styles.missing}>
+    <section className="py-8">
+      <BackLink fallbackTo="/collection" fallbackLabel="my collection" />
       <h1>This Pokémon isn’t in your collection</h1>
       <p>You may have removed it, or never added it.</p>
-      <Link to="/collection">Back to the collection</Link>
     </section>
   )
 }
@@ -73,8 +66,12 @@ export function CollectionEntryPage() {
 
   return (
     <article>
-      <div className={styles.layout}>
-        <div className={styles.artCard} data-type={entry.types[0]}>
+      <BackLink fallbackTo="/collection" fallbackLabel="my collection" />
+      <div className="grid gap-6 md:grid-cols-[minmax(12rem,16rem)_1fr] md:items-start">
+        <div
+          className="mx-auto grid aspect-square w-full max-w-64 place-items-center rounded-lg border border-border p-4 type-glow-art md:max-w-none"
+          data-type={entry.types[0]}
+        >
           <PokemonImage
             src={entry.imageUrl ?? entry.spriteUrl}
             alt={name}
@@ -84,18 +81,20 @@ export function CollectionEntryPage() {
           />
         </div>
         <div>
-          <div className={styles.headline}>
-            <h1>{name}</h1>
-            <span className={styles.number}>{formatId(entry.id)}</span>
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
+            <h1 className="mb-0 wrap-break-word">{name}</h1>
+            <span className="text-muted">{formatId(entry.id)}</span>
           </div>
-          <div className={styles.types}>
+          <div className="my-3 flex flex-wrap gap-2">
             {entry.types.map((type) => (
               <TypeChip key={type} type={type} />
             ))}
           </div>
 
-          <section className={`${styles.notes} ${styles.section}`} aria-labelledby="notes-heading">
-            <h2 id="notes-heading">Trainer notes</h2>
+          <Card as="section" className="mt-8 px-4 py-4 sm:px-6" aria-labelledby="notes-heading">
+            <h2 id="notes-heading" className="text-lg">
+              Trainer notes
+            </h2>
             {editing ? (
               <EditForm
                 entry={entry}
@@ -106,36 +105,34 @@ export function CollectionEntryPage() {
             ) : (
               <>
                 <NotesList entry={entry} />
-                <button
-                  type="button"
-                  className={styles.editButton}
-                  onClick={() => setEditing(true)}
-                >
+                <Button variant="outline" className="mt-3 px-6" onClick={() => setEditing(true)}>
                   Edit notes
-                </button>
+                </Button>
               </>
             )}
-          </section>
+          </Card>
 
           <DeleteEntry entry={entry} />
         </div>
       </div>
 
-      <section className={styles.section} aria-labelledby="stats-heading">
-        <h2 id="stats-heading">Base stats</h2>
+      <section className="mt-8" aria-labelledby="stats-heading">
+        <h2 id="stats-heading" className="text-lg">
+          Base stats
+        </h2>
         <StatBars stats={entry.stats} />
       </section>
 
-      <section className={styles.section} aria-label="Evolution">
-        <h2>Evolution</h2>
+      <section className="mt-8" aria-label="Evolution">
+        <h2 className="text-lg">Evolution</h2>
         {chain && chain.evolvesTo.length > 0 ? (
           <EvolutionTree chain={chain} currentId={entry.id} />
         ) : (
-          <p className={styles.muted}>This Pokémon does not evolve.</p>
+          <p className="text-muted">This Pokémon does not evolve.</p>
         )}
       </section>
 
-      <p className={styles.footer}>
+      <p className="mt-6 text-sm text-muted">
         <Link to={`/pokemon/${entry.id}`}>See it in the catalog</Link> · Last synced{' '}
         <time dateTime={entry.syncedAt}>
           {new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(new Date(entry.syncedAt))}

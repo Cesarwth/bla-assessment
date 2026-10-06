@@ -1,11 +1,14 @@
 import type { PokemonSummary } from '../../../shared/api/types'
 import { formatName } from '../../../shared/format'
+import { Button } from '../../../shared/ui/Button'
 import { ErrorState } from '../../../shared/ui/ErrorState'
+import { RemovableChip } from '../../../shared/ui/RemovableChip'
 import { useAuth } from '../../auth/useAuth'
 import { useCollectionIds, useSyncSelection } from '../queries'
 import { MAX_SELECTION } from '../SelectionContext'
 import { useSelection } from '../useSelection'
-import styles from './SelectionToolbar.module.css'
+
+const rowClass = 'flex flex-wrap items-center gap-3'
 
 /**
  * Selection for the catalog, trainers only: the "Select Pokémon" switch (with "Select all on this page" while it is
@@ -30,36 +33,37 @@ export function SelectionToolbar({ items }: { items: PokemonSummary[] }) {
 
   return (
     <>
-      <section className={styles.toolbar} aria-label="Select Pokémon to add">
+      <section className="mb-4 empty:hidden" aria-label="Select Pokémon to add">
         {showSwitch && (
-          <div className={styles.row}>
-            <button
-              type="button"
-              className={selection.active ? styles.switchOn : styles.switchOff}
+          <div className={rowClass}>
+            <Button
+              variant={selection.active ? 'primary' : 'outline'}
               aria-pressed={selection.active}
               onClick={() => selection.setActive(!selection.active)}
             >
               {selection.active ? 'Done selecting' : 'Select Pokémon'}
-            </button>
+            </Button>
             {selection.active && (
-              <button
-                type="button"
-                className={styles.secondary}
+              <Button
                 disabled={selectable.length === 0 || selection.isFull || !collected.data}
                 onClick={() => selection.addMany(selectable)}
               >
                 Select all on this page
-              </button>
+              </Button>
             )}
           </div>
         )}
         {report && (
-          <div className={styles.report} role="status">
-            <p>Added {report.created} Pokémon to your collection.</p>
-            {report.updated > 0 && <p>{report.updated} were already there and were refreshed.</p>}
-            {report.abortedReason && <p>Adding stopped early: {report.abortedReason}</p>}
+          <div className="mt-2" role="status">
+            <p className="mt-2 mb-0">Added {report.created} Pokémon to your collection.</p>
+            {report.updated > 0 && (
+              <p className="mt-2 mb-0">{report.updated} were already there and were refreshed.</p>
+            )}
+            {report.abortedReason && (
+              <p className="mt-2 mb-0">Adding stopped early: {report.abortedReason}</p>
+            )}
             {report.failures.length > 0 && (
-              <ul className={styles.failures} aria-label="Not added">
+              <ul className="mt-2 list-disc pl-6 text-sm text-muted" aria-label="Not added">
                 {report.failures.map((failure) => (
                   <li key={failure.identifier}>
                     {failure.identifier}: {failure.reason}
@@ -71,46 +75,38 @@ export function SelectionToolbar({ items }: { items: PokemonSummary[] }) {
         )}
       </section>
       {count > 0 && (
-        <section className={styles.tray} aria-label="Your selection">
-          <div className={styles.row}>
-            <p className={styles.count} role="status">
+        <section
+          className="mb-4 rounded-md border border-primary bg-surface px-4 py-3 max-sm:sticky max-sm:bottom-3 max-sm:z-2 max-sm:shadow-md"
+          aria-label="Your selection"
+        >
+          <div className={rowClass}>
+            <p className="mb-0 font-semibold" role="status">
               {count} selected
             </p>
-            <button
-              type="button"
-              className={styles.primary}
-              disabled={sync.isPending}
-              onClick={add}
-            >
+            <Button variant="primary" disabled={sync.isPending} onClick={add}>
               {sync.isPending ? 'Adding…' : `Add ${count} to my collection`}
-            </button>
-            <button
-              type="button"
-              className={styles.secondary}
-              disabled={sync.isPending}
-              onClick={selection.clear}
-            >
+            </Button>
+            <Button disabled={sync.isPending} onClick={selection.clear}>
               Clear
-            </button>
+            </Button>
           </div>
-          <ul className={styles.chips} aria-label="Selected Pokémon">
+          <ul
+            className="mt-3 flex max-h-24 flex-wrap gap-2 overflow-y-auto sm:max-h-28"
+            aria-label="Selected Pokémon"
+          >
             {selection.items.map((pokemon) => (
-              <li key={pokemon.id} className={styles.chip}>
+              <RemovableChip
+                key={pokemon.id}
+                removeLabel={`Remove ${formatName(pokemon.name)} from the selection`}
+                disabled={sync.isPending}
+                onRemove={() => selection.remove(pokemon.id)}
+              >
                 {formatName(pokemon.name)}
-                <button
-                  type="button"
-                  className={styles.remove}
-                  aria-label={`Remove ${formatName(pokemon.name)} from the selection`}
-                  disabled={sync.isPending}
-                  onClick={() => selection.remove(pokemon.id)}
-                >
-                  <span aria-hidden="true">×</span>
-                </button>
-              </li>
+              </RemovableChip>
             ))}
           </ul>
           {selection.isFull && (
-            <p className={styles.hint}>
+            <p className="mt-2 mb-0 text-sm text-muted">
               You can add up to {MAX_SELECTION} Pokémon at a time. Add these first, then select
               more.
             </p>

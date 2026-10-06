@@ -1,6 +1,8 @@
 import { useId, type KeyboardEvent } from 'react'
+import { Button } from '../../../shared/ui/Button'
+import { fieldClass } from '../../../shared/ui/fieldClass'
+import { RemovableChip } from '../../../shared/ui/RemovableChip'
 import { addTag } from '../tags'
-import styles from './TagInput.module.css'
 
 interface Props {
   tags: string[]
@@ -31,41 +33,36 @@ export function TagInput({ tags, onChange, text, onTextChange }: Props) {
   }
 
   return (
-    <div className={styles.group}>
-      <label htmlFor={inputId} className={styles.label}>
+    <div className="grid gap-2">
+      <label htmlFor={inputId} className="text-sm font-semibold">
         Add a tag
       </label>
       {tags.length > 0 && (
-        <ul className={styles.chips} aria-label="Tags">
+        <ul className="flex flex-wrap gap-2" aria-label="Tags">
           {tags.map((tag) => (
-            <li key={tag} className={styles.chip}>
+            <RemovableChip
+              key={tag}
+              removeLabel={`Remove tag ${tag}`}
+              onRemove={() => onChange(tags.filter((existing) => existing !== tag))}
+            >
               {tag}
-              <button
-                type="button"
-                className={styles.remove}
-                aria-label={`Remove tag ${tag}`}
-                onClick={() => onChange(tags.filter((existing) => existing !== tag))}
-              >
-                <span aria-hidden="true">×</span>
-              </button>
-            </li>
+            </RemovableChip>
           ))}
         </ul>
       )}
-      <div className={styles.add}>
+      <div className="flex gap-2">
         <input
           id={inputId}
+          className={`${fieldClass} flex-1 px-3 py-2`}
           value={text}
           onChange={(event) => onTextChange(event.target.value)}
           onKeyDown={onKeyDown}
           autoComplete="off"
         />
-        <button type="button" onClick={add}>
-          Add tag
-        </button>
+        <Button onClick={add}>Add tag</Button>
       </div>
       {error && (
-        <p role="alert" className={styles.error}>
+        <p role="alert" className="mb-0 text-sm text-danger">
           {error}
         </p>
       )}

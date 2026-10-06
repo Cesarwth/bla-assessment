@@ -2,8 +2,10 @@ import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
 import { api } from '../../shared/api/client'
 import type { RegisteredUser } from '../../shared/api/types'
+import { Alert } from '../../shared/ui/Alert'
+import { Button } from '../../shared/ui/Button'
+import { Card } from '../../shared/ui/Card'
 import { TextField } from '../../shared/ui/TextField'
-import styles from './AuthForm.module.css'
 import { toFormErrors, type FormErrors } from './formErrors'
 import { safeReturnPath } from './redirect'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
@@ -36,48 +38,46 @@ export function RegisterPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <form className={styles.card} onSubmit={submit} noValidate>
-        <h1>Create your trainer profile</h1>
-        {errors.general && (
-          <p role="alert" className={styles.alert}>
-            {errors.general}
+    <div className="mx-auto my-4 max-w-[26rem] sm:my-8">
+      <Card large raised className="p-6">
+        <form className="grid gap-4" onSubmit={submit} noValidate>
+          <h1 className="mb-0">Create your trainer profile</h1>
+          {errors.general && <Alert>{errors.general}</Alert>}
+          <TextField
+            label="Username"
+            name="username"
+            value={username}
+            onChange={setUsername}
+            autoComplete="username"
+            error={errors.fields.username}
+          />
+          <TextField
+            label="Email"
+            name="email"
+            type="email"
+            value={email}
+            onChange={setEmail}
+            autoComplete="email"
+            error={errors.fields.email}
+          />
+          <TextField
+            label="Password"
+            name="password"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            autoComplete="new-password"
+            hint="Use at least 8 characters, with letters and digits."
+            error={errors.fields.password}
+          />
+          <Button type="submit" variant="primary" size="lg" disabled={submitting}>
+            {submitting ? 'Creating profile…' : 'Create profile'}
+          </Button>
+          <p className="mb-0 text-center text-sm">
+            <Link to="/login">I already have a profile</Link>
           </p>
-        )}
-        <TextField
-          label="Username"
-          name="username"
-          value={username}
-          onChange={setUsername}
-          autoComplete="username"
-          error={errors.fields.username}
-        />
-        <TextField
-          label="Email"
-          name="email"
-          type="email"
-          value={email}
-          onChange={setEmail}
-          autoComplete="email"
-          error={errors.fields.email}
-        />
-        <TextField
-          label="Password"
-          name="password"
-          type="password"
-          value={password}
-          onChange={setPassword}
-          autoComplete="new-password"
-          hint="Use at least 8 characters, with letters and digits."
-          error={errors.fields.password}
-        />
-        <button type="submit" className={styles.submit} disabled={submitting}>
-          {submitting ? 'Creating profile…' : 'Create profile'}
-        </button>
-        <p className={styles.switch}>
-          <Link to="/login">I already have a profile</Link>
-        </p>
-      </form>
+        </form>
+      </Card>
     </div>
   )
 }

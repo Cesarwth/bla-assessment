@@ -4,9 +4,10 @@ import { LoadingStatus } from '../../shared/ui/LoadingStatus'
 import { Pagination } from '../../shared/ui/Pagination'
 import { PAGE_SIZES, usePaging } from '../../shared/usePaging'
 import { CollectionCard } from './components/CollectionCard'
-import styles from './CollectionPage.module.css'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useCollectionPage } from './queries'
+
+const gridClass = 'grid grid-cols-[repeat(auto-fill,minmax(min(16rem,100%),1fr))] gap-4'
 
 export function CollectionPage() {
   const { page, apiPage, size, hrefFor, setSize } = usePaging()
@@ -20,9 +21,9 @@ export function CollectionPage() {
       return (
         <>
           <LoadingStatus label="Loading your collection…" />
-          <ul className={styles.grid} aria-hidden="true">
+          <ul className={gridClass} aria-hidden="true">
             {Array.from({ length: 6 }, (_, index) => (
-              <li key={index} className={styles.skeleton} />
+              <li key={index} className="h-44 rounded-md bg-surface-muted" />
             ))}
           </ul>
         </>
@@ -30,8 +31,8 @@ export function CollectionPage() {
     }
     if (query.data.totalItems === 0) {
       return (
-        <div className={styles.empty}>
-          <h2>Your collection is empty</h2>
+        <div className="px-4 py-8 text-center text-muted">
+          <h2 className="text-fg">Your collection is empty</h2>
           <p>
             Select Pokémon in the catalog to add several at once, then give them a nickname, a
             region and tags.
@@ -43,15 +44,15 @@ export function CollectionPage() {
     if (query.data.items.length === 0) {
       // Beyond the last page (a stale bookmark, or the last entry of the last page was just deleted).
       return (
-        <div className={styles.empty}>
-          <h2>No entries on this page</h2>
+        <div className="px-4 py-8 text-center text-muted">
+          <h2 className="text-fg">No entries on this page</h2>
           <Link to={hrefFor(1)}>Go to the first page</Link>
         </div>
       )
     }
     return (
       <>
-        <ul className={styles.grid} aria-busy={query.isPlaceholderData}>
+        <ul className={`${gridClass} aria-busy:opacity-60`} aria-busy={query.isPlaceholderData}>
           {query.data.items.map((entry) => (
             <li key={entry.id}>
               <CollectionCard entry={entry} />
@@ -73,7 +74,7 @@ export function CollectionPage() {
   return (
     <section>
       <h1>My collection</h1>
-      <p className={styles.intro}>
+      <p className="max-w-2xl text-muted">
         Your Pokémon. Select Pokémon in the catalog to add several at once.
       </p>
       {renderResults()}

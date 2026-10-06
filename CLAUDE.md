@@ -21,7 +21,7 @@ All Java paths below (`src/main/...`, `src/test/...`) are relative to `backend/`
 - Security: Spring Security + JWT (register / login, public vs protected routes)
 - Cache: Spring Cache + Caffeine for PokeAPI responses
 - Tests: JUnit 5, Mockito, AssertJ, MockMvc, `MockRestServiceServer` + captured JSON fixtures (PokeAPI stub), ArchUnit
-- Frontend: React 19 + Vite 7 + TypeScript 5.9 (strict) in `frontend/`; TanStack Query for server state, React Router, CSS Modules with design tokens; Vitest + React Testing Library + MSW + axe
+- Frontend: React 19 + Vite 7 + TypeScript 5.9 (strict) in `frontend/`; TanStack Query for server state, React Router, **Tailwind CSS v4** (theme tokens in `@theme`, mobile-first); Vitest + React Testing Library + MSW + axe
 - Delivery: `Dockerfile` (multi-stage) + `docker-compose.yml`, README, seeded demo data and demo credentials
 
 ## User Stories (the backlog)
@@ -86,11 +86,13 @@ cd frontend && npm run dev     # Vite on :5173, proxies /api to localhost:8080
 
 ## Frontend rules
 
-- Feature folders mirror the API domains (`features/auth`, `catalog`, `collection`); `shared/` holds the API client and UI atoms. Features never import each other: `app/App.tsx` is the only place that composes them (e.g. the detail page receives `AddToCollection` through a prop).
+- Feature folders mirror the API domains (`features/auth`, `catalog`, `collection`); `shared/` holds the API client and UI primitives (`shared/ui`). Features never import each other: `app/App.tsx` is the only place that composes them (e.g. the detail page receives `AddToCollection` through a prop).
 - One API client (`shared/api/client.ts`) is the only code that calls `fetch`; it turns every failure into `ApiError` using the backend's error shape. Server state lives in TanStack Query, paging in the URL, auth in `AuthProvider`; no global store.
 - Text from the API (descriptions, nicknames, tags) is rendered as text, never as HTML.
+- **Styling = Tailwind v4, one stylesheet.** `src/index.css` is the only CSS file: `@import "tailwindcss"`, the `@theme` tokens (semantic colors `canvas`, `surface`, `fg`, `muted`, `border`, `primary`, …, the 18 Pokémon `type-*` colors, radius, shadow, `max-w-content`), the dark palette (the same variables overridden under `prefers-color-scheme: dark`, so components never need `dark:`), a few `@utility` blocks and the reduced-motion rule. Components use semantic utilities (`bg-surface`, `text-muted`), never raw hex. No CSS Modules, no `@apply` sprawl: repeated patterns are components in `shared/ui` (`Button`, `Card`, `Badge`, `Alert`, `RemovableChip`, `BackLink`, field classes…). `className` on those primitives is for layout only.
+- **Responsive, mobile-first:** design for 375 px and scale up with `sm:`/`md:`; tap targets ≥ 44 px on phones; no horizontal scroll from 320 px. Every list page keeps its state in the URL, and every detail page has a `BackLink` (history back when there is in-app history, a fallback link otherwise).
 - Tests are written first and use MSW at the network level. Any `console.error`/`console.warn` fails a test; pages are checked with axe. Coverage gate: lines/statements/functions 90 %, branches 85 %.
-- Things jsdom cannot see (real CORS, CSP, nginx, layout) are covered by `scripts/smoke.sh` and a manual check in Chrome.
+- Things jsdom cannot see (real CORS, CSP, nginx, layout, responsive behaviour) are covered by `scripts/smoke.sh` and a check in real Chrome through the DevTools protocol (3 widths × light/dark, no horizontal overflow, no console problems).
 
 ## Code standards
 

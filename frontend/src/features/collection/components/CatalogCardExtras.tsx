@@ -3,7 +3,6 @@ import { formatName } from '../../../shared/format'
 import { useAuth } from '../../auth/useAuth'
 import { useCollectionIds } from '../queries'
 import { useSelection } from '../useSelection'
-import styles from './CatalogCardExtras.module.css'
 import { InCollectionBadge } from './InCollectionBadge'
 
 /**
@@ -21,10 +20,13 @@ export function CatalogCardExtras({ pokemon }: { pokemon: PokemonSummary }) {
 
   const selected = selection.has(pokemon.id)
   return (
-    <label className={styles.pick} data-selected={selected}>
+    // Above the card-wide link (its ::after), so ticking never opens the detail page.
+    <label
+      className={`absolute top-3 right-3 z-1 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border-2 bg-surface px-3 py-1 text-sm font-bold sm:min-h-0 ${selected ? 'border-primary' : 'border-border'}`}
+    >
       <input
         type="checkbox"
-        className={styles.checkbox}
+        className="m-0 size-6 cursor-pointer accent-primary disabled:cursor-not-allowed"
         aria-label={`Select ${formatName(pokemon.name)}`}
         checked={selected}
         disabled={!selected && selection.isFull}

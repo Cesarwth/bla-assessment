@@ -199,22 +199,24 @@ curl -s -X PATCH localhost:8080/api/v1/collection/25 -H "Authorization: Bearer $
 
 ## The web app
 
-React 19 + TypeScript (strict) + Vite, in `frontend/`. Feature folders mirror the API domains:
+React 19 + TypeScript (strict) + Vite + **Tailwind CSS v4**, in `frontend/`. Feature folders mirror the API domains:
 
 ```
 frontend/src/
-  app/            App (routes), Layout, Header, ErrorBoundary
+  index.css       the only stylesheet: Tailwind import, @theme tokens, dark palette
+  app/            App (routes), Layout, Header, RequireLogin, ErrorBoundary
   features/
     auth/         login, register, session (JWT in sessionStorage), AuthProvider
-    catalog/      catalog list, detail page, queries
+    catalog/      catalog list with filter, detail page, queries
     collection/   collection list, entry page, edit form, tags, delete; the catalog's multi-select
-  shared/         API client (the only code that calls fetch), UI atoms, formatting, paging
+  shared/         API client (the only code that calls fetch), ui/ primitives (Button, Card, Badge, Alert, BackLink…), formatting, paging
   test/           MSW server, fixtures, helpers, console guard
 ```
 
 - **State**: server state in TanStack Query (cache, retries only for network/5xx, previous page stays visible while the next loads); paging lives in the URL (shareable); auth in a small context; no global store. Features never import each other: `App.tsx` is the only place that composes them.
 - **One API client** turns every failure into an `ApiError` (status, code, field errors) using the backend's error shape, so components never parse responses. A `401` on a request that carried a token ends the session, shows a notice and refetches the data without the dead token.
-- **UX**: responsive (1 → 4 columns), light/dark through `prefers-color-scheme`, skeleton loaders, friendly empty/error states with retry, route titles, focus moved to the content on navigation, skip link, keyboard-friendly forms with per-field errors.
+- **Styling**: Tailwind v4 with a single stylesheet. The design tokens (semantic colors, the 18 Pokémon type colors, radius, shadow) live in an `@theme` block; the dark palette overrides the same variables under `prefers-color-scheme`, so a class like `bg-surface` is right in both schemes. Repeated patterns are small components in `shared/ui` instead of long class lists or `@apply`. The build emits one static CSS file (≈ 28 kB, 6.5 kB gzip), so the strict CSP (`style-src 'self'`) still holds.
+- **UX**: mobile-first and responsive (1 column on a phone up to 4 on a wide screen, tap targets ≥ 44 px, no horizontal scroll from 320 px), a **Back** arrow on every detail page (returns to the list with its page, filter and selection), light/dark through `prefers-color-scheme`, skeleton loaders, friendly empty/error states with retry, route titles, focus moved to the content on navigation, skip link, keyboard-friendly forms with per-field errors.
 - **Safety**: text from the API (descriptions, nicknames, tags) is rendered as text, never as HTML; nginx sends a strict CSP (`script-src 'self'`, images only from this origin and the PokeAPI sprites host).
 
 ## Configuration
@@ -265,7 +267,7 @@ Tests were written **first** (red → green → refactor); the git history and t
 | --- | --- | --- |
 | Backend | `cd backend && ./gradlew test` | **423 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
 | Backend gate | `./gradlew build` | JaCoCo: fails below **90 % lines / 80 % branches** (actual ≈ 98 % / 86 %) |
-| Frontend | `cd frontend && npm test` | **198 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
+| Frontend | `cd frontend && npm test` | **206 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
 | Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99 % / 93 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
 | Static checks | `npm run typecheck && npm run lint` | strict TypeScript, ESLint with zero warnings |
 | Whole stack | `./scripts/smoke.sh` | 29 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, private collections, two trainers with the same Pokémon, versions |
