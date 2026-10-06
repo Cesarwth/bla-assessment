@@ -51,6 +51,46 @@ class RegisterUserTest {
     }
 
     @Test
+    void registersTheNormalizedUsernameAndEmail() {
+        when(hasher.hash("Pikachu123")).thenReturn("hashed");
+        when(users.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        User saved = registerUser.register(new RegisterUserCommand("  Alice ", "ALICE@Wonder.Land", "Pikachu123"));
+
+        assertThat(saved.username()).isEqualTo("alice");
+        assertThat(saved.email()).isEqualTo("alice@wonder.land");
+        verify(users).existsByUsername("alice");
+        verify(users).existsByEmail("alice@wonder.land");
+    }
+
+    @Test
+    void failsWhenTheUsernameIsTakenIgnoringCase() {
+        when(users.existsByUsername("alice")).thenReturn(true);
+
+        assertThatThrownBy(() -> registerUser.register(new RegisterUserCommand("ALICE", "a@wonder.land", "Pikachu123")))
+                .isInstanceOf(UsernameAlreadyExistsException.class);
+        verify(users, never()).save(any());
+    }
+
+    @Test
+    void rejectsPasswordsBcryptCannotHandleMeasuredInBytesNotCharacters() {
+        String multiByte = "é1".repeat(30); // 60 characters but 90 bytes
+        assertThatThrownBy(() -> registerUser.register(new RegisterUserCommand("ash", "ash@pallet.town", multiByte)))
+                .isInstanceOf(WeakPasswordException.class);
+        verify(users, never()).save(any());
+    }
+
+    @Test
+    void acceptsAPasswordOfExactlyTheMaximumByteLength() {
+        String exactly72Bytes = "a1".repeat(36);
+        when(hasher.hash(exactly72Bytes)).thenReturn("hashed");
+        when(users.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThat(registerUser.register(new RegisterUserCommand("ash", "ash@pallet.town", exactly72Bytes)).username())
+                .isEqualTo("ash");
+    }
+
+    @Test
     void failsWhenUsernameTaken() {
         when(users.existsByUsername("ash")).thenReturn(true);
 

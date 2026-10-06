@@ -241,3 +241,25 @@ Verified: `./gradlew clean build` green x3 (224 tests, 0 failures). Docker on Po
 - Catalog API from Plan B stays the browsing source; the frontend can offer "save to my collection" via sync.
 - CORS allows only `CORS_ALLOWED_ORIGINS` (default `http://localhost:5173`).
 - Demo accounts: `demo` / `DEMO_USER_PASSWORD`, `demo-admin` / `DEMO_ADMIN_PASSWORD` (see `.env.example`).
+
+## Code review follow-up — batch 1 (2026-10-05)
+
+Fixed test-first (each finding had a failing test before the fix). 242 tests, 0 failures; verified again on Docker/PostgreSQL.
+
+| Finding | Fix |
+| ------- | --- |
+| C1 username/email not normalized | `User` stores them stripped + lower-case; register, `exists*` and login use the same normalization |
+| C2 BCrypt 72-byte limit -> 500 | Password length measured in bytes (`PasswordLimits`); register -> 400 `WEAK_PASSWORD`, login -> 401 without hashing |
+| C3 re-sync could wipe genus/description/chain | `StoredPokemon.refreshedFrom` keeps stored values when upstream returns none |
+| C4 range sync lost its report | Stale edits become per-id failures; if upstream dies midway the partial report is returned with `abortedReason` (nothing processed yet -> still 502/504) |
+| C5 malformed upstream data -> 500 | Missing stat/species names and oversized ids raise `CatalogUnavailableException` (502) |
+| S4 default credentials | No default demo password; demo user only seeded when `DEMO_USER_PASSWORD` is set; compose seeds only if `SEED_DEMO_USER=true` |
+| S5 PII in logs | Integrity violations log only the exception type, no message or stack trace |
+| A1 weak ArchUnit | No `allowEmptyShould`; new rules: web only uses inbound ports, adapters do not depend on web/persistence, use-case implementations are wired only by config |
+| A2 `AuthToken` in `port.out` | Moved to `domain`; controller no longer depends on an outbound port |
+
+### Still open (batch 2 / decisions)
+- A4 translate unique violations in the user adapter (`USERNAME_TAKEN` under races); first-sync race on `pokeapi_id`.
+- T1 JaCoCo + coverage gate; T2 role/verb matrix test; T3 tests for `ApiSecurityErrorHandler`/wiring; T4 remove `Thread.sleep` from tests.
+- S2 user enumeration (register 409 echoes the username; login skips BCrypt for unknown users).
+- Decisions for the owner: S1 (any registered user can edit the shared collection), S3 (rate limiting / password length 12), A3 (`version` exposed but PATCH does not take it).

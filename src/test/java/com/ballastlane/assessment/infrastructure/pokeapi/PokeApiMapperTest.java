@@ -160,6 +160,27 @@ class PokeApiMapperTest {
     }
 
     @Test
+    void aStatWithoutANameIsAnUpstreamProblemNotAServerError() {
+        PokeApiPokemon broken = new PokeApiPokemon(1, "x", 1, 1, List.of(), List.of(),
+                List.of(new PokeApiPokemon.StatSlot(10, null)), null, new NamedRef("x", "https://pokeapi.co/api/v2/pokemon-species/1/"));
+
+        assertThatThrownBy(() -> mapper.toDetail(broken, null, null)).isInstanceOf(CatalogUnavailableException.class);
+    }
+
+    @Test
+    void aChainLinkWithoutASpeciesIsAnUpstreamProblemNotAServerError() {
+        PokeApiEvolutionChain broken = new PokeApiEvolutionChain(new ChainLink(null, List.of(), List.of()));
+
+        assertThatThrownBy(() -> mapper.toEvolutionTree(broken)).isInstanceOf(CatalogUnavailableException.class);
+    }
+
+    @Test
+    void idsTooBigToBeRealAreRejectedInsteadOfBlowingUp() {
+        assertThatThrownBy(() -> mapper.idFromUrl("https://pokeapi.co/api/v2/pokemon-species/99999999999/"))
+                .isInstanceOf(CatalogUnavailableException.class);
+    }
+
+    @Test
     void rejectsPayloadsWhoseUrlsDoNotCarryAnId() {
         PokeApiPokemon broken = new PokeApiPokemon(1, "x", 1, 1, List.of(), List.of(), List.of(), null, new NamedRef("x", "not-a-url"));
 

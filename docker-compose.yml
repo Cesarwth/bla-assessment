@@ -24,7 +24,7 @@ services:
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?copy .env.example to .env}
-      SEED_DEMO_USER: ${SEED_DEMO_USER:-true}
+      SEED_DEMO_USER: ${SEED_DEMO_USER:-false}
       DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:?copy .env.example to .env}
       DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:?copy .env.example to .env}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}

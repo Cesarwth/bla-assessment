@@ -1,4 +1,4 @@
-package com.ballastlane.assessment.application.port.out;
+package com.ballastlane.assessment.domain;
 
 import java.time.Instant;
 

@@ -1,6 +1,6 @@
 package com.ballastlane.assessment.infrastructure.security;
 
-import com.ballastlane.assessment.application.port.out.AuthToken;
+import com.ballastlane.assessment.domain.AuthToken;
 import com.ballastlane.assessment.application.port.out.TokenIssuer;
 import com.ballastlane.assessment.domain.User;
 import java.time.Clock;

@@ -15,6 +15,7 @@ import com.ballastlane.assessment.domain.SyncResult;
 import com.ballastlane.assessment.domain.exception.CatalogUnavailableException;
 import com.ballastlane.assessment.domain.exception.InvalidSyncRangeException;
 import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
+import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.support.TestData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,12 +65,36 @@ class SyncPokemonRangeTest {
     }
 
     @Test
-    void abortsWhenTheCatalogIsUnavailableInsteadOfRepeatingTheFailure() {
+    void returnsAPartialReportWhenTheCatalogGoesDownMidway() {
         when(syncOne.sync("1")).thenReturn(result(SyncOutcome.CREATED, 1));
         when(syncOne.sync("2")).thenThrow(new CatalogUnavailableException("down", false, null));
 
-        assertThatThrownBy(() -> syncRange.sync(1, 5)).isInstanceOf(CatalogUnavailableException.class);
+        SyncReport report = syncRange.sync(1, 5);
+
+        assertThat(report.created()).isEqualTo(1);
+        assertThat(report.abortedReason()).contains("2");
         verify(syncOne, never()).sync("3");
+    }
+
+    @Test
+    void rethrowsWhenTheCatalogIsDownBeforeAnythingWasProcessed() {
+        when(syncOne.sync("1")).thenThrow(new CatalogUnavailableException("down", true, null));
+
+        assertThatThrownBy(() -> syncRange.sync(1, 5))
+                .isInstanceOfSatisfying(CatalogUnavailableException.class, e -> assertThat(e.isTimeout()).isTrue());
+    }
+
+    @Test
+    void reportsConcurrentEditsAsFailuresAndKeepsGoing() {
+        when(syncOne.sync("1")).thenThrow(new StaleStoredPokemonException(1));
+        when(syncOne.sync("2")).thenReturn(result(SyncOutcome.CREATED, 2));
+
+        SyncReport report = syncRange.sync(1, 2);
+
+        assertThat(report.created()).isEqualTo(1);
+        assertThat(report.failures()).extracting(SyncReport.Failure::identifier).containsExactly("1");
+        assertThat(report.failures().get(0).reason()).isEqualTo("Modified concurrently, retry it");
+        assertThat(report.abortedReason()).isNull();
     }
 
     @Test

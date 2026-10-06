@@ -25,13 +25,15 @@ public class RegisterUser implements RegisterUserUseCase {
     @Override
     public User register(RegisterUserCommand command) {
         requireStrong(command.rawPassword());
-        if (users.existsByUsername(command.username())) {
-            throw new UsernameAlreadyExistsException(command.username());
+        String username = User.normalizeUsername(command.username());
+        String email = User.normalizeEmail(command.email());
+        if (users.existsByUsername(username)) {
+            throw new UsernameAlreadyExistsException(username);
         }
-        if (users.existsByEmail(command.email())) {
-            throw new EmailAlreadyExistsException(command.email());
+        if (users.existsByEmail(email)) {
+            throw new EmailAlreadyExistsException(email);
         }
-        User user = new User(null, command.username(), command.email(), hasher.hash(command.rawPassword()), Role.USER);
+        User user = new User(null, username, email, hasher.hash(command.rawPassword()), Role.USER);
         return users.save(user);
     }
 
@@ -39,11 +41,13 @@ public class RegisterUser implements RegisterUserUseCase {
     private static void requireStrong(String password) {
         boolean strong = password != null
                 && password.length() >= MIN_PASSWORD_LENGTH
+                && PasswordLimits.fitsBcrypt(password)
                 && password.chars().anyMatch(Character::isLetter)
                 && password.chars().anyMatch(Character::isDigit);
         if (!strong) {
             throw new WeakPasswordException(
-                    "Password must have at least " + MIN_PASSWORD_LENGTH + " characters, with letters and digits");
+                    "Password must have " + MIN_PASSWORD_LENGTH + " to " + PasswordLimits.MAX_BYTES
+                            + " bytes, with letters and digits");
         }
     }
 }

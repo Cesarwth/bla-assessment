@@ -38,8 +38,16 @@ public record StoredPokemon(
         return copyOf(detail, null, null, LocalAttributes.empty(), now);
     }
 
+    // Species data comes from separate upstream calls that can come back empty; a partial answer must not erase
+    // what an earlier, complete sync already stored.
     public StoredPokemon refreshedFrom(PokemonDetail detail, Instant now) {
-        return copyOf(detail, id, version, localAttributes, now);
+        StoredPokemon fresh = copyOf(detail, id, version, localAttributes, now);
+        return new StoredPokemon(fresh.id, fresh.version, fresh.pokeApiId, fresh.name, fresh.spriteUrl, fresh.imageUrl,
+                fresh.types, fresh.abilities, fresh.stats, fresh.weightKg, fresh.heightM,
+                fresh.genus != null ? fresh.genus : genus,
+                fresh.description != null ? fresh.description : description,
+                fresh.evolutionChain != null ? fresh.evolutionChain : evolutionChain,
+                fresh.localAttributes, fresh.syncedAt);
     }
 
     public StoredPokemon withLocalAttributes(LocalAttributes attributes) {

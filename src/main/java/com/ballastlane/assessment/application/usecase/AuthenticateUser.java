@@ -2,10 +2,11 @@ package com.ballastlane.assessment.application.usecase;
 
 import com.ballastlane.assessment.application.port.in.AuthenticateCommand;
 import com.ballastlane.assessment.application.port.in.AuthenticateUserUseCase;
-import com.ballastlane.assessment.application.port.out.AuthToken;
+import com.ballastlane.assessment.domain.AuthToken;
 import com.ballastlane.assessment.application.port.out.PasswordHasher;
 import com.ballastlane.assessment.application.port.out.TokenIssuer;
 import com.ballastlane.assessment.application.port.out.UserRepository;
+import com.ballastlane.assessment.domain.User;
 import com.ballastlane.assessment.domain.exception.InvalidCredentialsException;
 
 public class AuthenticateUser implements AuthenticateUserUseCase {
@@ -22,7 +23,11 @@ public class AuthenticateUser implements AuthenticateUserUseCase {
 
     @Override
     public AuthToken authenticate(AuthenticateCommand command) {
-        return users.findByUsername(command.username())
+        // Such a password can never have been registered (BCrypt rejects it), so don't even ask the hasher.
+        if (command.rawPassword() == null || !PasswordLimits.fitsBcrypt(command.rawPassword())) {
+            throw new InvalidCredentialsException();
+        }
+        return users.findByUsername(User.normalizeUsername(command.username()))
                 .filter(user -> hasher.matches(command.rawPassword(), user.passwordHash()))
                 .map(tokens::issue)
                 .orElseThrow(InvalidCredentialsException::new);

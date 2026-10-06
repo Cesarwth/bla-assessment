@@ -137,7 +137,8 @@ public class GlobalExceptionHandler {
     // Race between the existence check and the insert: the DB constraint is the last line of defense.
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ErrorResponse> integrity(DataIntegrityViolationException ex) {
-        log.warn("Data integrity violation", ex);
+        // The database message quotes the offending values (e.g. an email): log the kind of error, not its text.
+        log.warn("Data integrity violation rejected with 409 ({})", ex.getClass().getSimpleName());
         return respond(HttpStatus.CONFLICT, "CONFLICT", "Resource already exists");
     }
 

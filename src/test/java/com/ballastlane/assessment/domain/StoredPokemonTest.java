@@ -42,7 +42,7 @@ class StoredPokemonTest {
         StoredPokemon existing = TestData.stored(7, 3, 25, "pikachu", LocalAttributes.empty());
         PokemonDetail changed = new PokemonDetail(25, "pikachu-renamed", "new-img", "new-sprite", List.of("electric", "fairy"),
                 7.5, 0.5, List.of("static", "lightning-rod"), List.of(new PokemonStat("hp", 99)), "New genus",
-                "New description", null);
+                "New description", new EvolutionNode(25, "new-chain", "s", List.of(), List.of()));
 
         StoredPokemon refreshed = existing.refreshedFrom(changed, LATER);
 
@@ -55,7 +55,20 @@ class StoredPokemonTest {
         assertThat(refreshed.heightM()).isEqualTo(0.5);
         assertThat(refreshed.genus()).isEqualTo("New genus");
         assertThat(refreshed.description()).isEqualTo("New description");
-        assertThat(refreshed.evolutionChain()).isNull();
+        assertThat(refreshed.evolutionChain().name()).isEqualTo("new-chain");
+    }
+
+    @Test
+    void refreshKeepsStoredGenusDescriptionAndChainWhenUpstreamReturnsNone() {
+        StoredPokemon existing = TestData.stored(7, 3, 25, "pikachu", LocalAttributes.empty());
+        PokemonDetail partial = new PokemonDetail(25, "pikachu", "img", "sprite", List.of("electric"), 6.0, 0.4,
+                List.of("static"), List.of(new PokemonStat("hp", 35)), null, null, null);
+
+        StoredPokemon refreshed = existing.refreshedFrom(partial, LATER);
+
+        assertThat(refreshed.genus()).isEqualTo(existing.genus());
+        assertThat(refreshed.description()).isEqualTo(existing.description());
+        assertThat(refreshed.evolutionChain()).isEqualTo(existing.evolutionChain());
     }
 
     @Test

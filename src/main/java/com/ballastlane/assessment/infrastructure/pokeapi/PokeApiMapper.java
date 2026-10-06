@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 /** The only class that knows PokeAPI's JSON shape: units, nullable fields and text quirks are handled here. */
 public class PokeApiMapper {
 
-    private static final Pattern TRAILING_ID = Pattern.compile("/(\\d+)/?$");
+    private static final Pattern TRAILING_ID = Pattern.compile("/(\\d{1,9})/?$");
     private static final String SPRITE_BASE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/";
     private static final String ENGLISH = "en";
 
@@ -38,7 +38,7 @@ public class PokeApiMapper {
 
     public PokemonDetail toDetail(PokeApiPokemon pokemon, PokeApiSpecies species, PokeApiEvolutionChain chain) {
         List<PokemonStat> stats = orEmpty(pokemon.stats()).stream()
-                .map(stat -> new PokemonStat(stat.stat().name(), stat.baseStat()))
+                .map(stat -> new PokemonStat(requireName(stat.stat(), "stat"), stat.baseStat()))
                 .toList();
         return new PokemonDetail(
                 pokemon.id(),
@@ -116,11 +116,21 @@ public class PokeApiMapper {
                 .orElse(null);
     }
 
+    private static String requireName(NamedRef ref, String what) {
+        if (ref == null || ref.name() == null) {
+            throw new CatalogUnavailableException("PokeAPI returned a " + what + " without a name", false, null);
+        }
+        return ref.name();
+    }
+
     private static boolean isEnglish(NamedRef language) {
         return language != null && ENGLISH.equals(language.name());
     }
 
     private EvolutionNode toNode(ChainLink link) {
+        if (link == null || link.species() == null) {
+            throw new CatalogUnavailableException("PokeAPI returned an evolution link without a species", false, null);
+        }
         int id = idFromUrl(link.species().url());
         List<String> requirements = orEmpty(link.evolutionDetails()).stream()
                 .map(PokeApiMapper::describe)

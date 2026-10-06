@@ -5,8 +5,10 @@ import com.ballastlane.assessment.application.port.in.SyncPokemonUseCase;
 import com.ballastlane.assessment.domain.SyncOutcome;
 import com.ballastlane.assessment.domain.SyncReport;
 import com.ballastlane.assessment.domain.SyncResult;
+import com.ballastlane.assessment.domain.exception.CatalogUnavailableException;
 import com.ballastlane.assessment.domain.exception.InvalidSyncRangeException;
 import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
+import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +32,7 @@ public class SyncPokemonRange implements SyncPokemonRangeUseCase {
         int created = 0;
         int updated = 0;
         List<SyncReport.Failure> failures = new ArrayList<>();
+        String abortedReason = null;
         for (int id = from; id <= to; id++) {
             try {
                 SyncResult result = syncOne.sync(String.valueOf(id));
@@ -41,9 +44,19 @@ public class SyncPokemonRange implements SyncPokemonRangeUseCase {
             } catch (PokemonNotFoundException e) {
                 // PokeAPI has gaps (e.g. 1026-10000): a missing id is a per-item failure, not a reason to stop.
                 failures.add(new SyncReport.Failure(String.valueOf(id), "Not found upstream"));
+            } catch (StaleStoredPokemonException e) {
+                // Someone edited this record while we synced it: report it and keep the rest of the range.
+                failures.add(new SyncReport.Failure(String.valueOf(id), "Modified concurrently, retry it"));
+            } catch (CatalogUnavailableException e) {
+                // Upstream is down: stop instead of repeating the failure for every remaining id. What was already
+                // saved is reported; if nothing was processed yet there is no report to give, so the error propagates.
+                if (created + updated == 0 && failures.isEmpty()) {
+                    throw e;
+                }
+                abortedReason = "Catalog unavailable at id " + id;
+                break;
             }
-            // CatalogUnavailableException is deliberately not caught: if upstream is down, stop instead of repeating it.
         }
-        return new SyncReport(created, updated, failures);
+        return new SyncReport(created, updated, failures, abortedReason);
     }
 }

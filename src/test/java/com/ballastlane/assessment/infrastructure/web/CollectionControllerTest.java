@@ -137,7 +137,19 @@ class CollectionControllerTest {
                 .andExpect(jsonPath("$.created").value(2))
                 .andExpect(jsonPath("$.updated").value(0))
                 .andExpect(jsonPath("$.failures[0].identifier").value("3"))
-                .andExpect(jsonPath("$.failures[0].reason").value("Not found upstream"));
+                .andExpect(jsonPath("$.failures[0].reason").value("Not found upstream"))
+                .andExpect(jsonPath("$.abortedReason").isEmpty());
+    }
+
+    @Test
+    void syncRangeTellsTheClientWhenTheRunWasCutShort() throws Exception {
+        when(syncRange.sync(1, 5)).thenReturn(new SyncReport(1, 0, List.of(), "Catalog unavailable at id 2"));
+
+        mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
+                        .contentType(JSON).content("{\"from\":1,\"to\":5}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created").value(1))
+                .andExpect(jsonPath("$.abortedReason").value("Catalog unavailable at id 2"));
     }
 
     @Test

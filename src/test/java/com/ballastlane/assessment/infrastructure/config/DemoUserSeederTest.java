@@ -58,6 +58,17 @@ class DemoUserSeederTest {
     }
 
     @Test
+    void noDemoUserIsSeededWithoutAConfiguredPassword() {
+        new DemoUserSeeder(registerUser, users, hasher,
+                new DemoUserProperties(true, "demo", "demo@pokemon.dev", "", "demo-admin", "admin@pokemon.dev", null)).run(null);
+        new DemoUserSeeder(registerUser, users, hasher,
+                new DemoUserProperties(true, "demo", "demo@pokemon.dev", null, "demo-admin", "admin@pokemon.dev", null)).run(null);
+
+        verifyNoInteractions(registerUser);
+        verify(users, never()).save(any());
+    }
+
+    @Test
     void seedsTheAdminWithTheAdminRoleAndAHashedPassword() {
         when(users.existsByUsername("demo")).thenReturn(true);
         when(users.existsByUsername("demo-admin")).thenReturn(false);

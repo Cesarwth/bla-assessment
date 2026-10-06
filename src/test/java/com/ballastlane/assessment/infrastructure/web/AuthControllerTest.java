@@ -8,7 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.ballastlane.assessment.application.port.in.AuthenticateUserUseCase;
 import com.ballastlane.assessment.application.port.in.RegisterUserUseCase;
-import com.ballastlane.assessment.application.port.out.AuthToken;
+import com.ballastlane.assessment.domain.AuthToken;
 import com.ballastlane.assessment.domain.Role;
 import com.ballastlane.assessment.domain.User;
 import com.ballastlane.assessment.domain.exception.InvalidCredentialsException;

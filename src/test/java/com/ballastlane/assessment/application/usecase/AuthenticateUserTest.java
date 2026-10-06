@@ -6,7 +6,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.ballastlane.assessment.application.port.in.AuthenticateCommand;
-import com.ballastlane.assessment.application.port.out.AuthToken;
+import com.ballastlane.assessment.domain.AuthToken;
 import com.ballastlane.assessment.application.port.out.PasswordHasher;
 import com.ballastlane.assessment.application.port.out.TokenIssuer;
 import com.ballastlane.assessment.application.port.out.UserRepository;
@@ -44,6 +44,23 @@ class AuthenticateUserTest {
         when(tokens.issue(ASH)).thenReturn(token);
 
         assertThat(authenticateUser.authenticate(new AuthenticateCommand("ash", "Pikachu123"))).isEqualTo(token);
+    }
+
+    @Test
+    void looksTheUserUpByTheNormalizedUsername() {
+        AuthToken token = new AuthToken("jwt", Instant.parse("2030-01-01T00:00:00Z"));
+        when(users.findByUsername("ash")).thenReturn(Optional.of(ASH));
+        when(hasher.matches("Pikachu123", "hashed")).thenReturn(true);
+        when(tokens.issue(ASH)).thenReturn(token);
+
+        assertThat(authenticateUser.authenticate(new AuthenticateCommand("  ASH ", "Pikachu123"))).isEqualTo(token);
+    }
+
+    @Test
+    void anOverlongPasswordIsJustInvalidCredentialsWithoutHashingOrLookup() {
+        assertThatThrownBy(() -> authenticateUser.authenticate(new AuthenticateCommand("ash", "é1".repeat(40))))
+                .isInstanceOf(InvalidCredentialsException.class);
+        verifyNoInteractions(users, hasher, tokens);
     }
 
     @Test

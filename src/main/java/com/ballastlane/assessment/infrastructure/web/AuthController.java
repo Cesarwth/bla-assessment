@@ -4,7 +4,7 @@ import com.ballastlane.assessment.application.port.in.AuthenticateCommand;
 import com.ballastlane.assessment.application.port.in.AuthenticateUserUseCase;
 import com.ballastlane.assessment.application.port.in.RegisterUserCommand;
 import com.ballastlane.assessment.application.port.in.RegisterUserUseCase;
-import com.ballastlane.assessment.application.port.out.AuthToken;
+import com.ballastlane.assessment.domain.AuthToken;
 import com.ballastlane.assessment.infrastructure.web.dto.AuthResponse;
 import com.ballastlane.assessment.infrastructure.web.dto.LoginRequest;
 import com.ballastlane.assessment.infrastructure.web.dto.RegisterRequest;

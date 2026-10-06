@@ -36,6 +36,14 @@ class UserTest {
     }
 
     @Test
+    void normalizesUsernameAndEmailSoLookalikesAreTheSameAccount() {
+        User user = new User(null, "  Ash ", "  ASH@Pallet.Town ", "hash", Role.USER);
+
+        assertThat(user.username()).isEqualTo("ash");
+        assertThat(user.email()).isEqualTo("ash@pallet.town");
+    }
+
+    @Test
     void toStringNeverExposesThePasswordHash() {
         User user = new User(1L, "ash", "ash@pallet.town", "secret-hash", Role.USER);
 

@@ -19,9 +19,14 @@ import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundExceptio
 import com.ballastlane.assessment.domain.exception.InvalidUserException;
 import com.ballastlane.assessment.domain.exception.UsernameAlreadyExistsException;
 import com.ballastlane.assessment.domain.exception.WeakPasswordException;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.BeforeEach;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -86,6 +91,25 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void integrityViolationsAre409AndNeverLogPersonalDataOrStackTraces() throws Exception {
+        Logger logger = (Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            mvc.perform(get("/boom/integrity")).andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("CONFLICT"));
+
+            org.assertj.core.api.Assertions.assertThat(appender.list).isNotEmpty().allSatisfy(event -> {
+                org.assertj.core.api.Assertions.assertThat(event.getFormattedMessage()).doesNotContain("secret@pallet.town");
+                org.assertj.core.api.Assertions.assertThat(event.getThrowableProxy()).isNull();
+            });
+        } finally {
+            logger.detachAppender(appender);
+        }
+    }
+
+    @Test
     void returns400WhenARequestParameterHasTheWrongType() throws Exception {
         mvc.perform(get("/boom/typed").param("n", "abc")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
@@ -142,6 +166,7 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/boom/bad-update") void q() { throw new InvalidStoredPokemonUpdateException("bad"); }
         @GetMapping("/boom/bad-range") void r() { throw new InvalidSyncRangeException("bad"); }
         @GetMapping("/boom/stale") void t() { throw new StaleStoredPokemonException(25); }
+        @GetMapping("/boom/integrity") void u() { throw new DataIntegrityViolationException("Key (email)=(secret@pallet.town) already exists"); }
         @GetMapping("/boom/typed") void m(@RequestParam int n) { }
         @PostMapping("/boom/validate") void g(@Valid @RequestBody Payload payload) { }
     }

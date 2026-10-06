@@ -36,9 +36,11 @@ public class DemoUserSeeder implements ApplicationRunner {
     }
 
     private void seedUser() {
-        if (!users.existsByUsername(properties.username())) {
-            registerUser.register(new RegisterUserCommand(properties.username(), properties.email(), properties.password()));
+        String password = properties.password();
+        if (password == null || password.isBlank() || users.existsByUsername(properties.username())) {
+            return;
         }
+        registerUser.register(new RegisterUserCommand(properties.username(), properties.email(), password));
     }
 
     private void seedAdmin() {

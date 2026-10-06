@@ -7,3 +7,6 @@ spring:
 app:
   jwt:
     secret: test-secret-test-secret-test-secret-32b
+  seed:
+    demo-user:
+      password: Demo12345

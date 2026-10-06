@@ -3,7 +3,7 @@ package com.ballastlane.assessment.infrastructure.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.ballastlane.assessment.application.port.out.AuthToken;
+import com.ballastlane.assessment.domain.AuthToken;
 import com.ballastlane.assessment.domain.Role;
 import com.ballastlane.assessment.domain.User;
 import java.nio.charset.StandardCharsets;
