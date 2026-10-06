@@ -252,3 +252,13 @@ Manual testing: only the info panel of a card opened the detail. Cause: the titl
 ### Forest background and lighter buttons (2026-10-06)
 
 Feedback: the page background was basic (reference mood: a dark night forest in blue/teal/green) and the buttons felt heavy. The reference image is third-party artwork, so it was not used: the background is an original procedurally generated SVG scene (four files, 15–27 kB: night/day × wide/tall) rendered in a fixed, click-through layer. Text always sits on glass panels; contrast against the lightest and darkest tones of the art is tested. Buttons: 1px borders, no shadows, softer tinted primary. Checked in Chrome (105 page × width × scheme combinations, no overflow, no console problems, whole-card clicks still work 5/5).
+
+### Password recovery and profile management (2026-10-06)
+
+Requested last: trainers can recover a lost password and edit their own details. Outside the brief, kept small:
+
+- **Flow:** `POST /auth/forgot-password` (always 202, no enumeration) e-mails a one-time link; `POST /auth/reset-password` sets the new password. Tokens: 32 random bytes, only the SHA-256 hash stored (Flyway `V5`), 30-minute TTL, single use, newer requests invalidate older ones.
+- **Profile:** `GET/PATCH /users/me`, `POST /users/me/password`. Changing the e-mail needs the current password; a wrong current password is a `400` (never a `401`, which the web client treats as an expired session). A username change returns a new JWT because the token carries the username.
+- **E-mail in the demo:** a Mailpit container (`axllent/mailpit`) receives the messages at http://localhost:8025; production would point `MAIL_HOST` at a real SMTP server. The mail health indicator is disabled so a missing mail server never makes the API unhealthy.
+- **Known limits:** stateless JWTs stay valid after a password change until they expire; no rate limiting (a conscious scope decision, as for login).
+- **Verified live:** register → forgot → read the e-mail in Mailpit → weak password refused → reset → the link works once → old password rejected, new one accepted → profile read and rename; the reset token appears in no log. The smoke test now covers this (39 checks).

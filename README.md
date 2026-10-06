@@ -40,6 +40,7 @@ That creates `.env` from `.env.example` if it is missing — **with a random JWT
 | --- | --- |
 | Web app | http://localhost:8081 |
 | API | http://localhost:8080 (health: `/actuator/health`) |
+| Mailbox (demo) | http://localhost:8025 — the password-reset e-mails arrive here ([Mailpit](https://mailpit.axllent.org/), a local test inbox; nothing is sent to the internet) |
 
 Both ports are bound to **this machine only** (`127.0.0.1`); see [Security notes](#security-notes) before exposing them.
 
@@ -48,7 +49,7 @@ Prefer to do it by hand? `cp .env.example .env`, put a random value in `JWT_SECR
 Check that everything works, the way a browser reaches it (through nginx):
 
 ```bash
-./scripts/smoke.sh        # 29 checks, exit code 0 when all pass (the same script runs in CI)
+./scripts/smoke.sh        # 39 checks, exit code 0 when all pass (the same script runs in CI)
 ```
 
 Stop it with `docker compose down` (add `-v` to also erase the database).
@@ -138,6 +139,11 @@ Base path `/api/v1`. JSON in, JSON out. Dates are ISO-8601 UTC. Pages are **0-ba
 | --- | --- | --- | --- | --- |
 | `POST` | `/auth/register` | `{username, email, password}` | `201` user | username and email are stored lower-case and trimmed; password 8–72 bytes with letters and digits |
 | `POST` | `/auth/login` | `{username, password}` | `200 {token, tokenType: "Bearer", expiresAt}` | `401 INVALID_CREDENTIALS` for wrong user *or* password (same answer, same effort) |
+| `POST` | `/auth/forgot-password` | `{email}` | `202`, always | the same answer whether or not the account exists (nothing leaks); if it does, an e-mail with a one-time link is sent |
+| `POST` | `/auth/reset-password` | `{token, newPassword}` | `204` | `400 INVALID_RESET_TOKEN` for an unknown, expired or used link (same message for all three); the link is valid 30 minutes and works once |
+| `GET` | `/users/me` | — | `200 {id, username, email, role}` | needs a token |
+| `PATCH` | `/users/me` | `{username?, email?, currentPassword?}` | `200 {token, tokenType, expiresAt, user}` | needs a token; **changing the e-mail needs `currentPassword`** (`400 INVALID_CURRENT_PASSWORD`, never a 401); the returned token carries the new username |
+| `POST` | `/users/me/password` | `{currentPassword, newPassword}` | `204` | needs a token |
 
 Send the token as `Authorization: Bearer <token>` (JWT HS256, 60 minutes by default).
 
@@ -181,7 +187,7 @@ curl -s -X PATCH localhost:8080/api/v1/collection/25 -H "Authorization: Bearer $
 
 | Status | `code` values |
 | --- | --- |
-| `400` | `VALIDATION_FAILED` (with `fieldErrors`), `MALFORMED_REQUEST`, `INVALID_PARAMETER`, `INVALID_PAGINATION`, `INVALID_POKEMON_IDENTIFIER`, `INVALID_LOCAL_ATTRIBUTES`, `INVALID_UPDATE`, `INVALID_SEARCH_QUERY`, `INVALID_SYNC_SELECTION`, `WEAK_PASSWORD`, `INVALID_REQUEST` |
+| `400` | `VALIDATION_FAILED` (with `fieldErrors`), `MALFORMED_REQUEST`, `INVALID_PARAMETER`, `INVALID_PAGINATION`, `INVALID_POKEMON_IDENTIFIER`, `INVALID_LOCAL_ATTRIBUTES`, `INVALID_UPDATE`, `INVALID_SEARCH_QUERY`, `INVALID_SYNC_SELECTION`, `INVALID_RESET_TOKEN`, `INVALID_CURRENT_PASSWORD`, `WEAK_PASSWORD`, `INVALID_REQUEST` |
 | `401` | `UNAUTHORIZED` (no/invalid/expired token), `INVALID_CREDENTIALS` |
 | `403` | `FORBIDDEN` (access denied by the route rules) |
 | `404` | `POKEMON_NOT_FOUND`, `STORED_POKEMON_NOT_FOUND` |
@@ -231,6 +237,9 @@ Set in `.env` (copied from `.env.example`); Docker Compose passes them to the co
 | `JWT_SECRET` | API | — | **required**, at least 32 bytes and not the `change-me…` placeholder of `.env.example`; the API refuses to start otherwise (`./scripts/start.sh` generates one) |
 | `JWT_TTL_MINUTES` | API | `60` | token lifetime |
 | `CORS_ALLOWED_ORIGINS` | API | `http://localhost:5173` | only needed when a browser calls the API directly (e.g. `npm run dev`) |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM` | API | `mailpit`, `1025`, `no-reply@pokedex.local` | where the password-reset e-mails go. Real SMTP: also `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_AUTH=true`, `MAIL_STARTTLS=true`, and drop the `mailpit` service |
+| `APP_PUBLIC_URL` | API | `http://localhost:8081` | the address the reset link in the e-mail points to |
+| `PASSWORD_RESET_TTL_MINUTES` | API | `30` | how long a reset link is valid |
 | `POKEAPI_BASE_URL` | API | `https://pokeapi.co/api/v2` | upstream catalog |
 | `SEED_DEMO_USER`, `DEMO_USER_PASSWORD`, `DEMO_ADMIN_PASSWORD` | API | `false` / empty | create the `demo` and `demo-admin` accounts (each exists only if its password is set; the passwords may be left empty when seeding is off) |
 | `SEED_DEMO_DATA` | API | `false` | add the 16 demo Pokémon (needs the demo accounts) |
@@ -267,12 +276,12 @@ Tests were written **first** (red → green → refactor); the git history and t
 
 | Suite | Command | What it covers |
 | --- | --- | --- |
-| Backend | `cd backend && ./gradlew test` | **426 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
+| Backend | `cd backend && ./gradlew test` | **520 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
 | Backend gate | `./gradlew build` | JaCoCo: fails below **90 % lines / 80 % branches** (actual ≈ 98 % / 86 %) |
 | Frontend | `cd frontend && npm test` | **270 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
 | Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99 % / 93 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
 | Static checks | `npm run typecheck && npm run lint` | strict TypeScript, ESLint with zero warnings |
-| Whole stack | `./scripts/smoke.sh` | 29 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, private collections, two trainers with the same Pokémon, versions |
+| Whole stack | `./scripts/smoke.sh` | 39 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, private collections, two trainers with the same Pokémon, versions |
 | CI | `.github/workflows/ci.yml` | on every push to `main` and every pull request: backend `build` (tests + coverage gate), frontend typecheck/lint/coverage/build/audit, and the whole stack with `start.sh` + `smoke.sh` |
 
 Beyond what jsdom can see (real CORS, CSP, nginx, layout) the delivered stack was also checked in Chrome through the DevTools protocol on desktop, mobile and dark mode, logged in and out: **no console warnings or errors, no CSP violations, no failed requests**. That pass found and fixed a real bug (nginx dropped the port from `Host`, so the API treated the browser's `Origin` as foreign and refused every `POST`/`PATCH`/`DELETE`); the smoke script now guards it.
@@ -296,6 +305,7 @@ Beyond what jsdom can see (real CORS, CSP, nginx, layout) the delivered stack wa
 ## Security notes
 
 - Passwords: BCrypt, with a 72-byte limit checked in bytes; unknown users cost the same hash work as wrong passwords; usernames/emails are normalized so look-alike accounts cannot exist.
+- **Password recovery**: the reset token is 32 random bytes; only its SHA-256 hash is stored, it is valid 30 minutes and works once, a newer request invalidates the older links, and a successful reset invalidates the rest. The request endpoint answers the same for known and unknown e-mails, and the reset link never appears in a log. Changing the e-mail address requires the current password, so a stolen session cannot redirect future resets. Known limit: tokens are stateless JWTs, so after a password change or reset an already issued token stays valid until it expires (60 minutes by default); a token deny-list would close that. There is no rate limiting on these endpoints (a conscious choice for this scope).
 - No secrets in code or git: the JWT secret and database password come from the environment (the API refuses a short, missing or placeholder secret, and `start.sh` generates random ones); `.env` is git-ignored.
 - **Transport**: everything here is plain HTTP on `localhost` — the API (`8080`) and the app (`8081`) are published on `127.0.0.1` only and the database is not published at all. For anything beyond a local demo, terminate **TLS in front of nginx** (a reverse proxy or load balancer): nginx honours `X-Forwarded-Proto` and then sends `Strict-Transport-Security`. Without TLS, passwords and tokens would cross the network in clear text.
 - Errors never leak internals (fixed `500` message, upstream text only in logs; database messages that could quote personal data are not logged).

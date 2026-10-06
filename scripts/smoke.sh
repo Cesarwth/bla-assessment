@@ -86,5 +86,32 @@ check "it is gone for them" 404 "$(status "$COLLECTION/151" -H "$AUTH")"
 check "but the other trainer still has theirs" 200 "$(status "$COLLECTION/151" -H "$OTHER_AUTH")"
 check "the other trainer cleans up" 204 "$(status -X DELETE "$COLLECTION/151" -H "$OTHER_AUTH")"
 
+echo "Password recovery and profile"
+MAILBOX="${MAILBOX:-http://localhost:8025}"
+# Bodies are built in variables first (bash 3.2 mangles escaped quotes nested in "$(...)").
+forgot_known="{\"email\":\"$OTHER@example.com\"}"
+forgot_unknown='{"email":"nobody-here@example.com"}'
+check "the reset request is answered the same for a known e-mail" 202 "$(status -X POST "$BASE/api/v1/auth/forgot-password" -H "$JSON" -d "$forgot_known")"
+check "and for an unknown one (nothing is revealed)" 202 "$(status -X POST "$BASE/api/v1/auth/forgot-password" -H "$JSON" -d "$forgot_unknown")"
+sleep 2
+mail_id="$(curl -s "$MAILBOX/api/v1/search?query=to:$OTHER@example.com" | grep -o '"ID":"[^"]*"' | head -1 | sed 's/.*://; s/"//g' || true)"
+reset_token="$(curl -s "$MAILBOX/api/v1/message/$mail_id" | grep -o 'token=[A-Za-z0-9_-]*' | head -1 | sed 's/token=//' || true)"
+check "the reset e-mail arrives in the mailbox with a link" yes "$([ -n "$reset_token" ] && echo yes || echo no)"
+new_pw="Fresh${$}pass2"
+weak_body="{\"token\":\"$reset_token\",\"newPassword\":\"short\"}"
+reset_body="{\"token\":\"$reset_token\",\"newPassword\":\"$new_pw\"}"
+reuse_body="{\"token\":\"$reset_token\",\"newPassword\":\"${new_pw}x\"}"
+new_login="{\"username\":\"$OTHER\",\"password\":\"$new_pw\"}"
+check "a weak new password is refused" WEAK_PASSWORD "$(curl -s -X POST "$BASE/api/v1/auth/reset-password" -H "$JSON" -d "$weak_body" | field code)"
+check "the link sets a new password" 204 "$(status -X POST "$BASE/api/v1/auth/reset-password" -H "$JSON" -d "$reset_body")"
+check "the link works only once" INVALID_RESET_TOKEN "$(curl -s -X POST "$BASE/api/v1/auth/reset-password" -H "$JSON" -d "$reuse_body" | field code)"
+check "the old password no longer works" 401 "$(status -X POST "$BASE/api/v1/auth/login" -H "$JSON" -d "$other_login")"
+check "the new password does" 200 "$(status -X POST "$BASE/api/v1/auth/login" -H "$JSON" -d "$new_login")"
+PROFILE_AUTH="Authorization: Bearer $(curl -s -X POST "$BASE/api/v1/auth/login" -H "$JSON" -d "$new_login" | field token)"
+email_body="{\"email\":\"other$OTHER@example.com\"}"
+check "a trainer reads their profile" "$OTHER" "$(curl -s "$BASE/api/v1/users/me" -H "$PROFILE_AUTH" | field username)"
+check "changing the e-mail needs the current password" INVALID_CURRENT_PASSWORD "$(curl -s -X PATCH "$BASE/api/v1/users/me" -H "$PROFILE_AUTH" -H "$JSON" -d "$email_body" | field code)"
+check "the profile endpoints are private" 401 "$(status "$BASE/api/v1/users/me")"
+
 if [ "$failed" -eq 0 ]; then echo "All checks passed."; else echo "Some checks FAILED."; fi
 exit "$failed"
