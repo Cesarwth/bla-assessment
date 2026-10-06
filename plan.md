@@ -133,6 +133,9 @@ cd frontend && npm test -- auth collection catalog && npm run typecheck && npm r
 
 **Goal:** owner/admin edit local fields with proper validation and conflict handling; admin deletes.
 
+**Status:** ✅ Complete 2026-10-06
+**Deviation:** the delete confirmation is an inline group (not a native `<dialog>`): jsdom has no `showModal`, and an inline confirmation is announced as page content; `StatBars` and `EvolutionTree` moved to `shared/ui` so the entry page reuses them without importing from `catalog`; after a 409 the draft is kept and the next save uses the freshly loaded version (explicit overwrite); the entry query is only marked stale after a delete (removing it would make the mounted page refetch it and get a 404); `TextField` gained `maxLength` (50, like the API) and the tag editor mirrors the backend's tag rules in `tags.ts` for instant feedback.
+
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
 | ----- | --------- | --------- | ------- |

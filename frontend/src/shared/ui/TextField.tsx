@@ -12,9 +12,10 @@ interface Props {
   hint?: string
   error?: string
   min?: number
+  maxLength?: number
 }
 
-export function TextField({ label, name, value, onChange, type = 'text', autoComplete, hint, error, min }: Props) {
+export function TextField({ label, name, value, onChange, type = 'text', autoComplete, hint, error, min, maxLength }: Props) {
   const id = useId()
   const hintId = `${id}-hint`
   const errorId = `${id}-error`
@@ -30,6 +31,7 @@ export function TextField({ label, name, value, onChange, type = 'text', autoCom
         type={type}
         value={value}
         min={min}
+        maxLength={maxLength}
         autoComplete={autoComplete}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={error ? true : undefined}

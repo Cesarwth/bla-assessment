@@ -1,6 +1,12 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import type { FieldError } from '../shared/api/errors'
-import type { PageResponse, PokemonDetail, PokemonSummary, StoredPokemonSummary } from '../shared/api/types'
+import type {
+  PageResponse,
+  PokemonDetail,
+  PokemonSummary,
+  StoredPokemon,
+  StoredPokemonSummary,
+} from '../shared/api/types'
 import { server } from './server'
 
 export const apiUrl = (path: string) => `*/api/v1${path}`
@@ -49,5 +55,11 @@ export function mockCollection(
       const result = await respond(params)
       return result instanceof Response ? result : HttpResponse.json(result)
     }),
+  )
+}
+
+export function mockEntry(id: number, entry: StoredPokemon | Response): void {
+  server.use(
+    http.get(apiUrl(`/collection/${id}`), () => (entry instanceof Response ? entry : HttpResponse.json(entry))),
   )
 }

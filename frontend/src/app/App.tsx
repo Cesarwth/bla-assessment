@@ -4,6 +4,7 @@ import { RegisterPage } from '../features/auth/RegisterPage'
 import { CatalogPage } from '../features/catalog/CatalogPage'
 import { PokemonDetailPage } from '../features/catalog/PokemonDetailPage'
 import { AddToCollection } from '../features/collection/components/AddToCollection'
+import { CollectionEntryPage } from '../features/collection/CollectionEntryPage'
 import { CollectionPage } from '../features/collection/CollectionPage'
 import { Layout } from './Layout'
 import { NotFoundPage } from './NotFoundPage'
@@ -19,6 +20,7 @@ export function App() {
           element={<PokemonDetailPage renderActions={(pokemon) => <AddToCollection pokemonId={pokemon.id} />} />}
         />
         <Route path="collection" element={<CollectionPage />} />
+        <Route path="collection/:id" element={<CollectionEntryPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
         <Route path="*" element={<NotFoundPage />} />

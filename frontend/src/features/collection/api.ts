@@ -1,6 +1,14 @@
 import { api } from '../../shared/api/client'
 import type { PageResponse, StoredPokemon, StoredPokemonSummary, SyncReport } from '../../shared/api/types'
 
+/** `version` is the one the client last read; fields left out stay as they are, empty ones are cleared. */
+export interface EntryChanges {
+  version: number
+  nickname?: string
+  region?: string
+  tags?: string[]
+}
+
 export function fetchCollectionPage(page: number, size: number, signal?: AbortSignal) {
   return api.get<PageResponse<StoredPokemonSummary>>(`/collection?page=${page}&size=${size}`, signal)
 }
@@ -12,4 +20,16 @@ export function syncPokemon(id: number) {
 
 export function syncRange(from: number, to: number) {
   return api.post<SyncReport>('/collection/sync', { from, to })
+}
+
+export function fetchCollectionEntry(id: number, signal?: AbortSignal) {
+  return api.get<StoredPokemon>(`/collection/${id}`, signal)
+}
+
+export function updateCollectionEntry(id: number, changes: EntryChanges) {
+  return api.patch<StoredPokemon>(`/collection/${id}`, changes)
+}
+
+export function deleteCollectionEntry(id: number) {
+  return api.delete(`/collection/${id}`)
 }

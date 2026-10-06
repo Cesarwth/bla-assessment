@@ -1,0 +1,53 @@
+.delete {
+  margin-top: var(--space-5);
+}
+
+.trigger,
+.confirm,
+.cancel {
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.trigger,
+.cancel {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.trigger {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.confirm {
+  border: 0;
+  background: var(--color-danger);
+  color: var(--color-surface);
+}
+
+.confirm:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.box {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 30rem;
+  padding: var(--space-4);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-surface);
+}
+
+.box p {
+  margin: 0;
+}
+
+.buttons {
+  display: flex;
+  gap: var(--space-3);
+}

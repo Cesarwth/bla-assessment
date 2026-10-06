@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchCollectionPage, syncPokemon, syncRange } from './api'
+import { deleteCollectionEntry, fetchCollectionEntry, fetchCollectionPage, syncPokemon, syncRange, updateCollectionEntry, type EntryChanges } from './api'
 
 export const collectionKeys = {
   all: ['collection'] as const,
@@ -33,5 +33,37 @@ export function useImportRange() {
     mutationFn: ({ from, to }: { from: number; to: number }) => syncRange(from, to),
     // New entries must show up in the list without a manual reload.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: collectionKeys.lists() }),
+  })
+}
+
+export function useCollectionEntry(id: number, enabled = true) {
+  return useQuery({
+    queryKey: collectionKeys.entry(id),
+    queryFn: ({ signal }) => fetchCollectionEntry(id, signal),
+    enabled,
+  })
+}
+
+export function useUpdateEntry(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (changes: EntryChanges) => updateCollectionEntry(id, changes),
+    onSuccess: (saved) => {
+      // The response carries the new version: the next save must be based on it.
+      queryClient.setQueryData(collectionKeys.entry(id), saved)
+      return queryClient.invalidateQueries({ queryKey: collectionKeys.lists() })
+    },
+  })
+}
+
+export function useDeleteEntry(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => deleteCollectionEntry(id),
+    onSuccess: () => {
+      // Only mark the entry stale: removing it would make this still-mounted page fetch it again (and get a 404).
+      void queryClient.invalidateQueries({ queryKey: collectionKeys.entry(id), refetchType: 'none' })
+      return queryClient.invalidateQueries({ queryKey: collectionKeys.lists() })
+    },
   })
 }
