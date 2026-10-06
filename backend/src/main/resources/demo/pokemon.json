@@ -1,0 +1,1251 @@
+[
+ {
+  "owner": "demo",
+  "nickname": "Bulby",
+  "region": "Pallet Town",
+  "tags": [
+   "starter",
+   "grass"
+  ],
+  "detail": {
+   "id": 1,
+   "name": "bulbasaur",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
+   "types": [
+    "grass",
+    "poison"
+   ],
+   "weightKg": 6.9,
+   "heightM": 0.7,
+   "abilities": [
+    "overgrow",
+    "chlorophyll"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 45
+    },
+    {
+     "name": "attack",
+     "baseValue": 49
+    },
+    {
+     "name": "defense",
+     "baseValue": 49
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 65
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 65
+    },
+    {
+     "name": "speed",
+     "baseValue": 45
+    }
+   ],
+   "genus": "Seed Pokémon",
+   "description": "A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.",
+   "evolutionChain": {
+    "id": 1,
+    "name": "bulbasaur",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 2,
+      "name": "ivysaur",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/2.png",
+      "requirements": [
+       "Level up (level 16)"
+      ],
+      "evolvesTo": [
+       {
+        "id": 3,
+        "name": "venusaur",
+        "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/3.png",
+        "requirements": [
+         "Level up (level 32)"
+        ],
+        "evolvesTo": []
+       }
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo",
+  "nickname": "Char",
+  "region": "Pallet Town",
+  "tags": [
+   "starter",
+   "fire"
+  ],
+  "detail": {
+   "id": 4,
+   "name": "charmander",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png",
+   "types": [
+    "fire"
+   ],
+   "weightKg": 8.5,
+   "heightM": 0.6,
+   "abilities": [
+    "blaze",
+    "solar-power"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 39
+    },
+    {
+     "name": "attack",
+     "baseValue": 52
+    },
+    {
+     "name": "defense",
+     "baseValue": 43
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 60
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 50
+    },
+    {
+     "name": "speed",
+     "baseValue": 65
+    }
+   ],
+   "genus": "Lizard Pokémon",
+   "description": "Obviously prefers hot places. When it rains, steam is said to spout from the tip of its tail.",
+   "evolutionChain": {
+    "id": 4,
+    "name": "charmander",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 5,
+      "name": "charmeleon",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png",
+      "requirements": [
+       "Level up (level 16)"
+      ],
+      "evolvesTo": [
+       {
+        "id": 6,
+        "name": "charizard",
+        "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png",
+        "requirements": [
+         "Level up (level 36)"
+        ],
+        "evolvesTo": []
+       }
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo",
+  "nickname": "Squirt",
+  "region": "Pallet Town",
+  "tags": [
+   "starter",
+   "water"
+  ],
+  "detail": {
+   "id": 7,
+   "name": "squirtle",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png",
+   "types": [
+    "water"
+   ],
+   "weightKg": 9.0,
+   "heightM": 0.5,
+   "abilities": [
+    "torrent",
+    "rain-dish"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 44
+    },
+    {
+     "name": "attack",
+     "baseValue": 48
+    },
+    {
+     "name": "defense",
+     "baseValue": 65
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 50
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 64
+    },
+    {
+     "name": "speed",
+     "baseValue": 43
+    }
+   ],
+   "genus": "Tiny Turtle Pokémon",
+   "description": "After birth, its back swells and hardens into a shell. Powerfully sprays foam from its mouth.",
+   "evolutionChain": {
+    "id": 7,
+    "name": "squirtle",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 8,
+      "name": "wartortle",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/8.png",
+      "requirements": [
+       "Level up (level 16)"
+      ],
+      "evolvesTo": [
+       {
+        "id": 9,
+        "name": "blastoise",
+        "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png",
+        "requirements": [
+         "Level up (level 36)"
+        ],
+        "evolvesTo": []
+       }
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo",
+  "nickname": "Sparky",
+  "region": "Viridian Forest",
+  "tags": [
+   "favorite",
+   "electric"
+  ],
+  "detail": {
+   "id": 25,
+   "name": "pikachu",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
+   "types": [
+    "electric"
+   ],
+   "weightKg": 6.0,
+   "heightM": 0.4,
+   "abilities": [
+    "static",
+    "lightning-rod"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 35
+    },
+    {
+     "name": "attack",
+     "baseValue": 55
+    },
+    {
+     "name": "defense",
+     "baseValue": 40
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 50
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 50
+    },
+    {
+     "name": "speed",
+     "baseValue": 90
+    }
+   ],
+   "genus": "Mouse Pokémon",
+   "description": "When several of these POKéMON gather, their electricity could build and cause lightning storms.",
+   "evolutionChain": {
+    "id": 172,
+    "name": "pichu",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/172.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 25,
+      "name": "pikachu",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
+      "requirements": [
+       "Level up (happiness 220)"
+      ],
+      "evolvesTo": [
+       {
+        "id": 26,
+        "name": "raichu",
+        "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/26.png",
+        "requirements": [
+         "Use thunder-stone"
+        ],
+        "evolvesTo": []
+       }
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo",
+  "nickname": "Fluffy",
+  "region": "Celadon City",
+  "tags": [
+   "evolution-branches"
+  ],
+  "detail": {
+   "id": 133,
+   "name": "eevee",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png",
+   "types": [
+    "normal"
+   ],
+   "weightKg": 6.5,
+   "heightM": 0.3,
+   "abilities": [
+    "run-away",
+    "adaptability",
+    "anticipation"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 55
+    },
+    {
+     "name": "attack",
+     "baseValue": 55
+    },
+    {
+     "name": "defense",
+     "baseValue": 50
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 45
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 65
+    },
+    {
+     "name": "speed",
+     "baseValue": 55
+    }
+   ],
+   "genus": "Evolution Pokémon",
+   "description": "Its genetic code is irregular. It may mutate if it is exposed to radiation from element STONEs.",
+   "evolutionChain": {
+    "id": 133,
+    "name": "eevee",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 134,
+      "name": "vaporeon",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/134.png",
+      "requirements": [
+       "Use water-stone"
+      ],
+      "evolvesTo": []
+     },
+     {
+      "id": 135,
+      "name": "jolteon",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/135.png",
+      "requirements": [
+       "Use thunder-stone"
+      ],
+      "evolvesTo": []
+     },
+     {
+      "id": 136,
+      "name": "flareon",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/136.png",
+      "requirements": [
+       "Use fire-stone"
+      ],
+      "evolvesTo": []
+     },
+     {
+      "id": 196,
+      "name": "espeon",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/196.png",
+      "requirements": [
+       "Level up (happiness 160, day)"
+      ],
+      "evolvesTo": []
+     },
+     {
+      "id": 197,
+      "name": "umbreon",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/197.png",
+      "requirements": [
+       "Level up (happiness 160, night)"
+      ],
+      "evolvesTo": []
+     },
+     {
+      "id": 470,
+      "name": "leafeon",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/470.png",
+      "requirements": [
+       "Level up",
+       "Use leaf-stone"
+      ],
+      "evolvesTo": []
+     },
+     {
+      "id": 471,
+      "name": "glaceon",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/471.png",
+      "requirements": [
+       "Level up",
+       "Use ice-stone"
+      ],
+      "evolvesTo": []
+     },
+     {
+      "id": 700,
+      "name": "sylveon",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/700.png",
+      "requirements": [
+       "Level up",
+       "Level up (happiness 160)"
+      ],
+      "evolvesTo": []
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo",
+  "nickname": "Sleepy",
+  "region": "Route 12",
+  "tags": [
+   "heavy",
+   "favorite"
+  ],
+  "detail": {
+   "id": 143,
+   "name": "snorlax",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/143.png",
+   "types": [
+    "normal"
+   ],
+   "weightKg": 460.0,
+   "heightM": 2.1,
+   "abilities": [
+    "immunity",
+    "thick-fat",
+    "gluttony"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 160
+    },
+    {
+     "name": "attack",
+     "baseValue": 110
+    },
+    {
+     "name": "defense",
+     "baseValue": 65
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 65
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 110
+    },
+    {
+     "name": "speed",
+     "baseValue": 30
+    }
+   ],
+   "genus": "Sleeping Pokémon",
+   "description": "Very lazy. Just eats and sleeps. As its rotund bulk builds, it becomes steadily more slothful.",
+   "evolutionChain": {
+    "id": 446,
+    "name": "munchlax",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/446.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 143,
+      "name": "snorlax",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/143.png",
+      "requirements": [
+       "Level up (happiness 160)"
+      ],
+      "evolvesTo": []
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo-admin",
+  "nickname": null,
+  "region": "Kanto",
+  "tags": [
+   "starter-line"
+  ],
+  "detail": {
+   "id": 2,
+   "name": "ivysaur",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/2.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/2.png",
+   "types": [
+    "grass",
+    "poison"
+   ],
+   "weightKg": 13.0,
+   "heightM": 1.0,
+   "abilities": [
+    "overgrow",
+    "chlorophyll"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 60
+    },
+    {
+     "name": "attack",
+     "baseValue": 62
+    },
+    {
+     "name": "defense",
+     "baseValue": 63
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 80
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 80
+    },
+    {
+     "name": "speed",
+     "baseValue": 60
+    }
+   ],
+   "genus": "Seed Pokémon",
+   "description": "When the bulb on its back grows large, it appears to lose the ability to stand on its hind legs.",
+   "evolutionChain": {
+    "id": 1,
+    "name": "bulbasaur",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 2,
+      "name": "ivysaur",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/2.png",
+      "requirements": [
+       "Level up (level 16)"
+      ],
+      "evolvesTo": [
+       {
+        "id": 3,
+        "name": "venusaur",
+        "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/3.png",
+        "requirements": [
+         "Level up (level 32)"
+        ],
+        "evolvesTo": []
+       }
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo-admin",
+  "nickname": "Big V",
+  "region": "Kanto",
+  "tags": [
+   "starter-line",
+   "final-form"
+  ],
+  "detail": {
+   "id": 3,
+   "name": "venusaur",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/3.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/3.png",
+   "types": [
+    "grass",
+    "poison"
+   ],
+   "weightKg": 100.0,
+   "heightM": 2.0,
+   "abilities": [
+    "overgrow",
+    "chlorophyll"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 80
+    },
+    {
+     "name": "attack",
+     "baseValue": 82
+    },
+    {
+     "name": "defense",
+     "baseValue": 83
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 100
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 100
+    },
+    {
+     "name": "speed",
+     "baseValue": 80
+    }
+   ],
+   "genus": "Seed Pokémon",
+   "description": "The plant blooms when it is absorbing solar energy. It stays on the move to seek sunlight.",
+   "evolutionChain": {
+    "id": 1,
+    "name": "bulbasaur",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 2,
+      "name": "ivysaur",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/2.png",
+      "requirements": [
+       "Level up (level 16)"
+      ],
+      "evolvesTo": [
+       {
+        "id": 3,
+        "name": "venusaur",
+        "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/3.png",
+        "requirements": [
+         "Level up (level 32)"
+        ],
+        "evolvesTo": []
+       }
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo-admin",
+  "nickname": null,
+  "region": "Kanto",
+  "tags": [
+   "starter-line"
+  ],
+  "detail": {
+   "id": 5,
+   "name": "charmeleon",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/5.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png",
+   "types": [
+    "fire"
+   ],
+   "weightKg": 19.0,
+   "heightM": 1.1,
+   "abilities": [
+    "blaze",
+    "solar-power"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 58
+    },
+    {
+     "name": "attack",
+     "baseValue": 64
+    },
+    {
+     "name": "defense",
+     "baseValue": 58
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 80
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 65
+    },
+    {
+     "name": "speed",
+     "baseValue": 80
+    }
+   ],
+   "genus": "Flame Pokémon",
+   "description": "When it swings its burning tail, it elevates the temperature to unbearably high levels.",
+   "evolutionChain": {
+    "id": 4,
+    "name": "charmander",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 5,
+      "name": "charmeleon",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png",
+      "requirements": [
+       "Level up (level 16)"
+      ],
+      "evolvesTo": [
+       {
+        "id": 6,
+        "name": "charizard",
+        "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png",
+        "requirements": [
+         "Level up (level 36)"
+        ],
+        "evolvesTo": []
+       }
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo-admin",
+  "nickname": "Zard",
+  "region": "Kanto",
+  "tags": [
+   "starter-line",
+   "favorite"
+  ],
+  "detail": {
+   "id": 6,
+   "name": "charizard",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png",
+   "types": [
+    "fire",
+    "flying"
+   ],
+   "weightKg": 90.5,
+   "heightM": 1.7,
+   "abilities": [
+    "blaze",
+    "solar-power"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 78
+    },
+    {
+     "name": "attack",
+     "baseValue": 84
+    },
+    {
+     "name": "defense",
+     "baseValue": 78
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 109
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 85
+    },
+    {
+     "name": "speed",
+     "baseValue": 100
+    }
+   ],
+   "genus": "Flame Pokémon",
+   "description": "Spits fire that is hot enough to melt boulders. Known to cause forest fires unintentionally.",
+   "evolutionChain": {
+    "id": 4,
+    "name": "charmander",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 5,
+      "name": "charmeleon",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png",
+      "requirements": [
+       "Level up (level 16)"
+      ],
+      "evolvesTo": [
+       {
+        "id": 6,
+        "name": "charizard",
+        "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png",
+        "requirements": [
+         "Level up (level 36)"
+        ],
+        "evolvesTo": []
+       }
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo-admin",
+  "nickname": null,
+  "region": "Kanto",
+  "tags": [
+   "starter-line"
+  ],
+  "detail": {
+   "id": 8,
+   "name": "wartortle",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/8.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/8.png",
+   "types": [
+    "water"
+   ],
+   "weightKg": 22.5,
+   "heightM": 1.0,
+   "abilities": [
+    "torrent",
+    "rain-dish"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 59
+    },
+    {
+     "name": "attack",
+     "baseValue": 63
+    },
+    {
+     "name": "defense",
+     "baseValue": 80
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 65
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 80
+    },
+    {
+     "name": "speed",
+     "baseValue": 58
+    }
+   ],
+   "genus": "Turtle Pokémon",
+   "description": "Often hides in water to stalk unwary prey. For swimming fast, it moves its ears to maintain balance.",
+   "evolutionChain": {
+    "id": 7,
+    "name": "squirtle",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 8,
+      "name": "wartortle",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/8.png",
+      "requirements": [
+       "Level up (level 16)"
+      ],
+      "evolvesTo": [
+       {
+        "id": 9,
+        "name": "blastoise",
+        "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png",
+        "requirements": [
+         "Level up (level 36)"
+        ],
+        "evolvesTo": []
+       }
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo-admin",
+  "nickname": null,
+  "region": "Kanto",
+  "tags": [
+   "starter-line",
+   "final-form"
+  ],
+  "detail": {
+   "id": 9,
+   "name": "blastoise",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/9.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png",
+   "types": [
+    "water"
+   ],
+   "weightKg": 85.5,
+   "heightM": 1.6,
+   "abilities": [
+    "torrent",
+    "rain-dish"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 79
+    },
+    {
+     "name": "attack",
+     "baseValue": 83
+    },
+    {
+     "name": "defense",
+     "baseValue": 100
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 85
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 105
+    },
+    {
+     "name": "speed",
+     "baseValue": 78
+    }
+   ],
+   "genus": "Shellfish Pokémon",
+   "description": "A brutal POKéMON with pressurized water jets on its shell. They are used for high speed tackles.",
+   "evolutionChain": {
+    "id": 7,
+    "name": "squirtle",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 8,
+      "name": "wartortle",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/8.png",
+      "requirements": [
+       "Level up (level 16)"
+      ],
+      "evolvesTo": [
+       {
+        "id": 9,
+        "name": "blastoise",
+        "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png",
+        "requirements": [
+         "Level up (level 36)"
+        ],
+        "evolvesTo": []
+       }
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo-admin",
+  "nickname": null,
+  "region": "Kanto",
+  "tags": [
+   "electric"
+  ],
+  "detail": {
+   "id": 26,
+   "name": "raichu",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/26.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/26.png",
+   "types": [
+    "electric"
+   ],
+   "weightKg": 30.0,
+   "heightM": 0.8,
+   "abilities": [
+    "static",
+    "lightning-rod"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 60
+    },
+    {
+     "name": "attack",
+     "baseValue": 90
+    },
+    {
+     "name": "defense",
+     "baseValue": 55
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 90
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 80
+    },
+    {
+     "name": "speed",
+     "baseValue": 110
+    }
+   ],
+   "genus": "Mouse Pokémon",
+   "description": "Its long tail serves as a ground to protect itself from its own high voltage power.",
+   "evolutionChain": {
+    "id": 172,
+    "name": "pichu",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/172.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 25,
+      "name": "pikachu",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
+      "requirements": [
+       "Level up (happiness 220)"
+      ],
+      "evolvesTo": [
+       {
+        "id": 26,
+        "name": "raichu",
+        "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/26.png",
+        "requirements": [
+         "Use thunder-stone"
+        ],
+        "evolvesTo": []
+       }
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo-admin",
+  "nickname": "Shapeshifter",
+  "region": "Cinnabar Island",
+  "tags": [
+   "transform"
+  ],
+  "detail": {
+   "id": 132,
+   "name": "ditto",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/132.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/132.png",
+   "types": [
+    "normal"
+   ],
+   "weightKg": 4.0,
+   "heightM": 0.3,
+   "abilities": [
+    "limber",
+    "imposter"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 48
+    },
+    {
+     "name": "attack",
+     "baseValue": 48
+    },
+    {
+     "name": "defense",
+     "baseValue": 48
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 48
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 48
+    },
+    {
+     "name": "speed",
+     "baseValue": 48
+    }
+   ],
+   "genus": "Transform Pokémon",
+   "description": "Capable of copying an enemy's genetic code to instantly transform itself into a duplicate of the enemy.",
+   "evolutionChain": {
+    "id": 132,
+    "name": "ditto",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/132.png",
+    "requirements": [],
+    "evolvesTo": []
+   }
+  }
+ },
+ {
+  "owner": "demo-admin",
+  "nickname": null,
+  "region": "Cerulean Cave",
+  "tags": [
+   "legendary",
+   "psychic"
+  ],
+  "detail": {
+   "id": 150,
+   "name": "mewtwo",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png",
+   "types": [
+    "psychic"
+   ],
+   "weightKg": 122.0,
+   "heightM": 2.0,
+   "abilities": [
+    "pressure",
+    "unnerve"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 106
+    },
+    {
+     "name": "attack",
+     "baseValue": 110
+    },
+    {
+     "name": "defense",
+     "baseValue": 90
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 154
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 90
+    },
+    {
+     "name": "speed",
+     "baseValue": 130
+    }
+   ],
+   "genus": "Genetic Pokémon",
+   "description": "It was created by a scientist after years of horrific gene splicing and DNA engineering experiments.",
+   "evolutionChain": {
+    "id": 150,
+    "name": "mewtwo",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png",
+    "requirements": [],
+    "evolvesTo": []
+   }
+  }
+ },
+ {
+  "owner": "demo-admin",
+  "nickname": null,
+  "region": "Kanto",
+  "tags": [
+   "legendary",
+   "mythical"
+  ],
+  "detail": {
+   "id": 151,
+   "name": "mew",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png",
+   "types": [
+    "psychic"
+   ],
+   "weightKg": 4.0,
+   "heightM": 0.4,
+   "abilities": [
+    "synchronize"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 100
+    },
+    {
+     "name": "attack",
+     "baseValue": 100
+    },
+    {
+     "name": "defense",
+     "baseValue": 100
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 100
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 100
+    },
+    {
+     "name": "speed",
+     "baseValue": 100
+    }
+   ],
+   "genus": "New Species Pokémon",
+   "description": "So rare that it is still said to be a mirage by many experts. Only a few people have seen it worldwide.",
+   "evolutionChain": {
+    "id": 151,
+    "name": "mew",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png",
+    "requirements": [],
+    "evolvesTo": []
+   }
+  }
+ }
+]

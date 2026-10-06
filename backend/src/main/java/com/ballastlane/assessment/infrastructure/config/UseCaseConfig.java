@@ -30,6 +30,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 
 /** Application use cases are plain Java; this is the only place where they meet Spring. */
 @Configuration
@@ -92,9 +93,17 @@ public class UseCaseConfig {
     }
 
     @Bean
+    @Order(1) // accounts first: the demo Pokémon are owned by them
     @ConditionalOnProperty(prefix = "app.seed.demo-user", name = "enabled", havingValue = "true")
     DemoUserSeeder demoUserSeeder(
             RegisterUserUseCase registerUser, UserRepository users, PasswordHasher hasher, DemoUserProperties properties) {
         return new DemoUserSeeder(registerUser, users, hasher, properties);
+    }
+
+    @Bean
+    @Order(2)
+    @ConditionalOnProperty(prefix = "app.seed.demo-data", name = "enabled", havingValue = "true")
+    DemoDataSeeder demoDataSeeder(PokemonRepository repository, UserRepository users, Clock clock) {
+        return new DemoDataSeeder(new DemoDataReader().read(), repository, users, clock);
     }
 }

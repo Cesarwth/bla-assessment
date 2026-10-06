@@ -28,6 +28,9 @@ Seed a small, realistic collection (a snapshot of real PokeAPI data bundled with
 
 **Goal:** with the flag on, a fresh database starts with the 16 Pokémon and their owners; restarting changes nothing.
 
+**Status:** ✅ Complete 2026-10-06
+**Deviation:** no `DemoDataProperties` record: `@ConditionalOnProperty` is enough for a single boolean flag; the snapshot is 16 real PokeAPI responses saved through this API (`GET /api/v1/pokemon/{id}`) with owner/nickname/region/tags added; `DemoDataIT` also asserts that a user's edit survives a second seeder run.
+
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
 | ----- | --------- | --------- | ------- |

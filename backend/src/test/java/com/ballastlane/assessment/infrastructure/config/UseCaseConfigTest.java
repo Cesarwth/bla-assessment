@@ -55,4 +55,13 @@ class UseCaseConfigTest {
                         "app.seed.demo-user.email=demo@pokemon.dev", "app.seed.demo-user.password=Demo12345")
                 .run(context -> assertThat(context).hasSingleBean(DemoUserSeeder.class));
     }
+
+    @Test
+    void theDemoDataSeederExistsOnlyWhenExplicitlyEnabled() {
+        runner.run(context -> assertThat(context).doesNotHaveBean(DemoDataSeeder.class));
+        runner.withPropertyValues("app.seed.demo-data.enabled=false")
+                .run(context -> assertThat(context).doesNotHaveBean(DemoDataSeeder.class));
+        runner.withPropertyValues("app.seed.demo-data.enabled=true")
+                .run(context -> assertThat(context).hasSingleBean(DemoDataSeeder.class));
+    }
 }

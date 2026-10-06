@@ -34,6 +34,9 @@ app:
     secret: ${JWT_SECRET:}
     ttl-minutes: ${JWT_TTL_MINUTES:60}
   seed:
+    # Opt-in: a real deployment starts empty. Needs the demo accounts above (it assigns the Pokemon to them).
+    demo-data:
+      enabled: ${SEED_DEMO_DATA:false}
     # Demo-only account for the interview; documented in the README. Disable in real deployments.
     demo-user:
       enabled: ${SEED_DEMO_USER:false}
