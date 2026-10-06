@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { PokemonSummary } from '../../shared/api/types'
 import { Link } from 'react-router'
+import { Card } from '../../shared/ui/Card'
 import { ErrorState } from '../../shared/ui/ErrorState'
 import { LoadingStatus } from '../../shared/ui/LoadingStatus'
 import { Pagination } from '../../shared/ui/Pagination'
@@ -43,18 +44,18 @@ export function CatalogPage({ renderCardExtras, renderToolbar }: Props) {
     }
     if (query.data.items.length === 0 && filter) {
       return (
-        <div className={emptyClass}>
+        <Card glass className={emptyClass}>
           <h2 className="text-fg">No Pokémon match “{filter}”</h2>
           <Link to={hrefWithoutFilter}>Show all Pokémon</Link>
-        </div>
+        </Card>
       )
     }
     if (query.data.items.length === 0) {
       return (
-        <div className={emptyClass}>
+        <Card glass className={emptyClass}>
           <h2 className="text-fg">No Pokémon on this page</h2>
           <Link to={hrefFor(1)}>Go to the first page</Link>
-        </div>
+        </Card>
       )
     }
     return (
@@ -83,11 +84,13 @@ export function CatalogPage({ renderCardExtras, renderToolbar }: Props) {
 
   return (
     <section>
-      <h1>Catalog</h1>
-      <p className="max-w-160 text-muted">
-        Browse every Pokémon. Open one to see its stats and how it evolves.
-      </p>
-      <CatalogFilter value={filter} onChange={setFilter} />
+      <Card glass className="mb-4 px-4 py-4 sm:px-6">
+        <h1>Catalog</h1>
+        <p className="max-w-160 text-muted">
+          Browse every Pokémon. Open one to see its stats and how it evolves.
+        </p>
+        <CatalogFilter value={filter} onChange={setFilter} />
+      </Card>
       {renderToolbar?.(query.data?.items ?? [])}
       {renderResults()}
     </section>

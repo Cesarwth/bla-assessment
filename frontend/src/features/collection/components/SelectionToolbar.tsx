@@ -33,7 +33,10 @@ export function SelectionToolbar({ items }: { items: PokemonSummary[] }) {
 
   return (
     <>
-      <section className="mb-4 empty:hidden" aria-label="Select Pokémon to add">
+      <section
+        className="mb-4 rounded-md border border-border bg-surface/80 px-4 py-3 backdrop-blur empty:hidden"
+        aria-label="Select Pokémon to add"
+      >
         {showSwitch && (
           <div className={rowClass}>
             <Button

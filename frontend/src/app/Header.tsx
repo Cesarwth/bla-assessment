@@ -5,12 +5,12 @@ import { Button } from '../shared/ui/Button'
 import { buttonClass } from '../shared/ui/buttonClass'
 
 const navLink =
-  'inline-flex min-h-11 items-center rounded-full px-3 py-2 font-semibold text-muted no-underline hover:bg-surface-muted aria-[current=page]:bg-surface-muted aria-[current=page]:text-fg sm:min-h-0'
+  'inline-flex min-h-11 items-center rounded-full px-3 py-2 font-medium text-muted no-underline transition-colors hover:bg-surface-muted aria-[current=page]:bg-surface-muted aria-[current=page]:text-fg sm:min-h-0'
 
 export function Header() {
   const { user, isAdmin, logout } = useAuth()
   return (
-    <header className="sticky top-0 z-5 border-b border-border bg-surface">
+    <header className="sticky top-0 z-5 border-b border-border bg-surface/80 backdrop-blur-md">
       {/* Phones: brand and account share the first row, the navigation takes the second. From sm: one row. */}
       <div className="mx-auto flex max-w-content flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
         <Link

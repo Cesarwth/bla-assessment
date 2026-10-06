@@ -10,15 +10,18 @@
  * Spacing uses Tailwind's default scale (1 = 0.25rem); breakpoints are Tailwind's (sm 40rem, md 48rem, lg 64rem).
  */
 @theme {
-  --color-canvas: #f5f6fa;
+  --color-canvas: #cfe4e1; /* the color under the forest art while it loads, and its base tone */
   --color-surface: #ffffff;
   --color-surface-muted: #eef0f6;
   --color-fg: #1a1f2b;
   --color-muted: #566074;
   --color-border: #dfe3ec;
   --color-primary: #c4290a; /* Pokéball red; white text on it passes WCAG AA (5.7:1) */
-  --color-primary-hover: #a62008;
   --color-primary-contrast: #ffffff;
+  /* Buttons are light: the primary action is a soft red tint with red ink, not a solid red block. */
+  --color-primary-soft: #fdeceb;
+  --color-primary-soft-hover: #fad9d5;
+  --color-primary-ink: #9c1e06;
   --color-accent: #2f3fb8;
   --color-danger: #b3261e;
   --color-danger-surface: #fdecea;
@@ -26,6 +29,7 @@
   --color-success-surface: #e6f4ea;
   --color-warning-surface: #fff4d6;
   --color-focus: #2f3fb8;
+  --color-firefly: #d4f7a0;
 
   /* Pokémon types: a gradient pair for the card and hero (from the top to the bottom), a solid pill color and the
      foreground that is readable on all three (WCAG AA, checked for every type by src/index.css.test.ts).
@@ -135,6 +139,20 @@
     }
   }
 
+  /* Fireflies drift and pulse using only transform and opacity (cheap), and only where motion is welcome. */
+  --animate-firefly: firefly 8s ease-in-out infinite;
+  @keyframes firefly {
+    0%,
+    100% {
+      opacity: 0.1;
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      opacity: 0.95;
+      transform: translate3d(1rem, -1.25rem, 0);
+    }
+  }
+
   --animate-shimmer: shimmer 1.4s linear infinite;
   @keyframes shimmer {
     to {
@@ -148,19 +166,25 @@
     color-scheme: light dark;
     --shadow-ink-sm: rgb(16 24 40 / 8%);
     --shadow-ink-md: rgb(16 24 40 / 10%);
+    /* The darkest and lightest tones the forest art reaches in this scheme. Glass surfaces and text are
+       checked against both in src/index.css.test.ts, so the art can change without hurting readability. */
+    --backdrop-lo: #3f686e;
+    --backdrop-hi: #ffffff;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --color-canvas: #0f121a;
+      --color-canvas: #06141d;
       --color-surface: #181c27;
       --color-surface-muted: #212636;
       --color-fg: #eef0f6;
       --color-muted: #a3acc0;
       --color-border: #2c3347;
       --color-primary: #e5503a;
-      --color-primary-hover: #f06a56;
       --color-primary-contrast: #14080a;
+      --color-primary-soft: #3a1d1f;
+      --color-primary-soft-hover: #4b2528;
+      --color-primary-ink: #ffb4a8;
       --color-accent: #8f9bff;
       --color-danger: #ff8a80;
       --color-danger-surface: #3a1a18;
@@ -173,6 +197,8 @@
       --color-stat-high: #34d399;
       --shadow-ink-sm: rgb(0 0 0 / 40%);
       --shadow-ink-md: rgb(0 0 0 / 45%);
+      --backdrop-lo: #02080c;
+      --backdrop-hi: #6fb4c6;
     }
   }
 
@@ -368,6 +394,25 @@
   background: var(--type-pill);
   color: var(--type-ink);
   box-shadow: 0 4px 10px -2px color-mix(in srgb, var(--type-pill) 55%, transparent);
+}
+
+/* The forest behind the app (see Backdrop). Night in the dark scheme, a misty morning in the light one; the tall
+   art for portrait windows keeps the trunks and the clearing in view on a phone. The files are hashed by Vite. */
+@utility backdrop-art {
+  background-color: var(--color-canvas);
+  background-image: url('./assets/backdrop/forest-day-wide.svg');
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  background-size: cover;
+  @media (max-aspect-ratio: 1/1) {
+    background-image: url('./assets/backdrop/forest-day-tall.svg');
+  }
+  @media (prefers-color-scheme: dark) {
+    background-image: url('./assets/backdrop/forest-night-wide.svg');
+    @media (max-aspect-ratio: 1/1) {
+      background-image: url('./assets/backdrop/forest-night-tall.svg');
+    }
+  }
 }
 
 @utility skeleton-shimmer {

@@ -35,11 +35,13 @@ export function PokemonDetailPage({ renderActions }: Props) {
       return (
         <section className="py-8">
           <BackLink fallbackTo="/" fallbackLabel="the catalog" />
-          <h1>We couldn’t find that Pokémon</h1>
-          <p>
-            There is nothing called “{idOrName}” in the catalog. Check the spelling or try its
-            number.
-          </p>
+          <Card glass className="px-4 py-5 sm:px-6">
+            <h1>We couldn’t find that Pokémon</h1>
+            <p className="mb-0">
+              There is nothing called “{idOrName}” in the catalog. Check the spelling or try its
+              number.
+            </p>
+          </Card>
         </section>
       )
     }
@@ -64,43 +66,45 @@ export function PokemonDetailPage({ renderActions }: Props) {
 
       <div className="mt-6">
         {/* Plain text on purpose: descriptions come from a third party and are never rendered as HTML. */}
-        <p className="max-w-2xl text-[1.05rem]">
-          {pokemon.description ?? 'No description available.'}
-        </p>
+        <Card glass className="px-4 py-3 sm:px-6">
+          <p className="mb-0 max-w-2xl text-[1.05rem]">
+            {pokemon.description ?? 'No description available.'}
+          </p>
+        </Card>
 
         <dl className="my-4 grid grid-cols-[repeat(auto-fit,minmax(min(9rem,100%),1fr))] gap-3">
           <Card className="px-4 py-3">
             <dt className="text-xs text-muted">Weight</dt>
-            <dd className="font-bold wrap-break-word">{formatWeight(pokemon.weightKg)}</dd>
+            <dd className="font-semibold wrap-break-word">{formatWeight(pokemon.weightKg)}</dd>
           </Card>
           <Card className="px-4 py-3">
             <dt className="text-xs text-muted">Height</dt>
-            <dd className="font-bold wrap-break-word">{formatHeight(pokemon.heightM)}</dd>
+            <dd className="font-semibold wrap-break-word">{formatHeight(pokemon.heightM)}</dd>
           </Card>
           <Card className="px-4 py-3">
             <dt className="text-xs text-muted">Abilities</dt>
-            <dd className="font-bold wrap-break-word">{formatList(pokemon.abilities)}</dd>
+            <dd className="font-semibold wrap-break-word">{formatList(pokemon.abilities)}</dd>
           </Card>
         </dl>
 
         {renderActions?.(pokemon)}
 
-        <section className="mt-8" aria-labelledby="stats-heading">
+        <Card as="section" glass className="mt-8 px-4 py-4 sm:px-6" aria-labelledby="stats-heading">
           <h2 id="stats-heading" className="text-lg">
             Base stats
           </h2>
           <StatBars stats={pokemon.stats} />
-        </section>
+        </Card>
       </div>
 
-      <section className="mt-8" aria-label="Evolution">
+      <Card as="section" glass className="mt-8 px-4 py-4 sm:px-6" aria-label="Evolution">
         <h2 className="text-lg">Evolution</h2>
         {evolves ? (
           <EvolutionTree chain={chain} currentId={pokemon.id} />
         ) : (
-          <p className="text-muted">This Pokémon does not evolve.</p>
+          <p className="mb-0 text-muted">This Pokémon does not evolve.</p>
         )}
-      </section>
+      </Card>
     </article>
   )
 }

@@ -49,3 +49,57 @@ describe('type palette', () => {
     for (const spot of spots) expect(contrast(ink, spot)).toBeGreaterThanOrEqual(4.5)
   })
 })
+
+// Text never sits straight on the forest art: it sits on a translucent theme surface (the "glass": bg-surface/80)
+// or on an opaque one. The art changes under the glass, so the check mixes the surface with the darkest and the
+// lightest tone the art reaches (--backdrop-lo / --backdrop-hi) and requires AA on both.
+const GLASS_ALPHA = 0.8
+const darkStart = css.indexOf('@media (prefers-color-scheme: dark)')
+const schemes = {
+  light: css.slice(0, darkStart),
+  dark: css.slice(darkStart),
+} as const
+
+function schemeColor(scheme: keyof typeof schemes, name: string): Rgb {
+  const hex =
+    schemes[scheme].match(new RegExp(`--${name}: (#[0-9a-f]{6});`))?.[1] ??
+    schemes.light.match(new RegExp(`--${name}: (#[0-9a-f]{6});`))?.[1]
+  if (!hex) throw new Error(`--${name} is not declared`)
+  return rgb(hex)
+}
+
+const over = (top: Rgb, bottom: Rgb, alpha: number): Rgb =>
+  top.map((v, i) => Math.round(v * alpha + bottom[i]! * (1 - alpha))) as Rgb
+
+describe.each(['light', 'dark'] as const)('%s scheme: text on the forest backdrop', (scheme) => {
+  const color = (name: string) => schemeColor(scheme, `color-${name}`)
+  const backdrops = [schemeColor(scheme, 'backdrop-lo'), schemeColor(scheme, 'backdrop-hi')]
+
+  it.each(['fg', 'muted', 'accent', 'danger'])(
+    '%s reaches AA on glass over the darkest and lightest art',
+    (name) => {
+      for (const backdrop of backdrops) {
+        const glass = over(color('surface'), backdrop, GLASS_ALPHA)
+        expect(
+          contrast(color(name), glass),
+          `${name} on glass over ${backdrop}`,
+        ).toBeGreaterThanOrEqual(4.5)
+      }
+    },
+  )
+
+  it('the page text reaches AA on the color shown while the art loads', () => {
+    expect(contrast(color('fg'), color('canvas'))).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it.each([
+    ['primary-ink', 'primary-soft'],
+    ['primary-ink', 'primary-soft-hover'],
+    ['fg', 'surface-muted'],
+    ['fg', 'primary-soft'],
+    ['danger', 'surface'],
+    ['danger', 'danger-surface'],
+  ])('button text %s on %s reaches AA', (ink, fill) => {
+    expect(contrast(color(ink), color(fill))).toBeGreaterThanOrEqual(4.5)
+  })
+})

@@ -32,7 +32,7 @@ export function BackLink({ fallbackTo, fallbackLabel }: Props) {
     <Link
       to={fallbackTo}
       onClick={goBack}
-      className="mb-4 -ml-2 inline-flex min-h-11 items-center gap-2 rounded-full px-3 py-2 font-semibold text-accent no-underline hover:bg-surface-muted sm:min-h-0 sm:py-1"
+      className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface/80 px-4 py-2 font-medium text-accent no-underline backdrop-blur transition-colors hover:bg-surface-muted sm:min-h-0 sm:py-1"
     >
       <svg
         aria-hidden="true"

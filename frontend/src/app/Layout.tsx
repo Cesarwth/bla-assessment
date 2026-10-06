@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Link, Outlet, useLocation } from 'react-router'
 import { useAuth } from '../features/auth/useAuth'
 import { IconButton } from '../shared/ui/IconButton'
+import { Backdrop } from './Backdrop'
 import { ErrorBoundary } from './ErrorBoundary'
 import { Header } from './Header'
 
@@ -29,6 +30,7 @@ export function Layout() {
       >
         Skip to content
       </a>
+      <Backdrop />
       <Header />
       {sessionExpired && (
         <div
@@ -52,7 +54,7 @@ export function Layout() {
           <Outlet />
         </ErrorBoundary>
       </main>
-      <footer className="px-4 py-6 text-center text-sm text-muted">
+      <footer className="border-t border-border bg-surface/80 px-4 py-6 text-center text-sm text-muted backdrop-blur">
         Data from <a href="https://pokeapi.co">PokéAPI</a>. Pokémon is a trademark of Nintendo; this
         is a learning project.
       </footer>

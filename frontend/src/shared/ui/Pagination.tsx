@@ -20,7 +20,7 @@ export function Pagination({ page, totalPages, size, sizes, hrefFor, onSizeChang
   return (
     <nav
       aria-label="Pagination"
-      className="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3"
+      className="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-md border border-border bg-surface/80 px-4 py-3 backdrop-blur"
     >
       <div className="flex items-center gap-3">
         {page > 1 ? (

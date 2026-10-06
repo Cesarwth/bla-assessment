@@ -51,7 +51,7 @@ export function CatalogFilter({ value, onChange }: Props) {
   }
 
   return (
-    <div role="search" className="my-4 flex max-w-104 flex-col gap-1">
+    <div role="search" className="flex max-w-104 flex-col gap-1">
       <label htmlFor={inputId} className="text-sm font-semibold">
         Filter by name or number
       </label>

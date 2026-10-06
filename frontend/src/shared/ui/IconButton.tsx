@@ -15,7 +15,7 @@ export function IconButton({ glyph = '×', className, type = 'button', ...rest }
       type={type}
       className={cx(
         'inline-flex size-11 shrink-0 items-center justify-center rounded-full leading-none ' +
-          'text-xl text-muted not-disabled:hover:bg-border not-disabled:hover:text-fg ' +
+          'text-xl text-muted transition-colors not-disabled:hover:bg-border not-disabled:hover:text-fg ' +
           'disabled:opacity-60 sm:size-8',
         className,
       )}

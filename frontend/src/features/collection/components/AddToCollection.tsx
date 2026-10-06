@@ -5,7 +5,8 @@ import { useAuth } from '../../auth/useAuth'
 import { useCollectionIds, useSyncPokemon } from '../queries'
 
 /** Each trainer has their own collection: the button exists while this Pokémon is not in the logged-in trainer's. */
-const boxClass = 'my-4 flex flex-wrap items-center gap-x-4 gap-y-3'
+const boxClass =
+  'my-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-md border border-border bg-surface/80 px-4 py-3 backdrop-blur'
 
 export function AddToCollection({ pokemonId }: { pokemonId: number }) {
   const { user } = useAuth()

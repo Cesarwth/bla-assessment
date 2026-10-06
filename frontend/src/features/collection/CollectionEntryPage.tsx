@@ -36,8 +36,10 @@ function NotInCollection() {
   return (
     <section className="py-8">
       <BackLink fallbackTo="/collection" fallbackLabel="my collection" />
-      <h1>This Pokémon isn’t in your collection</h1>
-      <p>You may have removed it, or never added it.</p>
+      <Card glass className="px-4 py-5 sm:px-6">
+        <h1>This Pokémon isn’t in your collection</h1>
+        <p className="mb-0">You may have removed it, or never added it.</p>
+      </Card>
     </section>
   )
 }
@@ -97,23 +99,23 @@ export function CollectionEntryPage() {
         <DeleteEntry entry={entry} />
       </div>
 
-      <section className="mt-8" aria-labelledby="stats-heading">
+      <Card as="section" glass className="mt-8 px-4 py-4 sm:px-6" aria-labelledby="stats-heading">
         <h2 id="stats-heading" className="text-lg">
           Base stats
         </h2>
         <StatBars stats={entry.stats} />
-      </section>
+      </Card>
 
-      <section className="mt-8" aria-label="Evolution">
+      <Card as="section" glass className="mt-8 px-4 py-4 sm:px-6" aria-label="Evolution">
         <h2 className="text-lg">Evolution</h2>
         {chain && chain.evolvesTo.length > 0 ? (
           <EvolutionTree chain={chain} currentId={entry.id} />
         ) : (
-          <p className="text-muted">This Pokémon does not evolve.</p>
+          <p className="mb-0 text-muted">This Pokémon does not evolve.</p>
         )}
-      </section>
+      </Card>
 
-      <p className="mt-6 text-sm text-muted">
+      <p className="mt-6 inline-block rounded-md border border-border bg-surface/80 px-4 py-2 text-sm text-muted backdrop-blur">
         <Link to={`/pokemon/${entry.id}`}>See it in the catalog</Link> · Last synced{' '}
         <time dateTime={entry.syncedAt}>
           {new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(new Date(entry.syncedAt))}
