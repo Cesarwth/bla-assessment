@@ -1,5 +1,5 @@
 import type { PokemonStat } from '../../../shared/api/types'
-import { formatLabel } from '../format'
+import { formatLabel } from '../../../shared/format'
 import styles from './StatBars.module.css'
 
 // 255 is the highest base stat any Pokémon has, so bars across different Pokémon are comparable.

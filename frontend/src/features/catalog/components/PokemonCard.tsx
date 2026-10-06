@@ -1,9 +1,9 @@
 import { Link } from 'react-router'
 import type { PokemonSummary } from '../../../shared/api/types'
-import { formatId, formatList, formatName, formatWeight } from '../format'
+import { formatId, formatList, formatName, formatWeight } from '../../../shared/format'
 import styles from './PokemonCard.module.css'
-import { PokemonImage } from './PokemonImage'
-import { TypeChip } from './TypeChip'
+import { PokemonImage } from '../../../shared/ui/PokemonImage'
+import { TypeChip } from '../../../shared/ui/TypeChip'
 
 export function PokemonCard({ pokemon }: { pokemon: PokemonSummary }) {
   const name = formatName(pokemon.name)

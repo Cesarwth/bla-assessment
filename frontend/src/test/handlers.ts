@@ -1,6 +1,6 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import type { FieldError } from '../shared/api/errors'
-import type { PageResponse, PokemonDetail, PokemonSummary } from '../shared/api/types'
+import type { PageResponse, PokemonDetail, PokemonSummary, StoredPokemonSummary } from '../shared/api/types'
 import { server } from './server'
 
 export const apiUrl = (path: string) => `*/api/v1${path}`
@@ -34,5 +34,20 @@ export function mockDetail(idOrName: string, detail: PokemonDetail | Response): 
     http.get(apiUrl(`/pokemon/${idOrName}`), () =>
       detail instanceof Response ? detail : HttpResponse.json(detail),
     ),
+  )
+}
+
+/** Answers GET /collection and records the query string of every request in `requests`. */
+export function mockCollection(
+  respond: (params: URLSearchParams) => PageResponse<StoredPokemonSummary> | Response | Promise<PageResponse<StoredPokemonSummary> | Response>,
+  requests: string[] = [],
+): void {
+  server.use(
+    http.get(apiUrl('/collection'), async ({ request }) => {
+      const params = new URL(request.url).searchParams
+      requests.push(params.toString())
+      const result = await respond(params)
+      return result instanceof Response ? result : HttpResponse.json(result)
+    }),
   )
 }

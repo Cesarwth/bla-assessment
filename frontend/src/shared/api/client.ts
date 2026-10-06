@@ -41,7 +41,12 @@ async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, `HTTP_${response.status}`, `Something went wrong (HTTP ${response.status})`)
 }
 
-async function request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+async function exchange<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<{ status: number; data: T }> {
   const token = config.getToken()
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
@@ -61,18 +66,24 @@ async function request<T>(method: string, path: string, body?: unknown, signal?:
     throw new ApiError(0, 'NETWORK_ERROR', 'Cannot reach the server. Check your connection and try again.')
   }
 
-  if (response.status === 204) return null as T
+  if (response.status === 204) return { status: 204, data: null as T }
   if (!response.ok) {
     if (response.status === 401 && token) config.onUnauthorized()
     throw await toApiError(response)
   }
-  return (await response.json()) as T
+  return { status: response.status, data: (await response.json()) as T }
+}
+
+async function request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+  return (await exchange<T>(method, path, body, signal)).data
 }
 
 /** The only module that touches fetch: features call these and receive typed data or an {@link ApiError}. */
 export const api = {
   get: <T>(path: string, signal?: AbortSignal) => request<T>('GET', path, undefined, signal),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body ?? {}),
+  /** For endpoints whose status carries meaning, e.g. 201 created vs 200 refreshed. */
+  postWithStatus: <T>(path: string, body?: unknown) => exchange<T>('POST', path, body ?? {}),
   patch: <T>(path: string, body: unknown) => request<T>('PATCH', path, body),
   delete: (path: string) => request<null>('DELETE', path),
 }

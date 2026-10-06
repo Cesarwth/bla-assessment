@@ -4,10 +4,10 @@ import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { App } from '../../app/App'
 import { expectNoA11yViolations } from '../../test/axe'
-import { ditto, eevee, mew, pikachu } from '../../test/fixtures'
+import { ditto, eevee, mew, pikachu, stored } from '../../test/fixtures'
 import { apiUrl, failWith, mockDetail } from '../../test/handlers'
 import { server } from '../../test/server'
-import { renderApp } from '../../test/utils'
+import { makeToken, renderApp } from '../../test/utils'
 
 describe('PokemonDetailPage', () => {
   it('shows a loading state first', async () => {
@@ -171,5 +171,71 @@ describe('PokemonDetailPage', () => {
     await screen.findByRole('heading', { name: 'Eevee' })
 
     await expectNoA11yViolations(container)
+  })
+
+  describe('adding to the collection', () => {
+    const syncReturns = (status: number, body: object) =>
+      server.use(http.post(apiUrl('/collection/25/sync'), () => HttpResponse.json(body, { status })))
+
+    it('asks anonymous visitors to log in and remembers where they were', async () => {
+      mockDetail('25', pikachu)
+      renderApp(<App />, { route: '/pokemon/25' })
+      await screen.findByRole('heading', { name: 'Pikachu' })
+
+      expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Log in to add this Pokémon to the collection' })).toHaveAttribute('href', '/login')
+    })
+
+    it('adds it and links to the new entry', async () => {
+      mockDetail('25', pikachu)
+      syncReturns(201, stored(25, 'pikachu'))
+      renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
+      await screen.findByRole('heading', { name: 'Pikachu' })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Add to my collection' }))
+
+      expect(await screen.findByRole('status')).toHaveTextContent('Added to the collection.')
+      expect(screen.getByRole('link', { name: 'View it in the collection' })).toHaveAttribute('href', '/collection/25')
+    })
+
+    it('says so when it was already there and its data was refreshed', async () => {
+      mockDetail('25', pikachu)
+      syncReturns(200, stored(25, 'pikachu'))
+      renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
+      await screen.findByRole('heading', { name: 'Pikachu' })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Add to my collection' }))
+
+      expect(await screen.findByRole('status')).toHaveTextContent('Already in the collection. Its data was refreshed.')
+    })
+
+    it('disables the button while adding', async () => {
+      mockDetail('25', pikachu)
+      server.use(
+        http.post(apiUrl('/collection/25/sync'), async () => {
+          await delay(60)
+          return HttpResponse.json(stored(25, 'pikachu'), { status: 201 })
+        }),
+      )
+      renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
+      await screen.findByRole('heading', { name: 'Pikachu' })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Add to my collection' }))
+
+      expect(screen.getByRole('button', { name: 'Adding…' })).toBeDisabled()
+      await screen.findByRole('status')
+    })
+
+    it('reports an outage while adding without losing the page', async () => {
+      mockDetail('25', pikachu)
+      server.use(http.post(apiUrl('/collection/25/sync'), () => failWith(502, 'CATALOG_UNAVAILABLE', 'x')))
+      renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
+      await screen.findByRole('heading', { name: 'Pikachu' })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Add to my collection' }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('not answering right now')
+      expect(screen.getByRole('heading', { name: 'Pikachu' })).toBeInTheDocument()
+    })
   })
 })

@@ -1,18 +1,28 @@
+import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { isApiError } from '../../shared/api/errors'
+import type { PokemonDetail } from '../../shared/api/types'
 import { ErrorState } from '../../shared/ui/ErrorState'
 import { LoadingStatus } from '../../shared/ui/LoadingStatus'
+import { PokemonImage } from '../../shared/ui/PokemonImage'
+import { TypeChip } from '../../shared/ui/TypeChip'
 import { EvolutionTree } from './components/EvolutionTree'
-import { PokemonImage } from './components/PokemonImage'
 import { StatBars } from './components/StatBars'
-import { TypeChip } from './components/TypeChip'
-import { formatHeight, formatId, formatList, formatName, formatWeight } from './format'
+import { formatHeight, formatId, formatList, formatName, formatWeight } from '../../shared/format'
 import styles from './PokemonDetailPage.module.css'
 import { usePokemonDetail } from './queries'
 
 const MISSING_CODES = ['POKEMON_NOT_FOUND', 'INVALID_POKEMON_IDENTIFIER']
 
-export function PokemonDetailPage() {
+interface Props {
+  /**
+   * Extra actions shown under the facts. The app composes them in, so this feature does not depend on the
+   * collection feature.
+   */
+  renderActions?: (pokemon: PokemonDetail) => ReactNode
+}
+
+export function PokemonDetailPage({ renderActions }: Props) {
   const { idOrName = '' } = useParams()
   const query = usePokemonDetail(idOrName)
 
@@ -78,6 +88,8 @@ export function PokemonDetailPage() {
               <dd>{formatList(pokemon.abilities)}</dd>
             </div>
           </dl>
+
+          {renderActions?.(pokemon)}
 
           <section className={styles.section} aria-labelledby="stats-heading">
             <h2 id="stats-heading">Base stats</h2>

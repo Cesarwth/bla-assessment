@@ -85,6 +85,12 @@ describe('api client', () => {
     expect(error).toMatchObject({ status: 502, code: 'HTTP_502' })
   })
 
+  it('exposes the status code when the caller needs it (201 created vs 200 refreshed)', async () => {
+    server.use(http.post('*/api/v1/things', () => HttpResponse.json({ id: 1 }, { status: 201 })))
+
+    expect(await api.postWithStatus('/things')).toEqual({ status: 201, data: { id: 1 } })
+  })
+
   it('returns null for 204 No Content', async () => {
     server.use(http.delete('*/api/v1/things/1', () => new HttpResponse(null, { status: 204 })))
 

@@ -1,8 +1,8 @@
 import { Link } from 'react-router'
 import type { EvolutionNode } from '../../../shared/api/types'
-import { formatName } from '../format'
+import { formatName } from '../../../shared/format'
 import styles from './EvolutionTree.module.css'
-import { PokemonImage } from './PokemonImage'
+import { PokemonImage } from '../../../shared/ui/PokemonImage'
 
 interface BranchProps {
   node: EvolutionNode

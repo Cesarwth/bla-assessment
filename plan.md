@@ -100,6 +100,9 @@ cd frontend && npm test -- catalog && npm run typecheck && npm run lint
 
 **Goal:** authenticate, add Pokemon to the collection, and browse it.
 
+**Status:** ✅ Complete 2026-10-06
+**Deviation:** `Pagination`, `PokemonImage`, `TypeChip`, `format` and the URL paging hook moved to `shared/` (refactor under green tests) so `collection` does not import from `catalog`; the detail page receives its extra actions through a `renderActions` prop and `App.tsx` composes `AddToCollection` into it; the login return address is validated (`safeReturnPath`, no open redirect); after registering the app logs the user in with the same credentials; the API client gained `postWithStatus` for 201-vs-200; shared `TextField` (one description per field: error replaces hint) and `toFormErrors` (API codes -> fields) with their own tests.
+
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
 | ----- | --------- | --------- | ------- |

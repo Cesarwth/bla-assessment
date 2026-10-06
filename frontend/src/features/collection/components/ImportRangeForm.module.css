@@ -1,0 +1,62 @@
+.panel {
+  margin-bottom: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.panel h2 {
+  font-size: 1.05rem;
+}
+
+.hint {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.form > div {
+  width: 7rem;
+}
+
+.submit {
+  padding: var(--space-3) var(--space-5);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.alert {
+  margin: var(--space-3) 0 0;
+  color: var(--color-danger);
+}
+
+.report {
+  margin-top: var(--space-3);
+}
+
+.report p {
+  margin: 0 0 var(--space-1);
+}
+
+.failures {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}

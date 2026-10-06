@@ -1,4 +1,11 @@
-import type { EvolutionNode, PageResponse, PokemonDetail, PokemonSummary } from '../shared/api/types'
+import type {
+  EvolutionNode,
+  PageResponse,
+  PokemonDetail,
+  PokemonSummary,
+  StoredPokemon,
+  StoredPokemonSummary,
+} from '../shared/api/types'
 
 export function summary(id: number, name: string, types: string[] = ['normal'], weightKg = 10): PokemonSummary {
   return { id, name, spriteUrl: `https://img.test/sprites/${id}.png`, types, weightKg, abilities: ['run-away'] }
@@ -84,4 +91,35 @@ export const mew: PokemonDetail = {
   id: 151,
   name: 'mew',
   evolutionChain: node(151, 'mew'),
+}
+
+export function stored(id: number, name: string, over: Partial<StoredPokemon> = {}): StoredPokemon {
+  return {
+    ...pikachu,
+    id,
+    name,
+    version: 0,
+    ownerId: 1,
+    nickname: null,
+    region: null,
+    tags: [],
+    syncedAt: '2026-10-06T00:00:00Z',
+    ...over,
+  }
+}
+
+export function storedSummary(id: number, name: string, over: Partial<StoredPokemonSummary> = {}): StoredPokemonSummary {
+  return {
+    id,
+    name,
+    spriteUrl: `https://img.test/sprites/${id}.png`,
+    types: ['electric'],
+    weightKg: 6,
+    abilities: ['static'],
+    nickname: null,
+    region: null,
+    tags: [],
+    ownerId: 1,
+    ...over,
+  }
 }

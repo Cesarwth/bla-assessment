@@ -27,7 +27,8 @@ export function makeToken({ uid = 1, sub = 'ash', role = 'USER', exp }: TokenOpt
 }
 
 interface RenderOptions {
-  route?: string
+  /** A path, or a path with router state (e.g. the page a login should return to). */
+  route?: string | { pathname: string; state?: unknown }
   /** Puts a session in storage before rendering, as if the user had logged in earlier in this tab. */
   token?: string
 }
