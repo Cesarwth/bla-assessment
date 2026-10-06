@@ -14,6 +14,8 @@ export interface PokemonSummary {
   id: number
   name: string
   spriteUrl: string | null
+  /** Official artwork; optional so a payload from before it existed still renders (the sprite is the fallback). */
+  imageUrl?: string | null
   types: string[]
   weightKg: number
   abilities: string[]

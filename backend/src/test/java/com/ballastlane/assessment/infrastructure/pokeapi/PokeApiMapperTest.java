@@ -51,6 +51,19 @@ class PokeApiMapperTest {
         assertThat(summary.types()).containsExactly("electric");
         assertThat(summary.abilities()).containsExactly("static", "lightning-rod");
         assertThat(summary.spriteUrl()).endsWith("/pokemon/25.png");
+        assertThat(summary.imageUrl()).endsWith("/official-artwork/25.png");
+    }
+
+    @Test
+    void summaryImageFallsBackToTheSpriteOrIsNullWhenThereIsNoArtwork() {
+        PokemonSummary noArtwork = mapper.toSummary(
+                pokemonWithSprites(new Sprites("sprite.png", new Other(new Artwork(null)))));
+        PokemonSummary noSprites = mapper.toSummary(pokemonWithSprites(new Sprites(null, null)));
+        PokemonSummary noSpritesAtAll = mapper.toSummary(pokemonWithSprites(null));
+
+        assertThat(noArtwork.imageUrl()).isEqualTo("sprite.png");
+        assertThat(noSprites.imageUrl()).isNull();
+        assertThat(noSpritesAtAll.imageUrl()).isNull();
     }
 
     @Test

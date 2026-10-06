@@ -1,35 +1,29 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import type { PokemonSummary } from '../../../shared/api/types'
-import { formatId, formatList, formatName, formatWeight } from '../../../shared/format'
-import { Card } from '../../../shared/ui/Card'
-import { PokemonImage } from '../../../shared/ui/PokemonImage'
+import { formatList, formatName, formatWeight } from '../../../shared/format'
+import { PokemonCardFrame } from '../../../shared/ui/PokemonCardFrame'
 import { TypeChip } from '../../../shared/ui/TypeChip'
 
 export function PokemonCard({ pokemon, extras }: { pokemon: PokemonSummary; extras?: ReactNode }) {
   const name = formatName(pokemon.name)
   return (
-    <Card
-      as="article"
-      interactive
-      className="relative flex h-full flex-col gap-3 p-4 has-[input:checked]:border-primary has-[input:checked]:ring-3 has-[input:checked]:ring-primary"
+    <PokemonCardFrame
+      type={pokemon.types[0]}
+      id={pokemon.id}
+      name={name}
+      imageSrc={pokemon.imageUrl ?? pokemon.spriteUrl}
+      extras={extras}
+      title={
+        // The title link covers the whole card, so the card is one big target with a single accessible name.
+        <Link
+          className="text-(--type-ink) no-underline after:absolute after:inset-0 after:content-[''] focus-visible:outline-(--type-ink)"
+          to={`/pokemon/${pokemon.id}`}
+        >
+          {name}
+        </Link>
+      }
     >
-      {extras}
-      <div className="size-30 self-center rounded-full type-glow" data-type={pokemon.types[0]}>
-        <PokemonImage src={pokemon.spriteUrl} alt={name} size={120} fallback="No image" />
-      </div>
-      <div>
-        <span className="text-xs font-semibold text-muted">{formatId(pokemon.id)}</span>
-        <h2 className="mb-0 text-lg">
-          {/* The title link covers the whole card, so the card is one big target with a single accessible name. */}
-          <Link
-            className="text-fg no-underline after:absolute after:inset-0 after:rounded-md after:content-['']"
-            to={`/pokemon/${pokemon.id}`}
-          >
-            {name}
-          </Link>
-        </h2>
-      </div>
       <div className="flex flex-wrap gap-2">
         {pokemon.types.map((type) => (
           <TypeChip key={type} type={type} />
@@ -41,6 +35,6 @@ export function PokemonCard({ pokemon, extras }: { pokemon: PokemonSummary; extr
         <dt className="text-muted">Abilities</dt>
         <dd className="wrap-break-word">{formatList(pokemon.abilities)}</dd>
       </dl>
-    </Card>
+    </PokemonCardFrame>
   )
 }

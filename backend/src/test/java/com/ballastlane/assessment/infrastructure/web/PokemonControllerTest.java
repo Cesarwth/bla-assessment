@@ -40,8 +40,19 @@ class PokemonControllerTest {
     @MockitoBean ListPokemonUseCase listPokemon;
     @MockitoBean GetPokemonDetailUseCase getPokemonDetail;
 
-    private static final PokemonSummary PIKACHU = new PokemonSummary(25, "pikachu", "https://img/25.png",
+    private static final PokemonSummary PIKACHU = new PokemonSummary(25, "pikachu", "https://img/25.png", "https://art/25.png",
             List.of("electric"), 6.0, List.of("static", "lightning-rod"));
+
+    @Test
+    void listSerializesAMissingImageAsNull() throws Exception {
+        PokemonSummary noImage = new PokemonSummary(25, "pikachu", null, null, List.of(), 6.0, List.of());
+        when(listPokemon.list(null, null, null)).thenReturn(new PageResult<>(List.of(noImage), 0, 12, 1));
+
+        mvc.perform(get("/api/v1/pokemon"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].imageUrl").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.items[0].spriteUrl").value(org.hamcrest.Matchers.nullValue()));
+    }
 
     @Test
     void listReturnsPagedSummariesWithoutAToken() throws Exception {
@@ -53,6 +64,7 @@ class PokemonControllerTest {
                 .andExpect(jsonPath("$.items[0].id").value(25))
                 .andExpect(jsonPath("$.items[0].name").value("pikachu"))
                 .andExpect(jsonPath("$.items[0].spriteUrl").value("https://img/25.png"))
+                .andExpect(jsonPath("$.items[0].imageUrl").value("https://art/25.png"))
                 .andExpect(jsonPath("$.items[0].types[0]").value("electric"))
                 .andExpect(jsonPath("$.items[0].weightKg").value(6.0))
                 .andExpect(jsonPath("$.items[0].abilities[1]").value("lightning-rod"))

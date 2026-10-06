@@ -62,6 +62,7 @@ class PokemonFlowIT {
                 .andExpect(jsonPath("$.items[0].id").value(1))
                 .andExpect(jsonPath("$.items[2].id").value(3))
                 .andExpect(jsonPath("$.items[0].types[0]").value("electric"))
+                .andExpect(jsonPath("$.items[0].imageUrl").value(org.hamcrest.Matchers.endsWith("/official-artwork/25.png")))
                 .andExpect(jsonPath("$.totalItems").value(1351))
                 .andExpect(jsonPath("$.totalPages").value(451));
 

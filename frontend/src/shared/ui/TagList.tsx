@@ -5,7 +5,10 @@ export function TagList({ tags, className }: { tags: string[]; className?: strin
   return (
     <ul className={cx('flex flex-wrap gap-1', className)} aria-label="Tags">
       {tags.map((tag) => (
-        <li key={tag} className="rounded-sm bg-surface-muted px-2 py-0.5 text-sm wrap-break-word">
+        <li
+          key={tag}
+          className="rounded-full bg-surface-muted px-2.5 py-0.5 text-sm wrap-break-word"
+        >
           {tag}
         </li>
       ))}

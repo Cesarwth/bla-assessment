@@ -7,6 +7,7 @@ public record StoredPokemonSummaryResponse(
         int id,
         String name,
         String spriteUrl,
+        String imageUrl,
         List<String> types,
         double weightKg,
         List<String> abilities,
@@ -15,7 +16,7 @@ public record StoredPokemonSummaryResponse(
         List<String> tags) {
 
     public static StoredPokemonSummaryResponse from(StoredPokemon pokemon) {
-        return new StoredPokemonSummaryResponse(pokemon.pokeApiId(), pokemon.name(), pokemon.spriteUrl(), pokemon.types(),
+        return new StoredPokemonSummaryResponse(pokemon.pokeApiId(), pokemon.name(), pokemon.spriteUrl(), pokemon.imageUrl(), pokemon.types(),
                 pokemon.weightKg(), pokemon.abilities(), pokemon.localAttributes().nickname(),
                 pokemon.localAttributes().region(), pokemon.localAttributes().tags());
     }

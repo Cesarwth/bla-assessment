@@ -254,6 +254,7 @@ class CollectionFlowIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalItems").value(1))
                 .andExpect(jsonPath("$.items[0].id").value(25))
+                .andExpect(jsonPath("$.items[0].imageUrl").value(org.hamcrest.Matchers.endsWith("/official-artwork/25.png")))
                 .andExpect(jsonPath("$.items[0].ownerId").doesNotExist());
         mvc.perform(get("/api/v1/collection/25").header("Authorization", owner))
                 .andExpect(status().isOk())

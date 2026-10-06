@@ -1,12 +1,12 @@
 import { formatLabel } from '../format'
 
+/** Capitals come from CSS only, so the accessible name stays "Fire" and not "FIRE". */
 export function TypeChip({ type }: { type: string }) {
   return (
     <span
-      className="type-tint inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-fg"
+      className="type-pill inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-wider whitespace-nowrap uppercase"
       data-type={type}
     >
-      <span className="size-2 rounded-full bg-(--type-color)" aria-hidden="true" />
       {formatLabel(type)}
     </span>
   )

@@ -3,6 +3,9 @@ import { formatLabel } from '../format'
 
 // 255 is the highest base stat any Pokémon has, so bars across different Pokémon are comparable.
 const MAX_BASE_STAT = 255
+// Below LOW is a weak stat, above HIGH a strong one; the browser colors the <meter> by these parts.
+const LOW = 60
+const HIGH = 100
 
 const statLabel = (name: string) => (name === 'hp' ? 'HP' : formatLabel(name))
 
@@ -17,9 +20,12 @@ export function StatBars({ stats }: { stats: PokemonStat[] }) {
           <span className="text-sm text-muted">{statLabel(stat.name)}</span>
           <span className="text-right font-bold tabular-nums">{stat.baseValue}</span>
           <meter
-            className="stat-meter h-[0.65rem] w-full overflow-hidden rounded-full border-0"
+            className="stat-meter h-2 w-full overflow-hidden rounded-full border-0"
             min={0}
             max={MAX_BASE_STAT}
+            low={LOW}
+            high={HIGH}
+            optimum={MAX_BASE_STAT}
             value={stat.baseValue}
             aria-label={`${statLabel(stat.name)}: ${stat.baseValue}`}
           />

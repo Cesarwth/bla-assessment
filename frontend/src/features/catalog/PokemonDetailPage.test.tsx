@@ -32,7 +32,7 @@ describe('PokemonDetailPage', () => {
       'src',
       'https://img.test/artwork/25.png',
     )
-    expect(screen.getByText('#025')).toBeInTheDocument()
+    expect(screen.getByText('#0025')).toBeInTheDocument()
     expect(screen.getByText('Mouse Pokémon')).toBeInTheDocument()
     expect(screen.getByText('Electric')).toHaveAttribute('data-type', 'electric')
     expect(screen.getByText(/their electricity could build/)).toBeInTheDocument()
@@ -60,6 +60,18 @@ describe('PokemonDetailPage', () => {
     expect(speed).toHaveAttribute('value', '90')
     expect(speed).toHaveAttribute('max', '255')
     expect(within(stats).getByText('Special attack')).toBeInTheDocument()
+    expect(within(speed.closest('li')!).getByText('90')).toBeInTheDocument()
+  })
+
+  it('lets the browser color each bar by its value: low, medium or high', async () => {
+    mockDetail('25', pikachu)
+    renderApp(<App />, { route: '/pokemon/25' })
+    await screen.findByRole('heading', { name: 'Pikachu' })
+
+    const hp = screen.getByRole('meter', { name: 'HP: 35' })
+    expect(hp).toHaveAttribute('low', '60')
+    expect(hp).toHaveAttribute('high', '100')
+    expect(hp).toHaveAttribute('optimum', '255')
   })
 
   it('draws a linear evolution line and marks the current Pokémon', async () => {

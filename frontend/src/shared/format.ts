@@ -11,7 +11,7 @@ export function formatName(slug: string): string {
 }
 
 export function formatId(id: number): string {
-  return `#${String(id).padStart(3, '0')}`
+  return `#${String(id).padStart(4, '0')}`
 }
 
 export function formatWeight(kg: number): string {

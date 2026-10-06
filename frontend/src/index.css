@@ -27,26 +27,93 @@
   --color-warning-surface: #fff4d6;
   --color-focus: #2f3fb8;
 
-  /* One color per Pokémon type; the data-type attribute (below) exposes it to the chips and glows as --type-color. */
-  --color-type-unknown: #8a8fa3;
-  --color-type-normal: #a8a77a;
-  --color-type-fire: #ee8130;
-  --color-type-water: #6390f0;
-  --color-type-electric: #f7d02c;
-  --color-type-grass: #7ac74c;
-  --color-type-ice: #96d9d6;
-  --color-type-fighting: #c22e28;
-  --color-type-poison: #a33ea1;
-  --color-type-ground: #e2bf65;
-  --color-type-flying: #a98ff3;
-  --color-type-psychic: #f95587;
-  --color-type-bug: #a6b91a;
-  --color-type-rock: #b6a136;
-  --color-type-ghost: #735797;
-  --color-type-dragon: #6f35fc;
-  --color-type-dark: #705746;
-  --color-type-steel: #b7b7ce;
-  --color-type-fairy: #d685ad;
+  /* Pokémon types: a gradient pair for the card and hero (from the top to the bottom), a solid pill color and the
+     foreground that is readable on all three (WCAG AA, checked for every type by src/index.css.test.ts).
+     The data-type attribute (further down) exposes one type's set as --type-from/-to/-pill/-ink. */
+  --color-type-ink-light: #ffffff;
+  --color-type-ink-dark: #12151f;
+  --color-type-unknown-from: #aab0c0;
+  --color-type-unknown-to: #7d8499;
+  --color-type-unknown-pill: #8a8fa3;
+  --color-type-unknown-ink: #12151f;
+  --color-type-normal-from: #dcdac8;
+  --color-type-normal-to: #a9a88f;
+  --color-type-normal-pill: #a8a77a;
+  --color-type-normal-ink: #12151f;
+  --color-type-fire-from: #ffb56e;
+  --color-type-fire-to: #f4772a;
+  --color-type-fire-pill: #f2782a;
+  --color-type-fire-ink: #12151f;
+  --color-type-water-from: #1d4ed8;
+  --color-type-water-to: #1e3a8a;
+  --color-type-water-pill: #1d4ed8;
+  --color-type-water-ink: #ffffff;
+  --color-type-electric-from: #fde047;
+  --color-type-electric-to: #f5b800;
+  --color-type-electric-pill: #f7d02c;
+  --color-type-electric-ink: #12151f;
+  --color-type-grass-from: #86d65a;
+  --color-type-grass-to: #3ea34a;
+  --color-type-grass-pill: #7ac74c;
+  --color-type-grass-ink: #12151f;
+  --color-type-ice-from: #b9efec;
+  --color-type-ice-to: #6fcfcb;
+  --color-type-ice-pill: #96d9d6;
+  --color-type-ice-ink: #12151f;
+  --color-type-fighting-from: #b42318;
+  --color-type-fighting-to: #7f1d1d;
+  --color-type-fighting-pill: #b42318;
+  --color-type-fighting-ink: #ffffff;
+  --color-type-poison-from: #932d91;
+  --color-type-poison-to: #5b1d66;
+  --color-type-poison-pill: #932d91;
+  --color-type-poison-ink: #ffffff;
+  --color-type-ground-from: #ecc874;
+  --color-type-ground-to: #c9983a;
+  --color-type-ground-pill: #e2bf65;
+  --color-type-ground-ink: #12151f;
+  --color-type-flying-from: #b9a8f8;
+  --color-type-flying-to: #9384e4;
+  --color-type-flying-pill: #a98ff3;
+  --color-type-flying-ink: #12151f;
+  --color-type-psychic-from: #b91c5c;
+  --color-type-psychic-to: #8f1550;
+  --color-type-psychic-pill: #c71f66;
+  --color-type-psychic-ink: #ffffff;
+  --color-type-bug-from: #b6c92a;
+  --color-type-bug-to: #7e9a14;
+  --color-type-bug-pill: #a6b91a;
+  --color-type-bug-ink: #12151f;
+  --color-type-rock-from: #cdbb55;
+  --color-type-rock-to: #a08e2c;
+  --color-type-rock-pill: #b6a136;
+  --color-type-rock-ink: #12151f;
+  --color-type-ghost-from: #5f4b8b;
+  --color-type-ghost-to: #2f2150;
+  --color-type-ghost-pill: #6a4f93;
+  --color-type-ghost-ink: #ffffff;
+  --color-type-dragon-from: #5b21d6;
+  --color-type-dragon-to: #3b1a9a;
+  --color-type-dragon-pill: #6d34f0;
+  --color-type-dragon-ink: #ffffff;
+  --color-type-dark-from: #5a4638;
+  --color-type-dark-to: #2a1f19;
+  --color-type-dark-pill: #5b4636;
+  --color-type-dark-ink: #ffffff;
+  --color-type-steel-from: #c4c4d6;
+  --color-type-steel-to: #8e8ea8;
+  --color-type-steel-pill: #b7b7ce;
+  --color-type-steel-ink: #12151f;
+  --color-type-fairy-from: #f0a6c8;
+  --color-type-fairy-to: #d472a6;
+  --color-type-fairy-pill: #d685ad;
+  --color-type-fairy-ink: #12151f;
+
+  /* Stat bars: low, medium and high base stats. Darker than the usual red/amber/green so the bar stays visible
+     (3:1) against its track. */
+  --color-stat-low: #e11d48;
+  --color-stat-mid: #d97706;
+  --color-stat-high: #059669;
 
   --radius-sm: 6px;
   --radius-md: 12px;
@@ -59,6 +126,14 @@
 
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   --container-content: 72rem;
+
+  --animate-card-in: card-in 0.35s ease-out both;
+  @keyframes card-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
 
   --animate-shimmer: shimmer 1.4s linear infinite;
   @keyframes shimmer {
@@ -93,6 +168,9 @@
       --color-success-surface: #14301f;
       --color-warning-surface: #3a3010;
       --color-focus: #8f9bff;
+      --color-stat-low: #fb7185;
+      --color-stat-mid: #fbbf24;
+      --color-stat-high: #34d399;
       --shadow-ink-sm: rgb(0 0 0 / 40%);
       --shadow-ink-md: rgb(0 0 0 / 45%);
     }
@@ -156,86 +234,140 @@
   }
 
   [data-type] {
-    --type-color: var(--color-type-unknown);
+    --type-from: var(--color-type-unknown-from);
+    --type-to: var(--color-type-unknown-to);
+    --type-pill: var(--color-type-unknown-pill);
+    --type-ink: var(--color-type-unknown-ink);
   }
   [data-type='normal'] {
-    --type-color: var(--color-type-normal);
+    --type-from: var(--color-type-normal-from);
+    --type-to: var(--color-type-normal-to);
+    --type-pill: var(--color-type-normal-pill);
+    --type-ink: var(--color-type-normal-ink);
   }
   [data-type='fire'] {
-    --type-color: var(--color-type-fire);
+    --type-from: var(--color-type-fire-from);
+    --type-to: var(--color-type-fire-to);
+    --type-pill: var(--color-type-fire-pill);
+    --type-ink: var(--color-type-fire-ink);
   }
   [data-type='water'] {
-    --type-color: var(--color-type-water);
+    --type-from: var(--color-type-water-from);
+    --type-to: var(--color-type-water-to);
+    --type-pill: var(--color-type-water-pill);
+    --type-ink: var(--color-type-water-ink);
   }
   [data-type='electric'] {
-    --type-color: var(--color-type-electric);
+    --type-from: var(--color-type-electric-from);
+    --type-to: var(--color-type-electric-to);
+    --type-pill: var(--color-type-electric-pill);
+    --type-ink: var(--color-type-electric-ink);
   }
   [data-type='grass'] {
-    --type-color: var(--color-type-grass);
+    --type-from: var(--color-type-grass-from);
+    --type-to: var(--color-type-grass-to);
+    --type-pill: var(--color-type-grass-pill);
+    --type-ink: var(--color-type-grass-ink);
   }
   [data-type='ice'] {
-    --type-color: var(--color-type-ice);
+    --type-from: var(--color-type-ice-from);
+    --type-to: var(--color-type-ice-to);
+    --type-pill: var(--color-type-ice-pill);
+    --type-ink: var(--color-type-ice-ink);
   }
   [data-type='fighting'] {
-    --type-color: var(--color-type-fighting);
+    --type-from: var(--color-type-fighting-from);
+    --type-to: var(--color-type-fighting-to);
+    --type-pill: var(--color-type-fighting-pill);
+    --type-ink: var(--color-type-fighting-ink);
   }
   [data-type='poison'] {
-    --type-color: var(--color-type-poison);
+    --type-from: var(--color-type-poison-from);
+    --type-to: var(--color-type-poison-to);
+    --type-pill: var(--color-type-poison-pill);
+    --type-ink: var(--color-type-poison-ink);
   }
   [data-type='ground'] {
-    --type-color: var(--color-type-ground);
+    --type-from: var(--color-type-ground-from);
+    --type-to: var(--color-type-ground-to);
+    --type-pill: var(--color-type-ground-pill);
+    --type-ink: var(--color-type-ground-ink);
   }
   [data-type='flying'] {
-    --type-color: var(--color-type-flying);
+    --type-from: var(--color-type-flying-from);
+    --type-to: var(--color-type-flying-to);
+    --type-pill: var(--color-type-flying-pill);
+    --type-ink: var(--color-type-flying-ink);
   }
   [data-type='psychic'] {
-    --type-color: var(--color-type-psychic);
+    --type-from: var(--color-type-psychic-from);
+    --type-to: var(--color-type-psychic-to);
+    --type-pill: var(--color-type-psychic-pill);
+    --type-ink: var(--color-type-psychic-ink);
   }
   [data-type='bug'] {
-    --type-color: var(--color-type-bug);
+    --type-from: var(--color-type-bug-from);
+    --type-to: var(--color-type-bug-to);
+    --type-pill: var(--color-type-bug-pill);
+    --type-ink: var(--color-type-bug-ink);
   }
   [data-type='rock'] {
-    --type-color: var(--color-type-rock);
+    --type-from: var(--color-type-rock-from);
+    --type-to: var(--color-type-rock-to);
+    --type-pill: var(--color-type-rock-pill);
+    --type-ink: var(--color-type-rock-ink);
   }
   [data-type='ghost'] {
-    --type-color: var(--color-type-ghost);
+    --type-from: var(--color-type-ghost-from);
+    --type-to: var(--color-type-ghost-to);
+    --type-pill: var(--color-type-ghost-pill);
+    --type-ink: var(--color-type-ghost-ink);
   }
   [data-type='dragon'] {
-    --type-color: var(--color-type-dragon);
+    --type-from: var(--color-type-dragon-from);
+    --type-to: var(--color-type-dragon-to);
+    --type-pill: var(--color-type-dragon-pill);
+    --type-ink: var(--color-type-dragon-ink);
   }
   [data-type='dark'] {
-    --type-color: var(--color-type-dark);
+    --type-from: var(--color-type-dark-from);
+    --type-to: var(--color-type-dark-to);
+    --type-pill: var(--color-type-dark-pill);
+    --type-ink: var(--color-type-dark-ink);
   }
   [data-type='steel'] {
-    --type-color: var(--color-type-steel);
+    --type-from: var(--color-type-steel-from);
+    --type-to: var(--color-type-steel-to);
+    --type-pill: var(--color-type-steel-pill);
+    --type-ink: var(--color-type-steel-ink);
   }
   [data-type='fairy'] {
-    --type-color: var(--color-type-fairy);
+    --type-from: var(--color-type-fairy-from);
+    --type-to: var(--color-type-fairy-to);
+    --type-pill: var(--color-type-fairy-pill);
+    --type-ink: var(--color-type-fairy-ink);
   }
 }
 
 /* What utilities cannot express readably: values mixed from --type-color, the shimmer gradient, <meter> parts. */
-@utility type-glow {
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--type-color) 35%, transparent),
-    transparent 70%
-  );
+/* The look of a Pokémon type: gradient surface with its readable ink, a glass pill for the number, a solid pill with a
+   tinted shadow. Everything reads --type-* from the nearest [data-type]. */
+@utility type-card {
+  background: linear-gradient(to bottom, var(--type-from), var(--type-to));
+  color: var(--type-ink);
 }
 
-@utility type-glow-art {
-  background:
-    radial-gradient(
-      circle at 50% 40%,
-      color-mix(in srgb, var(--type-color) 35%, transparent),
-      transparent 70%
-    ),
-    var(--color-surface);
+@utility type-glass {
+  border: 1px solid rgb(255 255 255 / 30%);
+  background: rgb(255 255 255 / 15%);
+  backdrop-filter: blur(8px);
 }
 
-@utility type-tint {
-  border-color: color-mix(in srgb, var(--type-color) 50%, transparent);
-  background: color-mix(in srgb, var(--type-color) 22%, var(--color-surface));
+@utility type-pill {
+  border: 2px solid rgb(255 255 255 / 55%);
+  background: var(--type-pill);
+  color: var(--type-ink);
+  box-shadow: 0 4px 10px -2px color-mix(in srgb, var(--type-pill) 55%, transparent);
 }
 
 @utility skeleton-shimmer {
@@ -248,24 +380,40 @@
   background-size: 200% 100%;
 }
 
+/* <meter low high optimum> lets the browser pick the part: optimum = high stat, suboptimum = medium, even less
+   good = low. Each part gets one of the stat colors. */
 @utility stat-meter {
   appearance: none;
   background: var(--color-surface-muted);
   &::-webkit-meter-bar {
-    height: 0.65rem;
+    height: 0.5rem;
     border: 0;
     border-radius: 999px;
     background: var(--color-surface-muted);
   }
-  &::-webkit-meter-optimum-value,
-  &::-webkit-meter-suboptimum-value,
+  &::-webkit-meter-optimum-value {
+    border-radius: 999px;
+    background: var(--color-stat-high);
+  }
+  &::-webkit-meter-suboptimum-value {
+    border-radius: 999px;
+    background: var(--color-stat-mid);
+  }
   &::-webkit-meter-even-less-good-value {
     border-radius: 999px;
-    background: var(--color-accent);
+    background: var(--color-stat-low);
   }
-  &::-moz-meter-bar {
+  &:-moz-meter-optimum::-moz-meter-bar {
     border-radius: 999px;
-    background: var(--color-accent);
+    background: var(--color-stat-high);
+  }
+  &:-moz-meter-sub-optimum::-moz-meter-bar {
+    border-radius: 999px;
+    background: var(--color-stat-mid);
+  }
+  &:-moz-meter-sub-sub-optimum::-moz-meter-bar {
+    border-radius: 999px;
+    background: var(--color-stat-low);
   }
 }
 

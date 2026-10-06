@@ -78,6 +78,23 @@ describe('CollectionPage', () => {
     )
   })
 
+  it('shows the official artwork, or the sprite when there is none', async () => {
+    mockCollection(() =>
+      pageOf([storedSummary(25, 'pikachu'), storedSummary(26, 'raichu', { imageUrl: null })]),
+    )
+    renderApp(<App />, { route: '/collection', token: makeToken() })
+
+    expect(await screen.findByRole('img', { name: 'Pikachu' })).toHaveAttribute(
+      'src',
+      'https://img.test/artwork/25.png',
+    )
+    expect(screen.getByRole('img', { name: 'Raichu' })).toHaveAttribute(
+      'src',
+      'https://img.test/sprites/26.png',
+    )
+    expect(screen.getByText('#0025')).toBeInTheDocument()
+  })
+
   it('an entry without local data just shows the Pokémon', async () => {
     mockCollection(entries)
     renderApp(<App />, { route: '/collection', token: makeToken() })

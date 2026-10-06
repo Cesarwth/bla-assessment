@@ -235,3 +235,12 @@ Feedback while trying the app: detail pages had no way back to the list, the des
 - **Responsive:** mobile-first from 375 px with `sm`/`md` breakpoints, tap targets ≥ 44 px on phones, two-row header on phones, sticky selection tray on phones, vertical evolution tree on phones.
 - **Verification in real Chrome:** 15 page variants × 375/768/1280 px × light/dark, plus 320 px: no horizontal overflow in any of the 105 combinations and no console or network problems apart from the two deliberate 404s (a missing Pokémon and a missing entry).
 - **Documentation updated:** `CLAUDE.md` (stack and frontend rules), README (stack, structure, styling and UX notes, test counts).
+
+### Card redesign with type gradients (2026-10-06)
+
+Reference from the user: a Tailwind card with a type-coloured gradient, a glass number pill, a glowing large image, an inset white panel with solid type pills and coloured stat bars. Implemented with our theme system rather than pasted markup:
+
+- Backend: the list items of `GET /pokemon` and `GET /collection` carry `imageUrl` (official artwork; the sprite when there is none).
+- Frontend: `PokemonCardFrame` and `PokemonHero` in `shared/ui`; per-type palettes (`from/to/pill/ink`) in `@theme`; stat bars use a native `<meter>` so the browser picks low/medium/high colours; a stylised pokéball drawn as inline SVG in the header (own drawing, no official logo).
+- Accessibility: gradients are dark enough, or the text ink is dark on light types (fire uses dark text on orange), so every type reaches ≥ 4.5:1; `index.css.test.ts` enforces it for all 18 types plus the unknown fallback.
+- Checked in Chrome: 161 page × width × scheme combinations, no overflow and no console problems except the deliberate 404s.

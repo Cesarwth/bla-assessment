@@ -8,7 +8,7 @@ export function InCollectionBadge({ pokemonId }: { pokemonId: number }) {
   const ids = useCollectionIds(user !== null)
   if (!ids.data?.includes(pokemonId)) return null
   return (
-    <Badge tone="success" className="absolute top-3 right-3">
+    <Badge tone="success" className="absolute top-3 right-3 shadow-md">
       In my collection
     </Badge>
   )

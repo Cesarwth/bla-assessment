@@ -73,6 +73,8 @@ class PokeApiGatewayAdapterTest {
         PageResult<PokemonSummary> page = adapter.findPage(0, 3);
 
         assertThat(page.items()).extracting(PokemonSummary::name).containsExactly("bulbasaur", "ivysaur", "venusaur");
+        assertThat(page.items()).extracting(PokemonSummary::imageUrl).allSatisfy(url -> assertThat(url)
+                .endsWith("/official-artwork/25.png"));
         assertThat(page.totalItems()).isEqualTo(1351);
         assertThat(page.page()).isZero();
         assertThat(page.size()).isEqualTo(3);
@@ -226,6 +228,7 @@ class PokeApiGatewayAdapterTest {
         PageResult<PokemonSummary> result = adapter.search(query("25"), 0, 12);
 
         assertThat(result.items()).extracting(PokemonSummary::id).containsExactly(25);
+        assertThat(result.items().get(0).imageUrl()).endsWith("/official-artwork/25.png");
         assertThat(result.totalItems()).isEqualTo(1);
     }
 

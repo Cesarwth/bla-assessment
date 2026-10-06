@@ -31,6 +31,7 @@ public class PokeApiMapper {
                 pokemon.id(),
                 pokemon.name(),
                 spriteOf(pokemon),
+                imageOf(pokemon),
                 names(pokemon.types(), slot -> slot.type()),
                 toKilograms(pokemon.weight()),
                 names(pokemon.abilities(), slot -> slot.ability()));

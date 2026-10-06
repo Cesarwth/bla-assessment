@@ -17,10 +17,18 @@ export function Header() {
           to="/"
           className="inline-flex min-h-11 items-center gap-2 text-xl font-extrabold text-fg no-underline sm:order-1 sm:min-h-0"
         >
-          <span
-            className="size-6 rounded-full border-2 border-fg bg-[linear-gradient(var(--color-primary)_46%,var(--color-fg)_46%_54%,var(--color-surface)_54%)]"
-            aria-hidden="true"
-          />
+          {/* An own drawing of a ball, not a trademarked logo. */}
+          <svg viewBox="0 0 32 32" className="size-8 drop-shadow-sm" aria-hidden="true">
+            <circle cx="16" cy="16" r="14" className="fill-surface stroke-fg" strokeWidth="2.5" />
+            <path
+              d="M2 16a14 14 0 0 1 28 0Z"
+              className="fill-primary stroke-fg"
+              strokeWidth="2.5"
+            />
+            <path d="M2 16h28" className="stroke-fg" strokeWidth="2.5" />
+            <circle cx="16" cy="16" r="5" className="fill-surface stroke-fg" strokeWidth="2.5" />
+            <circle cx="16" cy="16" r="1.8" className="fill-fg" />
+          </svg>
           Pokédex
         </Link>
         <nav

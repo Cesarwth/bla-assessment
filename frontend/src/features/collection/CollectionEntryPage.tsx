@@ -1,17 +1,16 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { isApiError } from '../../shared/api/errors'
-import { formatId, formatName } from '../../shared/format'
+import { formatName } from '../../shared/format'
 import { BackLink } from '../../shared/ui/BackLink'
 import { Button } from '../../shared/ui/Button'
 import { Card } from '../../shared/ui/Card'
 import { EvolutionTree } from '../../shared/ui/EvolutionTree'
 import { ErrorState } from '../../shared/ui/ErrorState'
 import { LoadingStatus } from '../../shared/ui/LoadingStatus'
-import { PokemonImage } from '../../shared/ui/PokemonImage'
+import { PokemonHero } from '../../shared/ui/PokemonHero'
 import { StatBars } from '../../shared/ui/StatBars'
 import { TagList } from '../../shared/ui/TagList'
-import { TypeChip } from '../../shared/ui/TypeChip'
 import { DeleteEntry } from './components/DeleteEntry'
 import { EditForm } from './components/EditForm'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
@@ -67,53 +66,35 @@ export function CollectionEntryPage() {
   return (
     <article>
       <BackLink fallbackTo="/collection" fallbackLabel="my collection" />
-      <div className="grid gap-6 md:grid-cols-[minmax(12rem,16rem)_1fr] md:items-start">
-        <div
-          className="mx-auto grid aspect-square w-full max-w-64 place-items-center rounded-lg border border-border p-4 type-glow-art md:max-w-none"
-          data-type={entry.types[0]}
-        >
-          <PokemonImage
-            src={entry.imageUrl ?? entry.spriteUrl}
-            alt={name}
-            size={256}
-            fallback="No image available"
-            priority
-          />
-        </div>
-        <div>
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
-            <h1 className="mb-0 wrap-break-word">{name}</h1>
-            <span className="text-muted">{formatId(entry.id)}</span>
-          </div>
-          <div className="my-3 flex flex-wrap gap-2">
-            {entry.types.map((type) => (
-              <TypeChip key={type} type={type} />
-            ))}
-          </div>
+      <PokemonHero
+        id={entry.id}
+        name={name}
+        types={entry.types}
+        imageSrc={entry.imageUrl ?? entry.spriteUrl}
+      />
+      <div className="mt-6">
+        <Card as="section" className="px-4 py-4 sm:px-6" aria-labelledby="notes-heading">
+          <h2 id="notes-heading" className="text-lg">
+            Trainer notes
+          </h2>
+          {editing ? (
+            <EditForm
+              entry={entry}
+              onReload={() => void query.refetch()}
+              onSaved={() => navigate(`/pokemon/${entry.id}`, { state: { saved: name } })}
+              onCancel={() => setEditing(false)}
+            />
+          ) : (
+            <>
+              <NotesList entry={entry} />
+              <Button variant="outline" className="mt-3 px-6" onClick={() => setEditing(true)}>
+                Edit notes
+              </Button>
+            </>
+          )}
+        </Card>
 
-          <Card as="section" className="mt-8 px-4 py-4 sm:px-6" aria-labelledby="notes-heading">
-            <h2 id="notes-heading" className="text-lg">
-              Trainer notes
-            </h2>
-            {editing ? (
-              <EditForm
-                entry={entry}
-                onReload={() => void query.refetch()}
-                onSaved={() => navigate(`/pokemon/${entry.id}`, { state: { saved: name } })}
-                onCancel={() => setEditing(false)}
-              />
-            ) : (
-              <>
-                <NotesList entry={entry} />
-                <Button variant="outline" className="mt-3 px-6" onClick={() => setEditing(true)}>
-                  Edit notes
-                </Button>
-              </>
-            )}
-          </Card>
-
-          <DeleteEntry entry={entry} />
-        </div>
+        <DeleteEntry entry={entry} />
       </div>
 
       <section className="mt-8" aria-labelledby="stats-heading">

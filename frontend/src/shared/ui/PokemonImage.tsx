@@ -9,11 +9,7 @@ interface Props {
 
 export function PokemonImage({ src, alt, size, fallback, priority = false }: Props) {
   if (!src)
-    return (
-      <div className="grid size-full place-items-center text-center text-sm text-muted">
-        {fallback}
-      </div>
-    )
+    return <div className="grid size-full place-items-center text-center text-sm">{fallback}</div>
   return (
     <img
       className="block size-full object-contain"

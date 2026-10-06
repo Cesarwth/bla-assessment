@@ -7,10 +7,9 @@ import { Card } from '../../shared/ui/Card'
 import { ErrorState } from '../../shared/ui/ErrorState'
 import { EvolutionTree } from '../../shared/ui/EvolutionTree'
 import { LoadingStatus } from '../../shared/ui/LoadingStatus'
-import { PokemonImage } from '../../shared/ui/PokemonImage'
+import { PokemonHero } from '../../shared/ui/PokemonHero'
 import { StatBars } from '../../shared/ui/StatBars'
-import { TypeChip } from '../../shared/ui/TypeChip'
-import { formatHeight, formatId, formatList, formatName, formatWeight } from '../../shared/format'
+import { formatHeight, formatList, formatName, formatWeight } from '../../shared/format'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { usePokemonDetail } from './queries'
 
@@ -55,61 +54,43 @@ export function PokemonDetailPage({ renderActions }: Props) {
   return (
     <article>
       <BackLink fallbackTo="/" fallbackLabel="the catalog" />
-      <div className="grid gap-6 md:grid-cols-[minmax(14rem,20rem)_1fr] md:items-start">
-        <div
-          className="mx-auto grid aspect-square w-full max-w-80 place-items-center rounded-lg border border-border p-4 type-glow-art md:max-w-none"
-          data-type={pokemon.types[0]}
-        >
-          <PokemonImage
-            src={pokemon.imageUrl ?? pokemon.spriteUrl}
-            alt={name}
-            size={320}
-            fallback="No image available"
-            priority
-          />
-        </div>
+      <PokemonHero
+        id={pokemon.id}
+        name={name}
+        types={pokemon.types}
+        imageSrc={pokemon.imageUrl ?? pokemon.spriteUrl}
+        genus={pokemon.genus}
+      />
 
-        <div>
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
-            <h1 className="mb-0 wrap-break-word">{name}</h1>
-            <span className="font-bold text-muted">{formatId(pokemon.id)}</span>
-          </div>
-          {pokemon.genus && <p className="mb-3 text-muted">{pokemon.genus}</p>}
-          <div className="mb-4 flex flex-wrap gap-2">
-            {pokemon.types.map((type) => (
-              <TypeChip key={type} type={type} />
-            ))}
-          </div>
+      <div className="mt-6">
+        {/* Plain text on purpose: descriptions come from a third party and are never rendered as HTML. */}
+        <p className="max-w-2xl text-[1.05rem]">
+          {pokemon.description ?? 'No description available.'}
+        </p>
 
-          {/* Plain text on purpose: descriptions come from a third party and are never rendered as HTML. */}
-          <p className="max-w-2xl text-[1.05rem]">
-            {pokemon.description ?? 'No description available.'}
-          </p>
+        <dl className="my-4 grid grid-cols-[repeat(auto-fit,minmax(min(9rem,100%),1fr))] gap-3">
+          <Card className="px-4 py-3">
+            <dt className="text-xs text-muted">Weight</dt>
+            <dd className="font-bold wrap-break-word">{formatWeight(pokemon.weightKg)}</dd>
+          </Card>
+          <Card className="px-4 py-3">
+            <dt className="text-xs text-muted">Height</dt>
+            <dd className="font-bold wrap-break-word">{formatHeight(pokemon.heightM)}</dd>
+          </Card>
+          <Card className="px-4 py-3">
+            <dt className="text-xs text-muted">Abilities</dt>
+            <dd className="font-bold wrap-break-word">{formatList(pokemon.abilities)}</dd>
+          </Card>
+        </dl>
 
-          <dl className="my-4 grid grid-cols-[repeat(auto-fit,minmax(min(9rem,100%),1fr))] gap-3">
-            <Card className="px-4 py-3">
-              <dt className="text-xs text-muted">Weight</dt>
-              <dd className="font-bold wrap-break-word">{formatWeight(pokemon.weightKg)}</dd>
-            </Card>
-            <Card className="px-4 py-3">
-              <dt className="text-xs text-muted">Height</dt>
-              <dd className="font-bold wrap-break-word">{formatHeight(pokemon.heightM)}</dd>
-            </Card>
-            <Card className="px-4 py-3">
-              <dt className="text-xs text-muted">Abilities</dt>
-              <dd className="font-bold wrap-break-word">{formatList(pokemon.abilities)}</dd>
-            </Card>
-          </dl>
+        {renderActions?.(pokemon)}
 
-          {renderActions?.(pokemon)}
-
-          <section className="mt-8" aria-labelledby="stats-heading">
-            <h2 id="stats-heading" className="text-lg">
-              Base stats
-            </h2>
-            <StatBars stats={pokemon.stats} />
-          </section>
-        </div>
+        <section className="mt-8" aria-labelledby="stats-heading">
+          <h2 id="stats-heading" className="text-lg">
+            Base stats
+          </h2>
+          <StatBars stats={pokemon.stats} />
+        </section>
       </div>
 
       <section className="mt-8" aria-label="Evolution">

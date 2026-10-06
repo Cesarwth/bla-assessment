@@ -41,9 +41,9 @@ describe('CatalogPage', () => {
     expect(card).not.toBeNull()
     expect(within(card).getByRole('img', { name: 'Bulbasaur' })).toHaveAttribute(
       'src',
-      'https://img.test/sprites/1.png',
+      'https://img.test/artwork/1.png',
     )
-    expect(within(card).getByText('#001')).toBeInTheDocument()
+    expect(within(card).getByText('#0001')).toBeInTheDocument()
     expect(within(card).getByText('Grass')).toHaveAttribute('data-type', 'grass')
     expect(within(card).getByText('Poison')).toBeInTheDocument()
     expect(within(card).getByText('6.9 kg')).toBeInTheDocument()
@@ -54,8 +54,36 @@ describe('CatalogPage', () => {
     )
   })
 
+  it('falls back to the sprite when there is no official artwork, also for older payloads', async () => {
+    mockCatalog(() =>
+      pageOf([
+        { ...bulbasaur, imageUrl: null },
+        { ...summary(2, 'ivysaur', ['grass']), imageUrl: undefined },
+      ]),
+    )
+    renderApp(<App />)
+
+    expect(await screen.findByRole('img', { name: 'Bulbasaur' })).toHaveAttribute(
+      'src',
+      'https://img.test/sprites/1.png',
+    )
+    expect(screen.getByRole('img', { name: 'Ivysaur' })).toHaveAttribute(
+      'src',
+      'https://img.test/sprites/2.png',
+    )
+  })
+
+  it('writes the type in capitals with CSS only, so the accessible name stays as the API gives it', async () => {
+    mockCatalog(firstPage)
+    renderApp(<App />)
+
+    const grass = await screen.findAllByText('Grass')
+    expect(grass[0]).toHaveClass('uppercase')
+    expect(grass[0]).toHaveTextContent(/^Grass$/)
+  })
+
   it('copes with a missing sprite', async () => {
-    mockCatalog(() => pageOf([{ ...bulbasaur, spriteUrl: null }]))
+    mockCatalog(() => pageOf([{ ...bulbasaur, imageUrl: null, spriteUrl: null }]))
     renderApp(<App />)
 
     expect(await screen.findByText('No image')).toBeInTheDocument()

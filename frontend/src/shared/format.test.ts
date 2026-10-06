@@ -14,9 +14,9 @@ describe('formatting', () => {
     expect(formatName('deoxys-attack')).toBe('Deoxys Attack')
   })
 
-  it('shows the Pokédex number with at least three digits', () => {
-    expect(formatId(7)).toBe('#007')
-    expect(formatId(25)).toBe('#025')
+  it('shows the Pokédex number with at least four digits', () => {
+    expect(formatId(6)).toBe('#0006')
+    expect(formatId(25)).toBe('#0025')
     expect(formatId(1025)).toBe('#1025')
     expect(formatId(10001)).toBe('#10001')
   })

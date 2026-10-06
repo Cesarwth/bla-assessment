@@ -108,6 +108,18 @@ class CollectionControllerTest {
     }
 
     @Test
+    void listSerializesAMissingImageAsNull() throws Exception {
+        StoredPokemon noImage = new StoredPokemon(STORED.id(), STORED.version(), STORED.ownerId(), 25, "pikachu", null,
+                null, STORED.types(), STORED.abilities(), STORED.stats(), 6.0, 0.4, null, null, null,
+                STORED.localAttributes(), STORED.syncedAt());
+        when(listStored.list(null, null, USER_ACTOR)).thenReturn(new PageResult<>(List.of(noImage), 0, 12, 1));
+
+        mvc.perform(get("/api/v1/collection").header("Authorization", bearer(Role.USER)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].imageUrl").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
     void listReturnsTheCallersEntriesWithTheirNotesAndNoOwnerId() throws Exception {
         when(listStored.list(null, null, USER_ACTOR)).thenReturn(new PageResult<>(List.of(STORED), 0, 12, 1));
 
@@ -115,6 +127,8 @@ class CollectionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(25))
                 .andExpect(jsonPath("$.items[0].name").value("pikachu"))
+                .andExpect(jsonPath("$.items[0].spriteUrl").value("sprite/25"))
+                .andExpect(jsonPath("$.items[0].imageUrl").value("img/25"))
                 .andExpect(jsonPath("$.items[0].nickname").value("Pika"))
                 .andExpect(jsonPath("$.items[0].tags[0]").value("starter"))
                 .andExpect(jsonPath("$.items[0].ownerId").doesNotExist())
