@@ -16,7 +16,7 @@ Optional: `--no-tests` skips the test review.
    - **Correctness & API** — each user story requirement met (US-01..US-04, auth); status codes (400/401/403/404/409); consistent error body; validation; PokeAPI failures/timeouts/null fields handled; idempotent sync; caching correct.
    - **Security** — public vs protected routes, JWT handling, BCrypt, no hardcoded secrets or credentials outside documented seed data, input validation, no sensitive data in logs or error responses.
    - **Tests** (skip with `--no-tests`) — tests exist for every use case, adapter, mapper, controller, and exception handler; TDD evidence; no real PokeAPI calls; tests assert behavior, not mocks.
-3. Run `./gradlew test` and include the result.
+3. Run `cd backend && ./gradlew test` and include the result (and `cd frontend && npm test` if `frontend/` exists).
 4. Merge into one report:
 
 ```markdown

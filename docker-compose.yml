@@ -15,7 +15,7 @@ services:
     # No published port: only the app container can reach the database.
 
   app:
-    build: .
+    build: ./backend
     depends_on:
       db:
         condition: service_healthy

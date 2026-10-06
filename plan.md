@@ -30,6 +30,9 @@ Move the Spring Boot project into `backend/` (history preserved), keep orchestra
 
 **Goal:** everything backend lives in `backend/`; `docker compose up --build` and the whole suite work from the new place; nothing else changed.
 
+**Status:** ✅ Complete 2026-10-06
+**Deviation:** `HELP.md` was untracked (ignored) so it was moved with plain `mv`; stale root `build/` and `.gradle/` artifacts were deleted. Root `README.md` stub created.
+
 ### Tests to Write First (RED)
 Verification-first (a pure move has no new behavior): before moving, record the baseline — `./gradlew clean build` (307 tests, coverage gate green) and the compose smoke (login + sync + patch). After moving, the same commands must give the same result from `backend/`.
 

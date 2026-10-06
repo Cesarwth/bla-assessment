@@ -18,7 +18,7 @@ Execute `plan.md` precisely, test-first, one phase at a time.
 ### 2. Pre-Flight
 
 1. **Git:** if not a git repo, tell the user and offer `git init` (the assessment needs a public repo). If on `main`/`master` with other work, suggest a branch like `feature/us-01-pokemon-list`. Never push or create the remote without being asked.
-2. **Baseline:** run `./gradlew test`. If it fails before any change, STOP and report failures.
+2. **Baseline:** run `cd backend && ./gradlew test` (and `cd frontend && npm test` when working on the frontend). If it fails before any change, STOP and report failures.
 3. **Resume:** skip phases already ✅.
 4. Print:
 
@@ -75,7 +75,7 @@ After each phase add to `plan.md`: `**Status:** ✅ Complete <date>` and `**Devi
 
 ### 4. Final Verification
 
-1. Run the plan's Final Verification (default `./gradlew clean build`; include ArchUnit and coverage checks).
+1. Run the plan's Final Verification (default `cd backend && ./gradlew clean build`; include ArchUnit and coverage checks).
 2. If the frontend changed: `cd frontend && npm test && npm run build` and check the browser console is free of warnings.
 3. If Docker files changed: `docker compose build`.
 4. `git status` for untracked files that belong in the commit.

@@ -84,7 +84,7 @@ Is the smallest correct diff zero? Does an existing port/use case/adapter alread
 
 ### Verification
 ```bash
-./gradlew test --tests '<pattern>'
+cd backend && ./gradlew test --tests '<pattern>'
 ```
 **Expected result:** <specific pass criteria>
 
@@ -93,7 +93,7 @@ Is the smallest correct diff zero? Does an existing port/use case/adapter alread
 
 ## Final Verification
 ```bash
-./gradlew clean build
+cd backend && ./gradlew clean build
 docker compose build   # if Docker files changed
 ```
 

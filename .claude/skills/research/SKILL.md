@@ -27,7 +27,7 @@ Spawn Explore subagents (parallel, single message). Each returns ONLY a concise 
 
 **Subagent 2 — Data flow:** Trace (or, for greenfield, list the existing seams) controller -> use case -> port -> adapter -> DB / PokeAPI. Note layer boundaries crossed and where mapping happens (DTO <-> domain <-> JPA entity). Add a "why" only where intent is non-obvious.
 
-**Subagent 3 — Test coverage:** Find tests under `src/test/java` for the area (unit, `@WebMvcTest`, `@DataJpaTest`, WireMock, ArchUnit). For each path, name the test that drives it from an entry point. A test that mocks the class under test is not coverage.
+**Subagent 3 — Test coverage:** Find tests under `backend/src/test/java` (or `frontend/src`) for the area (unit, `@WebMvcTest`, `@DataJpaTest`, WireMock, ArchUnit). For each path, name the test that drives it from an entry point. A test that mocks the class under test is not coverage.
 
 **Subagent 4 — Constraints:** Flyway migrations and schema, `application*.yml` / env vars, Gradle dependencies and versions (Spring Boot 4.x compatibility!), security rules (public vs protected routes), cache config, Docker files, TODOs.
 

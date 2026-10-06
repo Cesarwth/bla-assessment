@@ -1,10 +1,22 @@
 # BLA Assessment — Pokemon API
 
-Technical interview exercise (Ballast Lane). RESTful API on Spring Boot that wraps PokeAPI, replicates data locally, and lets users modify it. Source requirements: `Java - BLA - Technical Interview Exercise V2.pdf`.
+Technical interview exercise (Ballast Lane). RESTful API on Spring Boot that wraps PokeAPI, replicates data locally, and lets users modify it, plus a React frontend. Source requirements: `Java - BLA - Technical Interview Exercise V2.pdf`.
+
+## Repository layout (one repo, two domains)
+
+```
+backend/            Spring Boot API (Gradle project, Dockerfile, tests)
+frontend/           React + Vite + TypeScript app (feature folders mirror the API domains)
+docker-compose.yml  db + backend + frontend, one command: docker compose up --build
+docs/               plans, research, GenAI write-up
+.claude/            workflow skills (/research /plan /implement /code-review)
+```
+
+All Java paths below (`src/main/...`, `src/test/...`) are relative to `backend/`.
 
 ## Stack
 
-- Java 21 (Gradle toolchain), Spring Boot 4.1.x, Gradle (Groovy DSL, wrapper `./gradlew`)
+- Java 21 (Gradle toolchain), Spring Boot 4.1.x, Gradle (Groovy DSL, wrapper `backend/gradlew`)
 - Persistence: relational DB (PostgreSQL in Docker, H2 for tests), Flyway migrations, Spring Data JPA (infrastructure only)
 - Security: Spring Security + JWT (register / login, public vs protected routes)
 - Cache: Spring Cache + Caffeine for PokeAPI responses
@@ -60,11 +72,13 @@ Red -> Green -> Refactor, one behavior at a time. Commit history should show the
 ## Commands
 
 ```bash
+cd backend
 ./gradlew test                 # all tests
 ./gradlew test --tests '*PokemonServiceTest'
-./gradlew build                # compile + test + jacoco verification
-./gradlew bootRun              # run locally (profile: local)
-docker compose up --build      # app + postgres
+./gradlew build                # compile + test + jacoco verification (line >= 90%, branch >= 80%)
+./gradlew bootRun              # run locally (needs DB_* and JWT_SECRET env vars)
+cd ..
+docker compose up --build      # postgres + backend (+ frontend once it exists)
 cd frontend && npm test && npm run build
 ```
 
