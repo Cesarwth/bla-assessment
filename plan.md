@@ -1,224 +1,197 @@
-# Plan D1: one repo (`backend/` + `frontend/`), owner-based edits, versioned PATCH
+# Plan D2: React frontend (catalog, detail, collection, login)
 
 **Research:** research.md
 **Date:** 2026-10-06
-**Scope:** part of an epic (frontend + backend, 6+ phases, endpoints changed) -> split: **D1 = this file** (repo layout + API contract, backend only), **D2 = `docs/plan-d2-frontend.md`** (React app). Run D1 first: the frontend consumes the final contract and the final folder layout.
-**Branch:** `feature/plan-d1-structure-ownership` from `feature/plan-c-collection` (HEAD `5d1098d`).
+**Scope:** part of an epic; runs after Plan D1 (needs `backend/` layout, `ownerId` and versioned PATCH). Copy this file to `plan.md` when D1 is done.
+**Branch:** `feature/plan-d2-frontend`
 **Estimated Phases:** 5
 
 ## Summary
 
-Move the Spring Boot project into `backend/` (history preserved), keep orchestration/docs at the root, then add the acting user to the write use cases: a record's owner is whoever first synced it; PATCH is allowed to the owner or an ADMIN and must carry the `version` it was read at. Same patterns as before: rules in the domain/use cases, JWT claims read only in the web layer, test first.
+A single-page React + TypeScript app in `frontend/`, organised by the same domains as the API (`auth`, `catalog`, `collection`). Server state lives in TanStack Query, auth in a small context, paging and filters in the URL. Tests use Vitest + React Testing Library + MSW so the real API client runs against mocked HTTP; console errors fail the tests. Docker serves the build with nginx and proxies `/api/` to the backend, so `docker compose up` gives the whole product on http://localhost:3000.
 
 ## Defaults assumed (change now if you disagree)
 
-- **Owner** = user who first creates the record by sync; re-sync by anyone refreshes PokeAPI data but never changes the owner. Records with no owner (legacy/seed) are editable by ADMIN only.
-- **Who can do what:** sync = any authenticated user; PATCH = owner or ADMIN; DELETE = ADMIN only (unchanged); reads public.
-- **Non-owner PATCH** -> 403 `FORBIDDEN_NOT_OWNER`; checked **before** the version, so a stranger never learns whether a version is current.
-- **PATCH body** requires `version` (number): missing -> 400 `VALIDATION_FAILED`; stale -> 409 `CONCURRENT_MODIFICATION` (existing code).
-- **Responses** add `ownerId` (number or null). The UI compares it with the `uid` claim of its own token; no usernames are exposed.
-- Order of checks in `UpdateStoredPokemon`: id positive -> body has fields -> record exists (404) -> ownership (403) -> version (409) -> validation of attributes (400) -> save.
+- **Stack (pinned, conservative stable lines):** React 19.3, Vite 7.3, TypeScript 5.9 (typescript-eslint supports TS < 6.1, so TS 7 is out), Vitest 3.2, MSW 2.15, jsdom 26, React Router 7.18, TanStack Query 5, ESLint 9. CSS Modules with CSS variables (design tokens), no UI kit. Chosen with the owner ("use the most stable React; React 19 is fine, keep it simple") instead of the newest majors.
+- **Look:** clean card layout, soft type-coloured chips, generous whitespace, light/dark through `prefers-color-scheme`, mobile first (1 column -> 2 -> 3-4), skeleton loaders, accessible focus states.
+- **Pages:** `/` catalog (paginated cards, "go to name or id" box), `/pokemon/:idOrName` detail (artwork, stat bars, description, genus, branching evolution tree, "Add to my collection"), `/collection` (cards with nickname/region/tags, "mine" badge, import range 1-20 for logged users), `/collection/:id` (view + edit form for owner/admin, delete for admin), `/login`, `/register`.
+- **Auth:** token in `sessionStorage` (survives reload, dies with the tab; documented trade-off), `uid`/`sub`/`role` read from the JWT payload; expired token -> logged out and redirected with a message. No refresh tokens.
+- **Search:** no list search exists in the API; the box navigates to the detail by name/id (404 handled). Not building client-side filtering of 1300 items.
+- **Ports:** UI on 3000 (nginx), API stays on 8080.
 
 ## Design principles (what to say in the interview)
 
-- **Clean Architecture:** the use cases receive an `Actor` value (userId, username, role) built by the web layer from the JWT; the domain never sees tokens or Spring Security. Authorization that depends on data (ownership) lives in the domain/use case; coarse route rules stay in `SecurityConfig`.
-- **Single Responsibility / Open-Closed:** `StoredPokemon.canBeEditedBy(actor)` is the one place that decides; adding a rule later (e.g. teams) changes one method.
-- **DRY:** one `Actor` type for every use case that needs identity; the controller uses a single helper to build it.
-- **Defense in depth:** route rules (401/403 by role) + ownership rule in the use case + optimistic lock in the database.
+- **Feature folders mirror backend domains:** each feature owns its pages, components, hooks and API calls; `shared/` has only the HTTP client and UI atoms. Dependencies point from features to `shared/`, never between features except through route-level composition.
+- **State:** server state in TanStack Query (cache, dedupe, retries, `keepPreviousData` for paging), URL for page/size, a tiny auth context, local state only inside forms. No global store.
+- **Single API client:** one place maps HTTP errors to `ApiError{status, code, message, fieldErrors}` using the backend's error shape; components never parse responses.
+- **Untrusted text:** nicknames, tags and PokeAPI descriptions are rendered as text only.
+- **Accessibility and no console noise are tested**, not hoped for.
 
-## Phase 1: Repository layout (no behavior change)
+## Phase 1: Scaffold, tooling, API client, auth, shell
 
-**Goal:** everything backend lives in `backend/`; `docker compose up --build` and the whole suite work from the new place; nothing else changed.
+**Goal:** `frontend/` builds, tests run, and a logged-in/out shell with routing works against MSW.
 
 **Status:** ✅ Complete 2026-10-06
-**Deviation:** `HELP.md` was untracked (ignored) so it was moved with plain `mv`; stale root `build/` and `.gradle/` artifacts were deleted. Root `README.md` stub created.
+**Deviation:** Vitest stays on 3.2.7: Vitest 4.1.11 would clear the dev-only `npm audit` advisories (`tinypool`, `@vitest/mocker`) but npm 10.9 crashes resolving its peer set; runtime dependencies have 0 advisories and the test runner never ships. No `RequireAuth` component (nothing would use it: pages are public and protected actions are shown conditionally), so `protectedRouteRedirectsToLogin` was dropped; auth tests live in `AuthProvider.test.tsx`; the session-expired banner and its test move to phase 5; the `isExpired`/token decoding also got UTF-8 and malformed-token cases.
 
 ### Tests to Write First (RED)
-Verification-first (a pure move has no new behavior): before moving, record the baseline — `./gradlew clean build` (307 tests, coverage gate green) and the compose smoke (login + sync + patch). After moving, the same commands must give the same result from `backend/`.
-
-| Level | Check | Asserts |
-| ----- | ----- | ------- |
-| Suite | `cd backend && ./gradlew clean build` | 307 tests, JaCoCo gate passes |
-| Smoke | `docker compose up --build -d` + curl login/sync | same responses as before the move |
+| Level | Test File | Test Case | Asserts |
+| ----- | --------- | --------- | ------- |
+| Setup | `src/test/setup.ts` | console `error`/`warn` throw | no warnings pass silently |
+| Unit | `src/shared/api/client.test.ts` | `sendsBearerTokenWhenLoggedIn`, `mapsErrorBodyToApiError`, `mapsNetworkFailure`, `returnsNullOn204`, `redirectsToLoginOn401WithToken` | error contract of the backend |
+| Unit | `src/features/auth/token.test.ts` | `readsUidSubAndRole`, `rejectsMalformedToken`, `detectsExpiry` | JWT payload parsing |
+| Component | `src/features/auth/AuthContext.test.tsx` | `loginStoresSessionAndExposesUser`, `logoutClears`, `restoresFromSessionStorage`, `expiredTokenStartsLoggedOut` | auth state |
+| Component | `src/app/App.test.tsx` | `rendersHeaderWithLoginLinkWhenAnonymous`, `showsUserMenuWhenLoggedIn`, `logoutReturnsToAnonymous`, `unknownRouteShowsNotFound`, `skipLinkTargetsMain` | shell |
 
 ### File Changes
 | File | Action | What Changes |
 | ---- | ------ | ------------ |
-| `src/`, `build.gradle`, `settings.gradle`, `gradle/`, `gradlew`, `gradlew.bat`, `Dockerfile`, `.dockerignore`, `HELP.md`, `.gitattributes` | Move (`git mv`) | into `backend/` |
-| `docker-compose.yml` | Modify | `app.build: ./backend` |
-| `.gitignore` | Modify | patterns that must also cover `backend/build`, `backend/.gradle`, `frontend/node_modules`, `frontend/dist` |
-| `CLAUDE.md`, `.claude/commands/code-review.md`, `.claude/skills/{plan,implement}/SKILL.md` | Modify | commands become `cd backend && ./gradlew ...`; architecture section notes the two domains |
-| `README.md` | Create (stub) | root README with the layout and the one-command start; filled in Plan E |
+| `frontend/package.json`, `vite.config.ts` (proxy `/api` -> :8080, vitest config), `tsconfig*.json`, `eslint.config.js`, `.prettierrc` | Create | strict TS, lint, scripts `dev`, `build`, `test`, `lint`, `typecheck` |
+| `frontend/src/shared/api/{client,errors,types}.ts` | Create | fetch wrapper, `ApiError`, API types |
+| `frontend/src/features/auth/{AuthContext,token,useAuth}.tsx` | Create | session handling |
+| `frontend/src/app/{App,routes,Layout,Header}.tsx`, `src/shared/ui/*`, `src/shared/styles/{tokens,global}.css` | Create | shell, tokens, responsive layout |
+| `frontend/src/test/{setup.ts,server.ts,handlers.ts}` | Create | MSW server, shared handlers, console guard |
 
 ### Implementation Notes
-Use `git mv` so `git log --follow` keeps history. Do not touch package names. Keep `.env`, `.env.example`, `docker-compose.yml`, `docs/`, `.claude/`, `plan.md`, `research.md` at the root. Frontend folder is created in D2.
+First command of the phase: install and run an empty test + build to prove the toolchain works with the very recent versions (see research risk); downgrade individual packages if needed and note it. TypeScript `strict`, no `any`. The client is the only module that touches `fetch`.
 
 ### Verification
 ```bash
-cd backend && ./gradlew clean build && cd ..
-docker compose up --build -d && curl -s -o /dev/null -w "%{http_code}\n" localhost:8080/actuator/health && docker compose down -v
-git log --follow --oneline backend/build.gradle | tail -2
+cd frontend && npm ci && npm run typecheck && npm run lint && npm test && npm run build
 ```
-**Expected result:** build green with the same test count; health 200; history still reachable.
+**Expected result:** all green; no console output during tests.
 
 ---
 
-## Phase 2: Actor, ownership and versioned update (domain + use cases)
+## Phase 2: Catalog list and detail (US-01, US-02)
 
-**Goal:** the rules work against mocked ports.
-**Status:** ✅ Complete 2026-10-06
-**Deviation:** phases 2, 3 and 4 were implemented test-first but verified together, because changing the use-case and `StoredPokemon` signatures makes domain, persistence and web tests compile (or fail to) as one unit; `ActorResolver` throws `BadCredentialsException` and `GlobalExceptionHandler` maps `AuthenticationException` to 401 so a token without `uid` cannot become a 500; `Actor` validation reuses `InvalidUserException`.
+**Goal:** browse the PokeAPI catalog and open a detailed view.
 
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
 | ----- | --------- | --------- | ------- |
-| Unit | `.../domain/ActorTest.java` | `isAdminOnlyForAdminRole`, `rejectsMissingIdentity` | value object invariants |
-| Unit | `.../domain/StoredPokemonTest.java` | `canBeEditedByOwner`, `canBeEditedByAdmin`, `cannotBeEditedByAnotherUser`, `ownerlessRecordsAreAdminOnly`, `refreshKeepsTheOwner`, `fromDetailSetsTheOwner` | ownership logic |
-| Unit | `.../application/usecase/SyncPokemonTest.java` | `newRecordIsOwnedByTheActor`, `refreshByAnotherUserKeepsTheOriginalOwner`, `racedRetryStillKeepsOwnership` | owner on create/refresh |
-| Unit | `.../application/usecase/SyncPokemonRangeTest.java` | `passesTheActorToEverySync` | actor propagation |
-| Unit | `.../application/usecase/UpdateStoredPokemonTest.java` | `ownerCanUpdate`, `adminCanUpdateAnyRecord`, `anotherUserGetsNotOwner`, `nonOwnerWithStaleVersionStillGetsNotOwner`, `staleVersionIsRejectedBeforeSaving`, `missingVersionIsRejected`, `ownerlessRecordNeedsAdmin` | order of checks |
+| Component | `features/catalog/CatalogPage.test.tsx` | `showsSkeletonThenCards`, `cardShowsSpriteTypesWeightAbilities`, `pagingUpdatesTheUrlAndKeepsPreviousPageVisible`, `pageSizeSelector`, `emptyAndErrorStates` (502/504 message), `goToBoxNavigatesByNameOrId` | US-01 |
+| Component | `features/catalog/PokemonDetailPage.test.tsx` | `showsImageStatsDescriptionGenus`, `statBarsReflectValues`, `rendersBranchingEvolutionTree` (Eevee), `handlesMissingImageAndDescription`, `notFoundShowsFriendlyPage`, `descriptionIsRenderedAsTextOnly` | US-02 |
+| Unit | `features/catalog/format.test.ts` | `typeColorFallback`, `weightAndHeightFormatting`, `capitalizeSlugs` | helpers |
+| A11y | both page tests | `hasNoAxeViolations` | `vitest-axe` |
 
 ### File Changes
-| File | Layer | Action | What Changes |
-| ---- | ----- | ------ | ------------ |
-| `domain/Actor.java` | domain | Create | record(userId, username, role) + `isAdmin()` |
-| `domain/exception/NotOwnerException.java` | domain | Create | |
-| `domain/StoredPokemon.java` | domain | Modify | `Long ownerId`; `fromDetail(detail, now, owner)`; `canBeEditedBy(actor)`; refresh keeps owner |
-| `application/port/in/{SyncPokemonUseCase,SyncPokemonRangeUseCase,UpdateStoredPokemonCommand}.java` | application | Modify | take the `Actor`; command gets `Long version` |
-| `application/usecase/{SyncPokemon,SyncPokemonRange,UpdateStoredPokemon}.java` | application | Modify | rules above |
+| File | Action | What Changes |
+| ---- | ------ | ------------ |
+| `features/catalog/{api,queries}.ts` | Create | `useCatalogPage`, `usePokemonDetail` |
+| `features/catalog/{CatalogPage,PokemonDetailPage}.tsx` + `components/{PokemonCard,TypeChip,StatBars,EvolutionTree,Pagination,GoToBox}.tsx` + CSS Modules | Create | UI |
+| `src/test/handlers.ts` | Modify | catalog fixtures (captured from the real API like the backend ones) |
 
 ### Implementation Notes
-`Actor` lives in `domain` (it is data, no framework). `SyncPokemonRange` passes the same actor to each id. Keep the version comparison in the use case (clear 409 before hitting the database); the entity `@Version` remains the last line of defense.
+Pagination state in `useSearchParams` (`page`, `size`), 0-based like the API. Cards have fixed image boxes and `loading="lazy"` to avoid layout shift. The evolution tree is a recursive component that wraps on narrow screens.
 
 ### Verification
 ```bash
-cd backend && ./gradlew test --tests '*ActorTest' --tests '*StoredPokemonTest' --tests '*SyncPokemon*' --tests '*UpdateStoredPokemonTest' --tests '*ArchitectureTest'
+cd frontend && npm test -- catalog && npm run typecheck && npm run lint
 ```
-**Expected result:** pass (other test classes will not compile until phases 3-4 update their call sites; run only these).
+**Expected result:** pass, axe clean, no console output.
 
 ---
 
-## Phase 3: Persistence — owner column
+## Phase 3: Login/register and the collection (US-03)
 
-**Goal:** the owner is stored and loaded; deleting a user cannot break records.
-**Status:** ✅ Complete 2026-10-06
-**Deviation:** phases 2, 3 and 4 were implemented test-first but verified together, because changing the use-case and `StoredPokemon` signatures makes domain, persistence and web tests compile (or fail to) as one unit; `ActorResolver` throws `BadCredentialsException` and `GlobalExceptionHandler` maps `AuthenticationException` to 401 so a token without `uid` cannot become a 500; `Actor` validation reuses `InvalidUserException`.
+**Goal:** authenticate, add Pokemon to the collection, and browse it.
 
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
 | ----- | --------- | --------- | ------- |
-| Integration | `.../persistence/JpaPokemonRepositoryAdapterTest.java` | `ownerRoundTrips`, `ownerlessRecordLoads`, `deletingTheOwnerUserKeepsTheRecordWithoutOwner` | FK `ON DELETE SET NULL` |
-| Unit | `.../persistence/PokemonPersistenceMapperTest.java` | `roundTripKeepsTheOwner` | mapper symmetry |
+| Component | `features/auth/{LoginPage,RegisterPage}.test.tsx` | `submitsAndRedirectsBack`, `showsInvalidCredentials`, `showsFieldErrorsFromTheApi`, `usernameTakenMessage`, `passwordRulesHint`, `disablesSubmitWhileLoading` | auth flows |
+| Component | `features/collection/CollectionPage.test.tsx` | `listsEntriesWithNicknameRegionTags`, `marksMyEntries` (ownerId = uid), `emptyStateInvitesToAddFromCatalog`, `pagination`, `importRangeShowsReportWithFailures`, `importHiddenWhenAnonymous`, `abortedReportIsExplained` | list + range sync |
+| Component | `features/catalog/PokemonDetailPage.test.tsx` (extend) | `addToCollectionNeedsLogin`, `addToCollectionSyncsAndLinksToTheEntry` (201 vs 200 wording), `shows502Gracefully` | single sync |
 
 ### File Changes
-| File | Layer | Action | What Changes |
-| ---- | ----- | ------ | ------------ |
-| `db/migration/V3__add_pokemon_owner.sql` | infra | Create | `owner_id BIGINT`, FK to `users(id)` `ON DELETE SET NULL`, index |
-| `infrastructure/persistence/{PokemonEntity,PokemonPersistenceMapper}.java` | infra | Modify | `ownerId` |
+| File | Action | What Changes |
+| ---- | ------ | ------------ |
+| `features/auth/{LoginPage,RegisterPage}.tsx`, `features/auth/api.ts` | Create | forms with accessible errors |
+| `features/collection/{api,queries}.ts`, `{CollectionPage}.tsx`, `components/{CollectionCard,ImportRangeForm,SyncReport}.tsx` | Create | list + sync |
+| `features/catalog/PokemonDetailPage.tsx` | Modify | "Add to my collection" |
+| `src/app/routes.tsx` | Modify | routes + `RequireAuth` |
 
 ### Implementation Notes
-Never edit V1/V2. Column is nullable on purpose (legacy and demo-seed rows). H2 and PostgreSQL both run the script (verified again in Phase 5).
+After a sync, invalidate the collection queries and seed the cache with the response. Mutations expose loading/error to the UI via TanStack Query; no ad-hoc `useEffect` fetching.
 
 ### Verification
 ```bash
-cd backend && ./gradlew test --tests '*JpaPokemonRepositoryAdapterTest' --tests '*PokemonPersistenceMapperTest'
+cd frontend && npm test -- auth collection catalog && npm run typecheck && npm run lint
 ```
-**Expected result:** pass on H2 with the same migration.
+**Expected result:** pass.
 
 ---
 
-## Phase 4: Web — actor from the JWT, version in PATCH, 403
+## Phase 4: Collection entry, edit and delete (US-04)
 
-**Goal:** the API contract the frontend will use.
-**Status:** ✅ Complete 2026-10-06
-**Deviation:** phases 2, 3 and 4 were implemented test-first but verified together, because changing the use-case and `StoredPokemon` signatures makes domain, persistence and web tests compile (or fail to) as one unit; `ActorResolver` throws `BadCredentialsException` and `GlobalExceptionHandler` maps `AuthenticationException` to 401 so a token without `uid` cannot become a 500; `Actor` validation reuses `InvalidUserException`.
+**Goal:** owner/admin edit local fields with proper validation and conflict handling; admin deletes.
 
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
 | ----- | --------- | --------- | ------- |
-| Integration | `.../web/CollectionControllerTest.java` | `patchRequiresVersion` (400 `VALIDATION_FAILED`), `patchPassesVersionAndActorToTheUseCase`, `patch403WhenNotOwner`, `sync passes the actor from the token`, `responsesIncludeOwnerId` | contract |
-| Unit | `.../web/GlobalExceptionHandlerTest.java` | `notOwnerIs403WithStableCode` | `FORBIDDEN_NOT_OWNER` |
-| Unit | `.../web/ActorResolverTest.java` | `buildsTheActorFromJwtClaims`, `rejectsATokenWithoutUid` | claims `uid`/`sub`/`role` |
-| Integration | `.../security/SecurityRulesMatrixTest.java` | unchanged rows still pass | route rules |
+| Component | `features/collection/CollectionEntryPage.test.tsx` | `showsFullRecordWithLocalFields`, `ownerSeesEditForm`, `strangerSeesReadOnlyWithExplanation`, `adminSeesEditAndDelete`, `anonymousSeesReadOnly`, `savesOnlyChangedFieldsAndSendsVersion`, `updatesVersionAfterSave`, `tagEditorNormalizesAndLimitsTen`, `showsFieldErrorsFrom400`, `conflict409OffersReload`, `notFound404`, `forbidden403Message`, `deleteAsksConfirmationThenRedirects` | US-04 behavior |
+| Unit | `features/collection/tags.test.ts` | `trimLowercaseDedupe`, `rejectsTooLongTag` | mirrors the backend rules for instant feedback |
+| A11y | page test | `formControlsHaveLabelsAndErrorsAreAnnounced` | axe + roles |
 
 ### File Changes
-| File | Layer | Action | What Changes |
-| ---- | ----- | ------ | ------------ |
-| `infrastructure/web/ActorResolver.java` | infra | Create | `Actor from(Jwt)`; the only place that reads claims |
-| `infrastructure/web/CollectionController.java` | infra | Modify | `@AuthenticationPrincipal Jwt` on sync/patch; passes actor |
-| `infrastructure/web/dto/{UpdatePokemonRequest,StoredPokemonResponse,StoredPokemonSummaryResponse}.java` | infra | Modify | `@NotNull Long version`; `ownerId` |
-| `infrastructure/web/GlobalExceptionHandler.java` | infra | Modify | `NotOwnerException` -> 403 `FORBIDDEN_NOT_OWNER` |
+| File | Action | What Changes |
+| ---- | ------ | ------------ |
+| `features/collection/{CollectionEntryPage,EditForm}.tsx`, `components/{TagInput,ConfirmDialog}.tsx` | Create | edit and delete UX |
+| `features/collection/{api,queries}.ts` | Modify | `useUpdateEntry`, `useDeleteEntry` |
 
 ### Implementation Notes
-The `Jwt` type stays in `infrastructure.web`; ArchUnit still forbids it in domain/application. A token without `uid` is a bad token: 401 through the existing entry point.
+Client-side checks only give early feedback; the API stays the authority (limits come from the backend error responses). Send only changed fields plus `version`. On 409 show "changed by someone else" with a reload button that refetches and keeps the user's draft visible. Confirmation uses a native `<dialog>` for accessibility.
 
 ### Verification
 ```bash
-cd backend && ./gradlew test
+cd frontend && npm test -- collection && npm run typecheck && npm run lint
 ```
-**Expected result:** whole suite green (call sites of phases 2-3 are updated here).
+**Expected result:** pass.
 
 ---
 
-## Phase 5: End-to-end ownership flows and Docker
+## Phase 5: Production build, Docker, quality gates
 
-**Goal:** the rules hold through the real stack, including PostgreSQL.
-
-**Status:** ✅ Complete 2026-10-06
-**Deviation:** the concurrency e2e now asserts that exactly ONE of 8 edits sent from the same version wins (stricter than before); a second regular user is registered on demand inside the IT.
+**Goal:** the whole product starts with one command and meets the "no console warnings, responsive, accessible" criteria.
 
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
 | ----- | --------- | --------- | ------- |
-| E2E | `.../CollectionFlowIT.java` | `anotherUserCannotEditButAdminCan`, `resyncByAnotherUserKeepsTheOwner`, `patchWithAStaleVersionIsRejected`, `patchBumpsTheVersionClientsMustSendNext`, `ownerIdMatchesTheTokenUid` | ownership + versioning end to end |
+| Component | `app/App.test.tsx` (extend) | `sessionExpiryShowsMessageAndLogsOut`, `errorBoundaryShowsFallback`, `titleChangesPerRoute` | resilience |
+| Config | `vite.config.ts` | coverage thresholds (lines 85 %, branches 75 %) | gate like the backend |
+| Smoke | compose | `curl localhost:3000/` serves the SPA, `/api/v1/pokemon?size=2` returns JSON through nginx, deep link `/collection/25` falls back to `index.html` | proxy + SPA fallback |
 
 ### File Changes
-| File | Layer | Action | What Changes |
-| ---- | ----- | ------ | ------------ |
-| `backend/src/test/.../CollectionFlowIT.java` | test | Modify | new flows; existing flows send `version` |
-| `docker-compose.yml`, `.env.example` | build | Modify (if needed) | none expected |
+| File | Action | What Changes |
+| ---- | ------ | ------------ |
+| `frontend/Dockerfile` | Create | multi-stage: `node:22-alpine` build -> `nginxinc/nginx-unprivileged` runtime |
+| `frontend/nginx.conf` | Create | SPA fallback, `/api/` proxy to `app:8080`, security headers (CSP, nosniff, frame-deny), cache for hashed assets |
+| `docker-compose.yml` | Modify | `frontend` service on `3000`, depends on `app` |
+| `frontend/.dockerignore`, `.env.example` | Create/Modify | exclude `node_modules`, `dist` |
+| `frontend/src/app/ErrorBoundary.tsx` | Create | fallback UI |
 
 ### Implementation Notes
-Create a second regular user in the e2e (register + login) to act as "another user". Re-measure coverage; keep the gate (90/80).
+Check the real browser console once by hand (Chrome devtools) on each page at phone and desktop widths; record the result in the plan status. CSP must allow images from `raw.githubusercontent.com` (PokeAPI sprites) and nothing else external.
 
 ### Verification
 ```bash
-cd backend && ./gradlew clean build && cd ..
+cd frontend && npm run typecheck && npm run lint && npm run test:coverage && npm run build && cd ..
 docker compose up --build -d
-# as demo: sync + PATCH ok; as another registered user: PATCH -> 403 FORBIDDEN_NOT_OWNER; as demo-admin: PATCH ok; stale version -> 409
+curl -s -o /dev/null -w "%{http_code}\n" localhost:3000/ && curl -s "localhost:3000/api/v1/pokemon?size=2" | head -c 200 && curl -s -o /dev/null -w "%{http_code}\n" localhost:3000/collection/25
 docker compose down -v
 ```
-**Expected result:** build green with the coverage gate; the manual flow gives 200 / 403 / 200 / 409 as listed; migrations V1-V3 apply on PostgreSQL.
+**Expected result:** all gates green; 200 / JSON / 200 (SPA fallback); no console warnings in the manual browser check.
 
 ---
 
 ## Final Verification
 ```bash
-cd backend && ./gradlew clean build && cd .. && docker compose build
+(cd backend && ./gradlew clean build) && (cd frontend && npm ci && npm run test:coverage && npm run build) && docker compose build
 ```
 
 ## Rollback Plan
-Feature branch: drop or `git revert`. The layout move is one commit (revert restores root layout). Schema: V3 only adds a nullable column; roll back with `V4__drop_owner.sql` if already deployed, never by editing V3.
+Feature branch; the frontend is additive (`frontend/` + one compose service). Drop the service and folder to revert.
 
 ## Out of Scope
-Frontend (D2); README content and demo data (Plan E); usernames in API responses; transferring ownership; per-user private collections; rate limiting (declined); the skipped review minors.
-
-## Implementation Status
-
-**Completed:** 2026-10-06
-**Branch:** feature/plan-d1-structure-ownership
-
-| Phase | Status | Deviations |
-| ----- | ------ | ---------- |
-| 1: Repository layout | ✅ | `HELP.md` moved with plain `mv`; root README stub |
-| 2: Actor + ownership + versioned update | ✅ | Verified together with 3-4 (shared compile unit) |
-| 3: Owner column (V3) | ✅ | none |
-| 4: Web: actor from JWT, version in PATCH, 403 | ✅ | `AuthenticationException` -> 401 handler |
-| 5: E2E + Docker | ✅ | stricter concurrency assertion |
-
-Verified: `cd backend && ./gradlew clean build` green (337 tests, 0 failures; coverage 98.2 % lines / 87.5 % branches, gate 90/80). Docker/PostgreSQL manual flow: sync by demo (owner = demo), PATCH by a stranger 403 `FORBIDDEN_NOT_OWNER`, by admin 200, with a stale version 409 `CONCURRENT_MODIFICATION`, without version 400 `VALIDATION_FAILED`, by the owner with the current version 200; Flyway V1-V3 applied; no errors in the logs.
-
-### Contract notes for Plan D2 (frontend)
-- `ownerId` is on collection list items, entries and sync/patch responses; compare it with the `uid` claim of the logged-in token.
-- PATCH body: `{version, nickname?, region?, tags?}`; send the `version` of the last read; 409 -> reload.
-- 403 `FORBIDDEN_NOT_OWNER` for a non-owner (an ADMIN may edit anything); DELETE stays ADMIN-only.
+README and GenAI document, curated demo data (Plan E); i18n; refresh tokens; client-side catalog search; end-to-end browser automation (Playwright); PWA/offline; analytics.
