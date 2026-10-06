@@ -15,10 +15,16 @@ import com.ballastlane.assessment.domain.SyncOutcome;
 import com.ballastlane.assessment.domain.SyncReport;
 import com.ballastlane.assessment.domain.SyncResult;
 import com.ballastlane.assessment.domain.exception.CatalogUnavailableException;
+import com.ballastlane.assessment.domain.exception.DuplicateStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.InvalidSyncSelectionException;
 import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.support.TestData;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,12 +40,39 @@ class SyncSelectedPokemonTest {
 
     private static final Actor ACTOR = TestData.user(5);
 
+    private static final Duration BUDGET = Duration.ofSeconds(90);
+
     @Mock SyncPokemonUseCase syncOne;
+    MutableClock clock = new MutableClock();
     SyncSelectedPokemon syncSelected;
 
     @BeforeEach
     void setUp() {
-        syncSelected = new SyncSelectedPokemon(syncOne);
+        syncSelected = new SyncSelectedPokemon(syncOne, clock, BUDGET);
+    }
+
+    /** Time only moves when a test says so, so the budget is exercised without sleeping. */
+    static final class MutableClock extends Clock {
+        private Instant now = TestData.NOW;
+
+        void advance(Duration by) {
+            now = now.plus(by);
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return now;
+        }
     }
 
     private static SyncResult result(SyncOutcome outcome, int id) {
@@ -111,6 +144,62 @@ class SyncSelectedPokemonTest {
         assertThat(report.created()).isEqualTo(1);
         assertThat(report.failures()).extracting(SyncReport.Failure::identifier).containsExactly("1");
         assertThat(report.failures().get(0).reason()).isEqualTo("Modified concurrently, retry it");
+        assertThat(report.abortedReason()).isNull();
+    }
+
+    @Test
+    void stopsWithAPartialReportWhenTheTimeBudgetIsExceeded() {
+        when(syncOne.sync("1", ACTOR)).thenAnswer(inv -> {
+            clock.advance(Duration.ofSeconds(60));
+            return result(SyncOutcome.CREATED, 1);
+        });
+        when(syncOne.sync("2", ACTOR)).thenAnswer(inv -> {
+            clock.advance(Duration.ofSeconds(30));
+            return result(SyncOutcome.UPDATED, 2);
+        });
+
+        SyncReport report = syncSelected.sync(List.of(1, 2, 3, 4), ACTOR);
+
+        assertThat(report.created()).isEqualTo(1);
+        assertThat(report.updated()).isEqualTo(1);
+        assertThat(report.abortedReason()).isEqualTo("Time budget exceeded before id 3");
+        verify(syncOne, never()).sync("3", ACTOR);
+        verify(syncOne, never()).sync("4", ACTOR);
+    }
+
+    @Test
+    void finishingExactlyInsideTheBudgetAbortsNothing() {
+        when(syncOne.sync("1", ACTOR)).thenAnswer(inv -> {
+            clock.advance(BUDGET.minusMillis(1));
+            return result(SyncOutcome.CREATED, 1);
+        });
+        when(syncOne.sync("2", ACTOR)).thenReturn(result(SyncOutcome.CREATED, 2));
+
+        SyncReport report = syncSelected.sync(List.of(1, 2), ACTOR);
+
+        assertThat(report.created()).isEqualTo(2);
+        assertThat(report.abortedReason()).isNull();
+    }
+
+    @Test
+    void theFirstIdIsAlwaysAttemptedEvenWithATinyBudget() {
+        when(syncOne.sync("1", ACTOR)).thenReturn(result(SyncOutcome.CREATED, 1));
+
+        SyncReport report = new SyncSelectedPokemon(syncOne, clock, Duration.ofMillis(1)).sync(List.of(1), ACTOR);
+
+        assertThat(report.created()).isEqualTo(1);
+        assertThat(report.abortedReason()).isNull();
+    }
+
+    @Test
+    void reportsAnEntryBeingAddedConcurrentlyAsAFailureAndKeepsGoing() {
+        when(syncOne.sync("1", ACTOR)).thenThrow(new DuplicateStoredPokemonException(1));
+        when(syncOne.sync("2", ACTOR)).thenReturn(result(SyncOutcome.CREATED, 2));
+
+        SyncReport report = syncSelected.sync(List.of(1, 2), ACTOR);
+
+        assertThat(report.created()).isEqualTo(1);
+        assertThat(report.failures()).containsExactly(new SyncReport.Failure("1", "Already being added, retry it"));
         assertThat(report.abortedReason()).isNull();
     }
 

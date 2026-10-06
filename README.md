@@ -241,6 +241,7 @@ Set in `.env` (copied from `.env.example`); Docker Compose passes them to the co
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM` | API | `mailpit`, `1025`, `no-reply@pokedex.local` | where the password-reset e-mails go. Real SMTP: also `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_AUTH=true`, `MAIL_STARTTLS=true`, and drop the `mailpit` service |
 | `APP_PUBLIC_URL` | API | `http://localhost:8081` | the address the reset link in the e-mail points to |
 | `PASSWORD_RESET_TTL_MINUTES` | API | `30` | how long a reset link is valid |
+| `SYNC_MAX_DURATION_SECONDS` | API | `90` | time budget of one "add selected Pokémon" request; when it runs out the answer lists what was added and why it stopped (nginx cuts the connection at 120 s) |
 | `POKEAPI_BASE_URL` | API | `https://pokeapi.co/api/v2` | upstream catalog |
 | `SEED_DEMO_USER`, `DEMO_USER_PASSWORD`, `DEMO_ADMIN_PASSWORD` | API | `false` / empty | create the `demo` and `demo-admin` accounts (each exists only if its password is set; the passwords may be left empty when seeding is off) |
 | `SEED_DEMO_DATA` | API | `false` | add the 16 demo Pokémon (needs the demo accounts) |

@@ -21,6 +21,15 @@ public interface PokemonRepository {
     StoredPokemon save(StoredPokemon entry);
 
     /**
+     * Writes only the trainer's own notes of an existing entry, guarded by the entry version. The shared Pokemon row is
+     * never touched, so two trainers editing notes of the same Pokemon cannot collide.
+     *
+     * @throws com.ballastlane.assessment.domain.exception.StaleStoredPokemonException when the version is outdated or
+     *         the entry no longer exists
+     */
+    StoredPokemon updateNotes(StoredPokemon entry);
+
+    /**
      * Removes the trainer's entry only; the shared Pokemon stays for everybody else.
      *
      * @return true when an entry was removed, false when the trainer did not have it

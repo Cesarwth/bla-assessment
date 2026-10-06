@@ -59,7 +59,7 @@ class SyncPokemonTest {
         ArgumentCaptor<StoredPokemon> saved = ArgumentCaptor.forClass(StoredPokemon.class);
         verify(repository).save(saved.capture());
         assertThat(saved.getValue().id()).isNull();
-        assertThat(saved.getValue().ownerId()).isEqualTo(5L);
+        assertThat(saved.getValue().trainerId()).isEqualTo(5L);
         assertThat(saved.getValue().localAttributes()).isEqualTo(LocalAttributes.empty());
         assertThat(saved.getValue().syncedAt()).isEqualTo(NOW);
     }

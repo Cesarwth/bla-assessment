@@ -7,9 +7,13 @@ import com.ballastlane.assessment.domain.SyncOutcome;
 import com.ballastlane.assessment.domain.SyncReport;
 import com.ballastlane.assessment.domain.SyncResult;
 import com.ballastlane.assessment.domain.exception.CatalogUnavailableException;
+import com.ballastlane.assessment.domain.exception.DuplicateStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.InvalidSyncSelectionException;
 import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -22,8 +26,13 @@ public class SyncSelectedPokemon implements SyncSelectedPokemonUseCase {
 
     private final SyncPokemonUseCase syncOne;
 
-    public SyncSelectedPokemon(SyncPokemonUseCase syncOne) {
+    private final Clock clock;
+    private final Duration maxDuration;
+
+    public SyncSelectedPokemon(SyncPokemonUseCase syncOne, Clock clock, Duration maxDuration) {
         this.syncOne = syncOne;
+        this.clock = clock;
+        this.maxDuration = maxDuration;
     }
 
     @Override
@@ -43,7 +52,14 @@ public class SyncSelectedPokemon implements SyncSelectedPokemonUseCase {
         int updated = 0;
         List<SyncReport.Failure> failures = new ArrayList<>();
         String abortedReason = null;
+        // Up to 50 ids x 3 upstream calls each: without a deadline the request outlives the proxy's timeout while the
+        // server keeps working. Stopping early returns what was saved so far and the client retries the rest.
+        Instant deadline = clock.instant().plus(maxDuration);
         for (int id : distinct) {
+            if (!clock.instant().isBefore(deadline) && created + updated + failures.size() > 0) {
+                abortedReason = "Time budget exceeded before id " + id;
+                break;
+            }
             try {
                 SyncResult result = syncOne.sync(String.valueOf(id), actor);
                 if (result.outcome() == SyncOutcome.CREATED) {
@@ -57,6 +73,9 @@ public class SyncSelectedPokemon implements SyncSelectedPokemonUseCase {
             } catch (StaleStoredPokemonException e) {
                 // Someone edited this record while we synced it: report it and keep the rest of the selection.
                 failures.add(new SyncReport.Failure(String.valueOf(id), "Modified concurrently, retry it"));
+            } catch (DuplicateStoredPokemonException e) {
+                // Still racing after SyncPokemon's own retries (e.g. the same trainer adding it from two tabs).
+                failures.add(new SyncReport.Failure(String.valueOf(id), "Already being added, retry it"));
             } catch (CatalogUnavailableException e) {
                 // Upstream is down: stop instead of repeating the failure for every remaining id. What was already
                 // saved is reported; if nothing was processed yet there is no report to give, so the error propagates.

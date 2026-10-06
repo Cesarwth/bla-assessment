@@ -39,8 +39,8 @@ class DemoDataSeederTest {
     @Mock UserRepository users;
     final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
 
-    private static DemoEntry entry(String owner, int id, String name, String nickname, String region, List<String> tags) {
-        return new DemoEntry(owner, nickname, region, tags, TestData.detail(id, name));
+    private static DemoEntry entry(String trainer, int id, String name, String nickname, String region, List<String> tags) {
+        return new DemoEntry(trainer, nickname, region, tags, TestData.detail(id, name));
     }
 
     private DemoDataSeeder seeder(DemoEntry... entries) {
@@ -63,7 +63,7 @@ class DemoDataSeederTest {
 
         ArgumentCaptor<StoredPokemon> saved = ArgumentCaptor.forClass(StoredPokemon.class);
         verify(repository, times(2)).save(saved.capture());
-        assertThat(saved.getAllValues()).extracting(StoredPokemon::pokeApiId, StoredPokemon::ownerId)
+        assertThat(saved.getAllValues()).extracting(StoredPokemon::pokeApiId, StoredPokemon::trainerId)
                 .containsExactly(org.assertj.core.groups.Tuple.tuple(25, 1L), org.assertj.core.groups.Tuple.tuple(26, 2L));
     }
 
@@ -103,7 +103,7 @@ class DemoDataSeederTest {
 
         ArgumentCaptor<StoredPokemon> saved = ArgumentCaptor.forClass(StoredPokemon.class);
         verify(repository, times(2)).save(saved.capture());
-        assertThat(saved.getAllValues()).extracting(StoredPokemon::ownerId).containsExactly(1L, 2L);
+        assertThat(saved.getAllValues()).extracting(StoredPokemon::trainerId).containsExactly(1L, 2L);
         assertThat(saved.getAllValues()).extracting(e -> e.localAttributes().nickname()).containsExactly("Sparky", null);
     }
 

@@ -14,8 +14,8 @@ import java.util.List;
 public final class TestData {
 
     public static final Instant NOW = Instant.parse("2026-10-05T12:00:00Z");
-    /** Owner of every {@link #stored} record unless a test says otherwise. */
-    public static final long OWNER_ID = 1L;
+    /** Trainer of every {@link #stored} record unless a test says otherwise. */
+    public static final long TRAINER_ID = 1L;
 
     private TestData() {
     }
@@ -35,14 +35,14 @@ public final class TestData {
     }
 
     public static StoredPokemon stored(long dbId, long version, int pokeApiId, String name, LocalAttributes local) {
-        return storedOwnedBy(OWNER_ID, dbId, version, pokeApiId, name, local);
+        return storedFor(TRAINER_ID, dbId, version, pokeApiId, name, local);
     }
 
-    /** {@code ownerId} may be null to model a record nobody owns (legacy or seeded data). */
-    public static StoredPokemon storedOwnedBy(
-            Long ownerId, long dbId, long version, int pokeApiId, String name, LocalAttributes local) {
+    /** {@code trainerId} is the trainer whose collection the record is in. */
+    public static StoredPokemon storedFor(
+            Long trainerId, long dbId, long version, int pokeApiId, String name, LocalAttributes local) {
         PokemonDetail d = detail(pokeApiId, name);
-        return new StoredPokemon(dbId, version, ownerId, d.id(), d.name(), d.spriteUrl(), d.imageUrl(), d.types(),
+        return new StoredPokemon(dbId, version, trainerId, d.id(), d.name(), d.spriteUrl(), d.imageUrl(), d.types(),
                 d.abilities(), d.stats(), d.weightKg(), d.heightM(), d.genus(), d.description(), d.evolutionChain(),
                 local, NOW);
     }

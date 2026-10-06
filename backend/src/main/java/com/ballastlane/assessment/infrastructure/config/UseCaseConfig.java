@@ -49,7 +49,7 @@ import org.springframework.core.annotation.Order;
 
 /** Application use cases are plain Java; this is the only place where they meet Spring. */
 @Configuration
-@EnableConfigurationProperties({DemoUserProperties.class, PasswordResetProperties.class})
+@EnableConfigurationProperties({DemoUserProperties.class, PasswordResetProperties.class, SyncProperties.class})
 public class UseCaseConfig {
 
     @Bean
@@ -111,8 +111,8 @@ public class UseCaseConfig {
     }
 
     @Bean
-    SyncSelectedPokemonUseCase syncSelectedPokemonUseCase(SyncPokemonUseCase syncPokemon) {
-        return new SyncSelectedPokemon(syncPokemon);
+    SyncSelectedPokemonUseCase syncSelectedPokemonUseCase(SyncPokemonUseCase syncPokemon, Clock clock, SyncProperties properties) {
+        return new SyncSelectedPokemon(syncPokemon, clock, properties.maxDuration());
     }
 
     @Bean
@@ -141,7 +141,7 @@ public class UseCaseConfig {
     }
 
     @Bean
-    @Order(1) // accounts first: the demo Pokémon are owned by them
+    @Order(1) // accounts first: the demo collections belong to them
     @ConditionalOnProperty(prefix = "app.seed.demo-user", name = "enabled", havingValue = "true")
     DemoUserSeeder demoUserSeeder(
             RegisterUserUseCase registerUser, UserRepository users, PasswordHasher hasher, DemoUserProperties properties) {

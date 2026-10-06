@@ -48,7 +48,11 @@ public class UpdateProfile implements UpdateProfileUseCase {
             throw new EmailAlreadyExistsException(email);
         }
 
-        User saved = users.save(new User(current.id(), username, email, current.passwordHash(), current.role()));
+        // Targeted write: saving the whole row would put back the password hash read above, undoing a password
+        // change or reset that committed in between.
+        // The User constructor re-checks the domain invariants (username length, e-mail format) before anything is stored.
+        User valid = new User(current.id(), username, email, current.passwordHash(), current.role());
+        User saved = users.updateProfile(valid.id(), valid.username(), valid.email());
         return new UpdatedProfile(saved, tokens.issue(saved));
     }
 

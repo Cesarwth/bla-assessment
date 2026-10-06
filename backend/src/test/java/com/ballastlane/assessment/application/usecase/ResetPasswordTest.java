@@ -1,6 +1,5 @@
 package com.ballastlane.assessment.application.usecase;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
@@ -26,7 +25,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -62,14 +60,12 @@ class ResetPasswordTest {
 
         resetPassword.reset(new ResetPasswordCommand("raw", "Brand9New"));
 
-        ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
+        // The password is written last: a failure after it cannot leave other reset links valid.
         InOrder order = inOrder(tokens, users);
         order.verify(tokens).markUsed(7L, NOW);
-        order.verify(users).save(saved.capture());
         order.verify(tokens).invalidateUnusedForUser(1L, NOW);
-        assertThat(saved.getValue().passwordHash()).isEqualTo("new-hash");
-        assertThat(saved.getValue().username()).isEqualTo("ash");
-        assertThat(saved.getValue().id()).isEqualTo(1L);
+        order.verify(users).updatePasswordHash(1L, "new-hash");
+        verify(users, never()).save(any());
     }
 
     @Test
@@ -80,7 +76,7 @@ class ResetPasswordTest {
         assertThatThrownBy(() -> resetPassword.reset(new ResetPasswordCommand("raw", "Brand9New")))
                 .isInstanceOf(InvalidResetTokenException.class)
                 .hasMessage("This reset link is invalid or has expired");
-        verify(users, never()).save(any());
+        verify(users, never()).updatePasswordHash(any(), any());
     }
 
     @Test
@@ -91,7 +87,7 @@ class ResetPasswordTest {
         assertThatThrownBy(() -> resetPassword.reset(new ResetPasswordCommand("raw", "Brand9New")))
                 .isInstanceOf(InvalidResetTokenException.class);
         verify(tokens, never()).markUsed(any(), any());
-        verify(users, never()).save(any());
+        verify(users, never()).updatePasswordHash(any(), any());
     }
 
     @Test
@@ -101,7 +97,7 @@ class ResetPasswordTest {
 
         assertThatThrownBy(() -> resetPassword.reset(new ResetPasswordCommand("raw", "Brand9New")))
                 .isInstanceOf(InvalidResetTokenException.class);
-        verify(users, never()).save(any());
+        verify(users, never()).updatePasswordHash(any(), any());
     }
 
     @Test
@@ -112,7 +108,7 @@ class ResetPasswordTest {
 
         assertThatThrownBy(() -> resetPassword.reset(new ResetPasswordCommand("raw", "Brand9New")))
                 .isInstanceOf(InvalidResetTokenException.class);
-        verify(users, never()).save(any());
+        verify(users, never()).updatePasswordHash(any(), any());
     }
 
     @Test

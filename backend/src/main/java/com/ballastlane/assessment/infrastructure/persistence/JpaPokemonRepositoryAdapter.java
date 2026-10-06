@@ -72,6 +72,21 @@ public class JpaPokemonRepositoryAdapter implements PokemonRepository {
         }
     }
 
+    @Override
+    @Transactional
+    public StoredPokemon updateNotes(StoredPokemon entry) {
+        // Only the trainer's entry row is loaded and written: the shared catalog row (and its version) stays out of
+        // it, so private edits of different trainers never contend with each other or with a sync.
+        if (entry.id() == null) {
+            throw new StaleStoredPokemonException(entry.pokeApiId());
+        }
+        try {
+            return mapper.toDomain(updateEntry(entry));
+        } catch (OptimisticLockingFailureException e) {
+            throw new StaleStoredPokemonException(entry.pokeApiId());
+        }
+    }
+
     // A copy older than the stored one (e.g. an entry read before another trainer synced) must not roll the shared
     // data back, so saving a trainer's notes never regresses the catalog.
     private PokemonEntity upsertCatalog(StoredPokemon entry) {

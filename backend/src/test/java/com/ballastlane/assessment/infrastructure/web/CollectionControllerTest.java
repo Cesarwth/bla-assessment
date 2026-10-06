@@ -109,7 +109,7 @@ class CollectionControllerTest {
 
     @Test
     void listSerializesAMissingImageAsNull() throws Exception {
-        StoredPokemon noImage = new StoredPokemon(STORED.id(), STORED.version(), STORED.ownerId(), 25, "pikachu", null,
+        StoredPokemon noImage = new StoredPokemon(STORED.id(), STORED.version(), STORED.trainerId(), 25, "pikachu", null,
                 null, STORED.types(), STORED.abilities(), STORED.stats(), 6.0, 0.4, null, null, null,
                 STORED.localAttributes(), STORED.syncedAt());
         when(listStored.list(null, null, USER_ACTOR)).thenReturn(new PageResult<>(List.of(noImage), 0, 12, 1));

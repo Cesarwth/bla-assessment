@@ -17,7 +17,7 @@ import org.springframework.boot.ApplicationRunner;
 /**
  * Fills an empty system with a small collection per demo trainer so there is something to try right away. It only ever
  * adds: an entry a trainer already has is left alone, so restarting never duplicates rows or undoes what users edited.
- * Runs after the user seeder, because owners are resolved by username.
+ * Runs after the user seeder, because trainers are resolved by username.
  */
 public class DemoDataSeeder implements ApplicationRunner {
 
@@ -39,13 +39,13 @@ public class DemoDataSeeder implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         int added = 0;
         for (DemoEntry entry : entries) {
-            Optional<User> owner = users.findByUsername(entry.owner());
-            if (owner.isEmpty()) {
-                log.warn("Skipping demo Pokemon {}: its owner '{}' does not exist (are the demo passwords set?)",
-                        entry.detail().name(), entry.owner());
+            Optional<User> account = users.findByUsername(entry.trainer());
+            if (account.isEmpty()) {
+                log.warn("Skipping demo Pokemon {}: its trainer '{}' does not exist (are the demo passwords set?)",
+                        entry.detail().name(), entry.trainer());
                 continue;
             }
-            User user = owner.get();
+            User user = account.get();
             if (repository.findByTrainerAndPokeApiId(user.id(), entry.detail().id()).isPresent()) {
                 continue;
             }

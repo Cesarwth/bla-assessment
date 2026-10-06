@@ -138,9 +138,9 @@ class CollectionFlowIT {
 
     @Test
     void anotherTrainerCannotSeeEditOrRemoveAnEntryNotEvenAnAdmin() throws Exception {
-        String owner = user();
+        String mine = user();
         String stranger = otherUser();
-        long version = syncAs(owner, "pikachu");
+        long version = syncAs(mine, "pikachu");
 
         for (String outsider : List.of(stranger, admin())) {
             mvc.perform(get("/api/v1/collection/25").header("Authorization", outsider))
@@ -152,7 +152,7 @@ class CollectionFlowIT {
             mvc.perform(get("/api/v1/collection").header("Authorization", outsider))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.totalItems").value(0));
         }
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", owner))
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", mine))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.nickname").isEmpty());
     }
 
@@ -215,6 +215,45 @@ class CollectionFlowIT {
     }
 
     @Test
+    void twoTrainersEditingTheirOwnNotesOfTheSamePokemonNeverCollideNorTouchTheCatalogRow() throws Exception {
+        String mine = user();
+        String theirs = otherUser();
+        long mineVersion = syncAs(mine, "pikachu");
+        long theirVersion = syncAs(theirs, "pikachu");
+        Long catalogVersion = jdbc.queryForObject("select version from pokemon", Long.class);
+
+        int rounds = 5;
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            List<Callable<Integer>> editors = List.of(
+                    () -> editRepeatedly(mine, mineVersion, rounds), () -> editRepeatedly(theirs, theirVersion, rounds));
+            for (Future<Integer> done : pool.invokeAll(editors)) {
+                assertThat(done.get()).isEqualTo(rounds);
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertThat(jdbc.queryForObject("select version from pokemon", Long.class)).isEqualTo(catalogVersion);
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", mine))
+                .andExpect(jsonPath("$.nickname").value("edit-" + rounds)).andExpect(jsonPath("$.version").value(mineVersion + rounds));
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", theirs))
+                .andExpect(jsonPath("$.nickname").value("edit-" + rounds)).andExpect(jsonPath("$.version").value(theirVersion + rounds));
+    }
+
+    /** Returns how many consecutive edits were accepted (each one carries the version the previous one returned). */
+    private int editRepeatedly(String token, long firstVersion, int rounds) throws Exception {
+        int accepted = 0;
+        for (int i = 1; i <= rounds; i++) {
+            mvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
+                            .content(patchBody(firstVersion + i - 1, "\"nickname\":\"edit-" + i + "\"")))
+                    .andExpect(status().isOk());
+            accepted++;
+        }
+        return accepted;
+    }
+
+    @Test
     void patchRulesAreDefensive() throws Exception {
         String token = user();
         long version = syncAs(token, "pikachu");
@@ -243,34 +282,34 @@ class CollectionFlowIT {
 
     @Test
     void theCollectionRoutesNeedATokenButTheCatalogDoesNot() throws Exception {
-        String owner = user();
-        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", owner)).andExpect(status().isCreated());
+        String mine = user();
+        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", mine)).andExpect(status().isCreated());
 
         mvc.perform(get("/api/v1/collection")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/collection/25")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/pokemon/25")).andExpect(status().isOk());
 
-        mvc.perform(get("/api/v1/collection").header("Authorization", owner))
+        mvc.perform(get("/api/v1/collection").header("Authorization", mine))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalItems").value(1))
                 .andExpect(jsonPath("$.items[0].id").value(25))
                 .andExpect(jsonPath("$.items[0].imageUrl").value(org.hamcrest.Matchers.endsWith("/official-artwork/25.png")))
                 .andExpect(jsonPath("$.items[0].ownerId").doesNotExist());
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", owner))
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", mine))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.stats[0].name").value("hp"))
                 .andExpect(jsonPath("$.evolutionChain.evolvesTo[0].evolvesTo[0].name").value("raichu"));
-        mvc.perform(get("/api/v1/collection/404").header("Authorization", owner)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/collection/404").header("Authorization", mine)).andExpect(status().isNotFound());
     }
 
     @Test
     void idsListsOnlyTheCallersPokemonSortedAndIsEmptyForAnotherTrainer() throws Exception {
-        String owner = user();
-        syncAs(owner, "pikachu");
-        syncAs(owner, "1");
+        String mine = user();
+        syncAs(mine, "pikachu");
+        syncAs(mine, "1");
 
         mvc.perform(get("/api/v1/collection/ids")).andExpect(status().isUnauthorized());
-        mvc.perform(get("/api/v1/collection/ids").header("Authorization", owner))
+        mvc.perform(get("/api/v1/collection/ids").header("Authorization", mine))
                 .andExpect(status().isOk()).andExpect(content().json("[1,25]", true));
         mvc.perform(get("/api/v1/collection/ids").header("Authorization", otherUser()))
                 .andExpect(status().isOk()).andExpect(content().json("[]", true));
@@ -278,15 +317,15 @@ class CollectionFlowIT {
 
     @Test
     void anyTrainerRemovesTheirOwnEntryAndTheSharedPokemonStaysForTheOthers() throws Exception {
-        String owner = user();
+        String mine = user();
         String other = otherUser();
-        syncAs(owner, "pikachu");
+        syncAs(mine, "pikachu");
         syncAs(other, "pikachu");
 
         mvc.perform(delete("/api/v1/collection/25")).andExpect(status().isUnauthorized());
-        mvc.perform(delete("/api/v1/collection/25").header("Authorization", owner)).andExpect(status().isNoContent());
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", owner)).andExpect(status().isNotFound());
-        mvc.perform(delete("/api/v1/collection/25").header("Authorization", owner)).andExpect(status().isNotFound());
+        mvc.perform(delete("/api/v1/collection/25").header("Authorization", mine)).andExpect(status().isNoContent());
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", mine)).andExpect(status().isNotFound());
+        mvc.perform(delete("/api/v1/collection/25").header("Authorization", mine)).andExpect(status().isNotFound());
         mvc.perform(get("/api/v1/collection/25").header("Authorization", other)).andExpect(status().isOk());
         assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(1);

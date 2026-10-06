@@ -18,7 +18,7 @@ class StoredPokemonTest {
 
         assertThat(created.id()).isNull();
         assertThat(created.version()).isNull();
-        assertThat(created.ownerId()).isEqualTo(5L);
+        assertThat(created.trainerId()).isEqualTo(5L);
         assertThat(created.pokeApiId()).isEqualTo(25);
         assertThat(created.name()).isEqualTo("pikachu");
         assertThat(created.localAttributes()).isEqualTo(LocalAttributes.empty());
@@ -74,9 +74,9 @@ class StoredPokemonTest {
 
     @Test
     void refreshKeepsTheTrainerWhoseCollectionTheEntryIsIn() {
-        StoredPokemon existing = TestData.storedOwnedBy(5L, 7, 3, 25, "pikachu", LocalAttributes.empty());
+        StoredPokemon existing = TestData.storedFor(5L, 7, 3, 25, "pikachu", LocalAttributes.empty());
 
-        assertThat(existing.refreshedFrom(TestData.detail(25, "pikachu"), LATER).ownerId()).isEqualTo(5L);
+        assertThat(existing.refreshedFrom(TestData.detail(25, "pikachu"), LATER).trainerId()).isEqualTo(5L);
     }
 
     @Test

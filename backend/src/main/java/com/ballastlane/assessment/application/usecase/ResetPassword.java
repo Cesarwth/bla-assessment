@@ -45,7 +45,8 @@ public class ResetPassword implements ResetPasswordUseCase {
             throw new InvalidResetTokenException();
         }
         User user = users.findById(token.userId()).orElseThrow(InvalidResetTokenException::new);
-        users.save(new User(user.id(), user.username(), user.email(), hasher.hash(command.newPassword()), user.role()));
+        // Other links die before the password changes: a failure after the write must not leave them usable.
         tokens.invalidateUnusedForUser(user.id(), now);
+        users.updatePasswordHash(user.id(), hasher.hash(command.newPassword()));
     }
 }

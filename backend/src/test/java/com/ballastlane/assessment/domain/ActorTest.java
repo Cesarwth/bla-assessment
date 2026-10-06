@@ -9,12 +9,6 @@ import org.junit.jupiter.api.Test;
 class ActorTest {
 
     @Test
-    void isAdminOnlyForTheAdminRole() {
-        assertThat(new Actor(1L, "ash", Role.ADMIN).isAdmin()).isTrue();
-        assertThat(new Actor(1L, "ash", Role.USER).isAdmin()).isFalse();
-    }
-
-    @Test
     void requiresAnIdentity() {
         assertThatThrownBy(() -> new Actor(null, "ash", Role.USER)).isInstanceOf(InvalidUserException.class);
         assertThatThrownBy(() -> new Actor(1L, " ", Role.USER)).isInstanceOf(InvalidUserException.class);

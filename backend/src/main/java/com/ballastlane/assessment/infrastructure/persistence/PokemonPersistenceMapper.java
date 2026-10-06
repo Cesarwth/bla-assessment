@@ -54,7 +54,7 @@ class PokemonPersistenceMapper {
 
     TrainerPokemonEntity toNewEntry(StoredPokemon source, PokemonEntity catalog) {
         TrainerPokemonEntity entry = new TrainerPokemonEntity();
-        entry.userId = source.ownerId();
+        entry.userId = source.trainerId();
         entry.pokemon = catalog;
         entry.addedAt = source.syncedAt();
         applyNotes(entry, source.localAttributes());

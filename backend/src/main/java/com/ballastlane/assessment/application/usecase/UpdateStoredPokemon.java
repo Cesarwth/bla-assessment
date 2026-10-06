@@ -39,6 +39,6 @@ public class UpdateStoredPokemon implements UpdateStoredPokemonUseCase {
                 command.nickname() != null ? command.nickname() : now.nickname(),
                 command.region() != null ? command.region() : now.region(),
                 command.tags() != null ? command.tags() : now.tags());
-        return repository.save(current.withLocalAttributes(merged));
+        return repository.updateNotes(current.withLocalAttributes(merged));
     }
 }

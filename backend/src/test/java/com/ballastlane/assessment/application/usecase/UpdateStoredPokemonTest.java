@@ -33,8 +33,8 @@ class UpdateStoredPokemonTest {
 
     private static final LocalAttributes LOCAL = new LocalAttributes("Pika", "Kanto", List.of("starter"));
     private static final long VERSION = 3L;
-    private static final Actor OWNER = TestData.user(5);
-    private static final StoredPokemon EXISTING = TestData.storedOwnedBy(5L, 7, VERSION, 25, "pikachu", LOCAL);
+    private static final Actor TRAINER = TestData.user(5);
+    private static final StoredPokemon EXISTING = TestData.storedFor(5L, 7, VERSION, 25, "pikachu", LOCAL);
 
     @Mock PokemonRepository repository;
     UpdateStoredPokemon updateStoredPokemon;
@@ -50,8 +50,8 @@ class UpdateStoredPokemonTest {
 
     private StoredPokemon update(String nickname, String region, List<String> tags) {
         when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.of(EXISTING));
-        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        return updateStoredPokemon.update(command(VERSION, OWNER, nickname, region, tags));
+        when(repository.updateNotes(any())).thenAnswer(inv -> inv.getArgument(0));
+        return updateStoredPokemon.update(command(VERSION, TRAINER, nickname, region, tags));
     }
 
     @Test
@@ -79,11 +79,12 @@ class UpdateStoredPokemonTest {
         update("Sparky", null, null);
 
         ArgumentCaptor<StoredPokemon> saved = ArgumentCaptor.forClass(StoredPokemon.class);
-        verify(repository).save(saved.capture());
+        verify(repository).updateNotes(saved.capture());
+        verify(repository, never()).save(any());
         assertThat(saved.getValue())
                 .isEqualTo(EXISTING.withLocalAttributes(new LocalAttributes("Sparky", "Kanto", List.of("starter"))));
         assertThat(saved.getValue().version()).isEqualTo(VERSION);
-        assertThat(saved.getValue().ownerId()).isEqualTo(5L);
+        assertThat(saved.getValue().trainerId()).isEqualTo(5L);
     }
 
     @Test
@@ -92,28 +93,28 @@ class UpdateStoredPokemonTest {
 
         assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION, TestData.user(6), "Mine now", null, null)))
                 .isInstanceOf(StoredPokemonNotFoundException.class);
-        verify(repository, never()).save(any());
+        verify(repository, never()).updateNotes(any());
     }
 
     @Test
     void aStaleVersionIsRejectedBeforeSaving() {
         when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.of(EXISTING));
 
-        assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION - 1, OWNER, "x", null, null)))
+        assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION - 1, TRAINER, "x", null, null)))
                 .isInstanceOf(StaleStoredPokemonException.class);
-        verify(repository, never()).save(any());
+        verify(repository, never()).updateNotes(any());
     }
 
     @Test
     void aMissingVersionIsRejectedWithoutTouchingTheRepository() {
-        assertThatThrownBy(() -> updateStoredPokemon.update(command(null, OWNER, "x", null, null)))
+        assertThatThrownBy(() -> updateStoredPokemon.update(command(null, TRAINER, "x", null, null)))
                 .isInstanceOf(InvalidStoredPokemonUpdateException.class);
         verifyNoInteractions(repository);
     }
 
     @Test
     void rejectsAnUpdateWithNothingToChangeBeforeTouchingTheRepository() {
-        assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION, OWNER, null, null, null)))
+        assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION, TRAINER, null, null, null)))
                 .isInstanceOf(InvalidStoredPokemonUpdateException.class);
         verifyNoInteractions(repository);
     }
@@ -122,23 +123,23 @@ class UpdateStoredPokemonTest {
     void throwsNotFoundWhenTheRecordDoesNotExist() {
         when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION, OWNER, "x", null, null)))
+        assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION, TRAINER, "x", null, null)))
                 .isInstanceOf(StoredPokemonNotFoundException.class);
-        verify(repository, never()).save(any());
+        verify(repository, never()).updateNotes(any());
     }
 
     @Test
     void rejectsInvalidAttributesWithoutSaving() {
         when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.of(EXISTING));
 
-        assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION, OWNER, "x".repeat(51), null, null)))
+        assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION, TRAINER, "x".repeat(51), null, null)))
                 .isInstanceOf(InvalidLocalAttributesException.class);
-        verify(repository, never()).save(any());
+        verify(repository, never()).updateNotes(any());
     }
 
     @Test
     void rejectsNonPositiveIds() {
-        assertThatThrownBy(() -> updateStoredPokemon.update(new UpdateStoredPokemonCommand(0, VERSION, "x", null, null, OWNER)))
+        assertThatThrownBy(() -> updateStoredPokemon.update(new UpdateStoredPokemonCommand(0, VERSION, "x", null, null, TRAINER)))
                 .isInstanceOf(InvalidPokemonIdentifierException.class);
         verifyNoInteractions(repository);
     }

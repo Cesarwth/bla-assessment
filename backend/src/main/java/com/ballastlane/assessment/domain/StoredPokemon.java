@@ -7,13 +7,13 @@ import java.util.Objects;
 /**
  * One entry of a trainer's collection: the shared Pokemon data (PokeAPI-owned, refreshed by sync) plus that trainer's
  * own {@link LocalAttributes}. {@code id} and {@code version} belong to the entry, not to the shared Pokemon, and are
- * null until first saved; the version guards the trainer's notes against stale writes. {@code ownerId} is the trainer
+ * null until first saved; the version guards the trainer's notes against stale writes. {@code trainerId} is the trainer
  * whose collection this entry is in.
  */
 public record StoredPokemon(
         Long id,
         Long version,
-        Long ownerId,
+        Long trainerId,
         int pokeApiId,
         String name,
         String spriteUrl,
@@ -43,8 +43,8 @@ public record StoredPokemon(
     // Species data comes from separate upstream calls that can come back empty; a partial answer must not erase
     // what an earlier, complete sync already stored.
     public StoredPokemon refreshedFrom(PokemonDetail detail, Instant now) {
-        StoredPokemon fresh = copyOf(detail, id, version, ownerId, localAttributes, now);
-        return new StoredPokemon(fresh.id, fresh.version, fresh.ownerId, fresh.pokeApiId, fresh.name, fresh.spriteUrl, fresh.imageUrl,
+        StoredPokemon fresh = copyOf(detail, id, version, trainerId, localAttributes, now);
+        return new StoredPokemon(fresh.id, fresh.version, fresh.trainerId, fresh.pokeApiId, fresh.name, fresh.spriteUrl, fresh.imageUrl,
                 fresh.types, fresh.abilities, fresh.stats, fresh.weightKg, fresh.heightM,
                 fresh.genus != null ? fresh.genus : genus,
                 fresh.description != null ? fresh.description : description,
@@ -53,13 +53,13 @@ public record StoredPokemon(
     }
 
     public StoredPokemon withLocalAttributes(LocalAttributes attributes) {
-        return new StoredPokemon(id, version, ownerId, pokeApiId, name, spriteUrl, imageUrl, types, abilities, stats, weightKg,
+        return new StoredPokemon(id, version, trainerId, pokeApiId, name, spriteUrl, imageUrl, types, abilities, stats, weightKg,
                 heightM, genus, description, evolutionChain, attributes, syncedAt);
     }
 
     private static StoredPokemon copyOf(
-            PokemonDetail d, Long id, Long version, Long ownerId, LocalAttributes local, Instant syncedAt) {
-        return new StoredPokemon(id, version, ownerId, d.id(), d.name(), d.spriteUrl(), d.imageUrl(), d.types(), d.abilities(),
+            PokemonDetail d, Long id, Long version, Long trainerId, LocalAttributes local, Instant syncedAt) {
+        return new StoredPokemon(id, version, trainerId, d.id(), d.name(), d.spriteUrl(), d.imageUrl(), d.types(), d.abilities(),
                 d.stats(), d.weightKg(), d.heightM(), d.genus(), d.description(), d.evolutionChain(), local, syncedAt);
     }
 }

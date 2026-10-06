@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.ballastlane.assessment.domain.Role;
 import com.ballastlane.assessment.domain.User;
 import com.ballastlane.assessment.domain.exception.EmailAlreadyExistsException;
+import com.ballastlane.assessment.domain.exception.UserNotFoundException;
 import com.ballastlane.assessment.domain.exception.UsernameAlreadyExistsException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,5 +93,50 @@ class JpaUserRepositoryAdapterTest {
             assertThat(found.passwordHash()).isEqualTo("new-hash");
         });
         assertThat(adapter.existsByUsername("gary")).isFalse();
+    }
+
+    @Test
+    void updateProfileChangesOnlyUsernameAndEmailAndKeepsTheStoredHashAndRole() {
+        User saved = adapter.save(new User(null, "gary", "gary@pallet.town", "hash-1", Role.ADMIN));
+        // a password change commits after the profile form was loaded
+        adapter.updatePasswordHash(saved.id(), "hash-2");
+
+        User updated = adapter.updateProfile(saved.id(), "blue", "blue@pallet.town");
+
+        assertThat(updated).isEqualTo(new User(saved.id(), "blue", "blue@pallet.town", "hash-2", Role.ADMIN));
+        assertThat(adapter.findById(saved.id())).hasValue(updated);
+    }
+
+    @Test
+    void updateProfileMapsUniqueViolationsToTheDomainExceptions() {
+        adapter.save(user("ash", "ash@pallet.town"));
+        User other = adapter.save(user("misty", "misty@cerulean.city"));
+
+        assertThatThrownBy(() -> adapter.updateProfile(other.id(), "ash", "misty@cerulean.city"))
+                .isInstanceOf(UsernameAlreadyExistsException.class);
+        assertThatThrownBy(() -> adapter.updateProfile(other.id(), "misty", "ash@pallet.town"))
+                .isInstanceOf(EmailAlreadyExistsException.class);
+    }
+
+    @Test
+    void updateProfileOfAVanishedAccountIsNotFound() {
+        assertThatThrownBy(() -> adapter.updateProfile(999_999L, "ghost", "ghost@pallet.town"))
+                .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    void updatePasswordHashChangesOnlyTheHash() {
+        User saved = adapter.save(user("brock", "brock@pewter.city"));
+
+        adapter.updatePasswordHash(saved.id(), "new-hash");
+
+        assertThat(adapter.findById(saved.id())).hasValue(
+                new User(saved.id(), "brock", "brock@pewter.city", "new-hash", Role.USER));
+    }
+
+    @Test
+    void updatePasswordHashOfAVanishedAccountIsNotFound() {
+        assertThatThrownBy(() -> adapter.updatePasswordHash(999_999L, "new-hash"))
+                .isInstanceOf(UserNotFoundException.class);
     }
 }

@@ -1,6 +1,6 @@
 [
  {
-  "owner": "demo",
+  "trainer": "demo",
   "nickname": "Bulby",
   "region": "Pallet Town",
   "tags": [
@@ -80,7 +80,7 @@
   }
  },
  {
-  "owner": "demo",
+  "trainer": "demo",
   "nickname": "Char",
   "region": "Pallet Town",
   "tags": [
@@ -159,7 +159,7 @@
   }
  },
  {
-  "owner": "demo",
+  "trainer": "demo",
   "nickname": "Squirt",
   "region": "Pallet Town",
   "tags": [
@@ -238,7 +238,7 @@
   }
  },
  {
-  "owner": "demo",
+  "trainer": "demo",
   "nickname": "Sparky",
   "region": "Viridian Forest",
   "tags": [
@@ -317,7 +317,7 @@
   }
  },
  {
-  "owner": "demo",
+  "trainer": "demo",
   "nickname": "Fluffy",
   "region": "Celadon City",
   "tags": [
@@ -452,7 +452,7 @@
   }
  },
  {
-  "owner": "demo",
+  "trainer": "demo",
   "nickname": "Sleepy",
   "region": "Route 12",
   "tags": [
@@ -522,7 +522,7 @@
   }
  },
  {
-  "owner": "demo-admin",
+  "trainer": "demo-admin",
   "nickname": null,
   "region": "Kanto",
   "tags": [
@@ -601,7 +601,7 @@
   }
  },
  {
-  "owner": "demo-admin",
+  "trainer": "demo-admin",
   "nickname": "Big V",
   "region": "Kanto",
   "tags": [
@@ -681,7 +681,7 @@
   }
  },
  {
-  "owner": "demo-admin",
+  "trainer": "demo-admin",
   "nickname": null,
   "region": "Kanto",
   "tags": [
@@ -759,7 +759,7 @@
   }
  },
  {
-  "owner": "demo-admin",
+  "trainer": "demo-admin",
   "nickname": "Zard",
   "region": "Kanto",
   "tags": [
@@ -839,7 +839,7 @@
   }
  },
  {
-  "owner": "demo-admin",
+  "trainer": "demo-admin",
   "nickname": null,
   "region": "Kanto",
   "tags": [
@@ -917,7 +917,7 @@
   }
  },
  {
-  "owner": "demo-admin",
+  "trainer": "demo-admin",
   "nickname": null,
   "region": "Kanto",
   "tags": [
@@ -996,7 +996,7 @@
   }
  },
  {
-  "owner": "demo-admin",
+  "trainer": "demo-admin",
   "nickname": null,
   "region": "Kanto",
   "tags": [
@@ -1074,7 +1074,7 @@
   }
  },
  {
-  "owner": "demo-admin",
+  "trainer": "demo-admin",
   "nickname": "Shapeshifter",
   "region": "Cinnabar Island",
   "tags": [
@@ -1132,7 +1132,7 @@
   }
  },
  {
-  "owner": "demo-admin",
+  "trainer": "demo-admin",
   "nickname": null,
   "region": "Cerulean Cave",
   "tags": [
@@ -1191,7 +1191,7 @@
   }
  },
  {
-  "owner": "demo-admin",
+  "trainer": "demo-admin",
   "nickname": null,
   "region": "Kanto",
   "tags": [
@@ -1249,7 +1249,7 @@
   }
  },
  {
-  "owner": "demo-admin",
+  "trainer": "demo-admin",
   "nickname": "Bulba Boss",
   "region": "Kanto",
   "tags": [
@@ -1329,7 +1329,7 @@
   }
  },
  {
-  "owner": "demo-admin",
+  "trainer": "demo-admin",
   "nickname": null,
   "region": "Kanto",
   "tags": [

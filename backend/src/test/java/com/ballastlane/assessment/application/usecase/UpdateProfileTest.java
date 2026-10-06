@@ -3,6 +3,8 @@ package com.ballastlane.assessment.application.usecase;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -26,7 +28,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -47,30 +48,30 @@ class UpdateProfileTest {
         lenient().when(users.findById(1L)).thenReturn(Optional.of(ASH));
     }
 
-    private void saveEchoesAndTokenIsIssued() {
-        when(users.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+    private void updateEchoesAndTokenIsIssued() {
+        // the repository answers with the stored row, whose hash is whatever is current in the database
+        when(users.updateProfile(eq(1L), anyString(), anyString())).thenAnswer(inv ->
+                new User(1L, inv.getArgument(1), inv.getArgument(2), "stored-hash", Role.USER));
         when(tokens.issue(any(User.class))).thenReturn(TOKEN);
     }
 
     @Test
     void changesTheUsernameWithoutAPasswordAndIssuesATokenForTheNewName() {
-        saveEchoesAndTokenIsIssued();
+        updateEchoesAndTokenIsIssued();
 
         UpdatedProfile result = updateProfile.update(new UpdateProfileCommand(1L, "  Red ", null, null));
 
-        ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
-        verify(users).save(saved.capture());
-        assertThat(saved.getValue().username()).isEqualTo("red");
-        assertThat(saved.getValue().email()).isEqualTo("ash@pallet.town");
-        assertThat(saved.getValue().passwordHash()).isEqualTo("stored-hash");
+        verify(users).updateProfile(1L, "red", "ash@pallet.town");
+        // never the whole-row save: it would write back the password hash read earlier
+        verify(users, never()).save(any());
         assertThat(result.user().username()).isEqualTo("red");
         assertThat(result.token()).isEqualTo(TOKEN);
-        verify(tokens).issue(saved.getValue());
+        verify(tokens).issue(result.user());
     }
 
     @Test
     void changesTheEmailWhenTheCurrentPasswordMatches() {
-        saveEchoesAndTokenIsIssued();
+        updateEchoesAndTokenIsIssued();
         when(hasher.matches("Pikachu123", "stored-hash")).thenReturn(true);
 
         UpdatedProfile result = updateProfile.update(new UpdateProfileCommand(1L, null, " NEW@Pallet.Town", "Pikachu123"));
@@ -86,14 +87,14 @@ class UpdateProfileTest {
         assertThatThrownBy(() -> updateProfile.update(new UpdateProfileCommand(1L, null, "new@pallet.town", "wrong")))
                 .isInstanceOf(InvalidCurrentPasswordException.class);
         verify(users, never()).existsByEmail(any());
-        verify(users, never()).save(any());
+        verify(users, never()).updateProfile(any(), any(), any());
     }
 
     @Test
     void changingTheEmailWithoutAPasswordFails() {
         assertThatThrownBy(() -> updateProfile.update(new UpdateProfileCommand(1L, null, "new@pallet.town", null)))
                 .isInstanceOf(InvalidCurrentPasswordException.class);
-        verify(users, never()).save(any());
+        verify(users, never()).updateProfile(any(), any(), any());
     }
 
     @Test
@@ -105,7 +106,7 @@ class UpdateProfileTest {
 
     @Test
     void resubmittingTheCurrentEmailIsNotAChangeAndNeedsNoPassword() {
-        saveEchoesAndTokenIsIssued();
+        updateEchoesAndTokenIsIssued();
 
         UpdatedProfile result = updateProfile.update(new UpdateProfileCommand(1L, "red", "ASH@pallet.town", null));
 
@@ -119,7 +120,7 @@ class UpdateProfileTest {
 
         assertThatThrownBy(() -> updateProfile.update(new UpdateProfileCommand(1L, "Red", null, null)))
                 .isInstanceOf(UsernameAlreadyExistsException.class);
-        verify(users, never()).save(any());
+        verify(users, never()).updateProfile(any(), any(), any());
     }
 
     @Test
@@ -129,12 +130,12 @@ class UpdateProfileTest {
 
         assertThatThrownBy(() -> updateProfile.update(new UpdateProfileCommand(1L, null, "red@pallet.town", "Pikachu123")))
                 .isInstanceOf(EmailAlreadyExistsException.class);
-        verify(users, never()).save(any());
+        verify(users, never()).updateProfile(any(), any(), any());
     }
 
     @Test
     void keepingTheSameUsernameDoesNotCollideWithItself() {
-        saveEchoesAndTokenIsIssued();
+        updateEchoesAndTokenIsIssued();
 
         updateProfile.update(new UpdateProfileCommand(1L, "ASH", null, null));
 
@@ -151,7 +152,7 @@ class UpdateProfileTest {
     void rejectsAnInvalidNewUsername() {
         assertThatThrownBy(() -> updateProfile.update(new UpdateProfileCommand(1L, "ab", null, null)))
                 .isInstanceOf(InvalidUserException.class);
-        verify(users, never()).save(any());
+        verify(users, never()).updateProfile(any(), any(), any());
     }
 
     @Test

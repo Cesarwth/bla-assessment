@@ -38,9 +38,9 @@ class PokemonPersistenceMapperTest {
 
     @Test
     void roundTripKeepsTheTrainerWhoseCollectionTheEntryIsIn() {
-        StoredPokemon entry = TestData.storedOwnedBy(42L, 7, 3, 25, "pikachu", LocalAttributes.empty());
+        StoredPokemon entry = TestData.storedFor(42L, 7, 3, 25, "pikachu", LocalAttributes.empty());
 
-        assertThat(roundTrip(entry).ownerId()).isEqualTo(42L);
+        assertThat(roundTrip(entry).trainerId()).isEqualTo(42L);
     }
 
     @Test
@@ -74,7 +74,7 @@ class PokemonPersistenceMapperTest {
                 node(134, "vaporeon", List.of("Use water-stone")),
                 node(135, "jolteon", List.of("Use thunder-stone"), node(1, "deep", List.of("Level up (level 5)"))));
         StoredPokemon pokemon = TestData.stored(1, 0, 133, "eevee", LocalAttributes.empty());
-        StoredPokemon withChain = new StoredPokemon(pokemon.id(), pokemon.version(), pokemon.ownerId(), pokemon.pokeApiId(), pokemon.name(),
+        StoredPokemon withChain = new StoredPokemon(pokemon.id(), pokemon.version(), pokemon.trainerId(), pokemon.pokeApiId(), pokemon.name(),
                 pokemon.spriteUrl(), pokemon.imageUrl(), pokemon.types(), pokemon.abilities(), pokemon.stats(),
                 pokemon.weightKg(), pokemon.heightM(), pokemon.genus(), pokemon.description(), eevee,
                 pokemon.localAttributes(), pokemon.syncedAt());
@@ -85,7 +85,7 @@ class PokemonPersistenceMapperTest {
     @Test
     void nullEvolutionChainStaysNull() {
         StoredPokemon pokemon = TestData.stored(1, 0, 25, "pikachu", LocalAttributes.empty());
-        StoredPokemon noChain = new StoredPokemon(pokemon.id(), pokemon.version(), pokemon.ownerId(), pokemon.pokeApiId(), pokemon.name(),
+        StoredPokemon noChain = new StoredPokemon(pokemon.id(), pokemon.version(), pokemon.trainerId(), pokemon.pokeApiId(), pokemon.name(),
                 pokemon.spriteUrl(), pokemon.imageUrl(), pokemon.types(), pokemon.abilities(), pokemon.stats(),
                 pokemon.weightKg(), pokemon.heightM(), pokemon.genus(), pokemon.description(), null,
                 pokemon.localAttributes(), pokemon.syncedAt());

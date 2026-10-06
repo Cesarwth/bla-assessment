@@ -31,6 +31,6 @@ public class ChangePassword implements ChangePasswordUseCase {
         if (command.newPassword().equals(currentPassword)) {
             throw new WeakPasswordException("The new password must be different from the current one");
         }
-        users.save(new User(user.id(), user.username(), user.email(), hasher.hash(command.newPassword()), user.role()));
+        users.updatePasswordHash(user.id(), hasher.hash(command.newPassword()));
     }
 }

@@ -10,8 +10,4 @@ public record Actor(Long userId, String username, Role role) {
             throw new InvalidUserException("An actor needs an id, a username and a role");
         }
     }
-
-    public boolean isAdmin() {
-        return role == Role.ADMIN;
-    }
 }

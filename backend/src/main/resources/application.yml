@@ -45,6 +45,9 @@ app:
     from: ${MAIL_FROM:no-reply@pokedex.local}
   password-reset:
     ttl: ${PASSWORD_RESET_TTL_MINUTES:30}m
+  sync:
+    # Time budget of one bulk sync; keep it below the reverse proxy's read timeout (nginx: 120 s).
+    max-duration: ${SYNC_MAX_DURATION_SECONDS:90}s
   pokeapi:
     base-url: ${POKEAPI_BASE_URL:https://pokeapi.co/api/v2}
     connect-timeout: 2s

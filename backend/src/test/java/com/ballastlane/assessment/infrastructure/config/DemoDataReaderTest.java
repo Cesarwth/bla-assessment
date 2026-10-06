@@ -26,12 +26,12 @@ class DemoDataReaderTest {
 
     @Test
     void noTrainerHasThePokemonTwiceAndEveryEntryBelongsToAKnownDemoAccount() {
-        Set<String> perTrainer = entries.stream().map(e -> e.owner() + "/" + e.detail().id()).collect(Collectors.toSet());
+        Set<String> perTrainer = entries.stream().map(e -> e.trainer() + "/" + e.detail().id()).collect(Collectors.toSet());
 
         assertThat(perTrainer).hasSize(entries.size());
-        assertThat(entries).extracting(DemoEntry::owner).containsOnly("demo", "demo-admin");
-        assertThat(entries.stream().filter(e -> e.owner().equals("demo"))).hasSizeGreaterThanOrEqualTo(3);
-        assertThat(entries.stream().filter(e -> e.owner().equals("demo-admin"))).hasSizeGreaterThanOrEqualTo(3);
+        assertThat(entries).extracting(DemoEntry::trainer).containsOnly("demo", "demo-admin");
+        assertThat(entries.stream().filter(e -> e.trainer().equals("demo"))).hasSizeGreaterThanOrEqualTo(3);
+        assertThat(entries.stream().filter(e -> e.trainer().equals("demo-admin"))).hasSizeGreaterThanOrEqualTo(3);
     }
 
     @Test
@@ -39,8 +39,8 @@ class DemoDataReaderTest {
         List<DemoEntry> bulbasaurs = entries.stream().filter(e -> e.detail().id() == 1).toList();
         List<DemoEntry> pikachus = entries.stream().filter(e -> e.detail().id() == 25).toList();
 
-        assertThat(bulbasaurs).extracting(DemoEntry::owner).containsExactlyInAnyOrder("demo", "demo-admin");
-        assertThat(pikachus).extracting(DemoEntry::owner).containsExactlyInAnyOrder("demo", "demo-admin");
+        assertThat(bulbasaurs).extracting(DemoEntry::trainer).containsExactlyInAnyOrder("demo", "demo-admin");
+        assertThat(pikachus).extracting(DemoEntry::trainer).containsExactlyInAnyOrder("demo", "demo-admin");
         assertThat(bulbasaurs).extracting(DemoEntry::nickname).doesNotHaveDuplicates();
         assertThat(pikachus).extracting(DemoEntry::tags).doesNotHaveDuplicates();
     }
@@ -68,7 +68,7 @@ class DemoDataReaderTest {
         assertThat(pikachu.detail().types()).containsExactly("electric");
         assertThat(pikachu.detail().weightKg()).isEqualTo(6.0);
         assertThat(pikachu.nickname()).isEqualTo("Sparky");
-        assertThat(pikachu.owner()).isEqualTo("demo");
+        assertThat(pikachu.trainer()).isEqualTo("demo");
     }
 
     @Test

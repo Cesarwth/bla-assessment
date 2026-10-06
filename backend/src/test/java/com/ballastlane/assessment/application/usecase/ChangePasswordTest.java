@@ -1,6 +1,5 @@
 package com.ballastlane.assessment.application.usecase;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
@@ -20,7 +19,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -46,10 +44,9 @@ class ChangePasswordTest {
 
         changePassword.change(new ChangePasswordCommand(1L, "Pikachu123", "Raichu456"));
 
-        ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
-        verify(users).save(saved.capture());
-        assertThat(saved.getValue().passwordHash()).isEqualTo("new-hash");
-        assertThat(saved.getValue().username()).isEqualTo("ash");
+        // only the hash is written: a profile edit committed meanwhile must survive
+        verify(users).updatePasswordHash(1L, "new-hash");
+        verify(users, never()).save(any());
     }
 
     @Test
@@ -58,7 +55,7 @@ class ChangePasswordTest {
 
         assertThatThrownBy(() -> changePassword.change(new ChangePasswordCommand(1L, "wrong", "Raichu456")))
                 .isInstanceOf(InvalidCurrentPasswordException.class);
-        verify(users, never()).save(any());
+        verify(users, never()).updatePasswordHash(any(), any());
     }
 
     @Test
@@ -73,7 +70,7 @@ class ChangePasswordTest {
 
         assertThatThrownBy(() -> changePassword.change(new ChangePasswordCommand(1L, "Pikachu123", "short")))
                 .isInstanceOf(WeakPasswordException.class);
-        verify(users, never()).save(any());
+        verify(users, never()).updatePasswordHash(any(), any());
     }
 
     @Test
@@ -83,7 +80,7 @@ class ChangePasswordTest {
         assertThatThrownBy(() -> changePassword.change(new ChangePasswordCommand(1L, "Pikachu123", "Pikachu123")))
                 .isInstanceOf(WeakPasswordException.class)
                 .hasMessage("The new password must be different from the current one");
-        verify(users, never()).save(any());
+        verify(users, never()).updatePasswordHash(any(), any());
     }
 
     @Test
