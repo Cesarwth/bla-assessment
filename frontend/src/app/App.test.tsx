@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { bulbasaur, pageOf, pikachu } from '../test/fixtures'
-import { apiUrl, failWith, mockCatalog, mockCollection, mockDetail } from '../test/handlers'
+import { apiUrl, failWith, mockCatalog, mockCollection, mockCollectionIds, mockDetail } from '../test/handlers'
 import { server } from '../test/server'
 import { makeToken, renderApp } from '../test/utils'
 import { App } from './App'
@@ -12,6 +12,7 @@ describe('App shell', () => {
   // The home route is the catalog; these tests are about the shell around it.
   beforeEach(() => {
     mockCatalog(() => pageOf([bulbasaur]))
+    mockCollectionIds([]) // logged-in trainers also ask which of these they already have
   })
 
   it('offers login and register links to anonymous visitors', () => {

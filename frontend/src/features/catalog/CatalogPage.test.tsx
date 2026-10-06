@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest'
 import { App } from '../../app/App'
 import { expectNoA11yViolations } from '../../test/axe'
 import { bulbasaur, pageOf, pikachu, summary } from '../../test/fixtures'
-import { failWith, mockCatalog, mockDetail } from '../../test/handlers'
-import { renderApp } from '../../test/utils'
+import { failWith, mockCatalog, mockCollectionIds, mockDetail } from '../../test/handlers'
+import { makeToken, renderApp } from '../../test/utils'
 
 const firstPage = () => pageOf([bulbasaur, summary(2, 'ivysaur', ['grass', 'poison']), summary(3, 'venusaur', ['grass'])])
 
@@ -189,5 +189,50 @@ describe('CatalogPage', () => {
     await screen.findByText('Bulbasaur')
 
     await expectNoA11yViolations(container)
+  })
+  describe('what you already collected', () => {
+    it('marks the Pokémon that are in your collection', async () => {
+      mockCatalog(firstPage)
+      mockCollectionIds([1, 3])
+      renderApp(<App />, { token: makeToken() })
+
+      const bulbasaur = (await screen.findByRole('link', { name: /Bulbasaur/ })).closest('article')!
+      expect(await within(bulbasaur).findByText('In my collection')).toBeInTheDocument()
+      const venusaur = screen.getByRole('link', { name: /Venusaur/ }).closest('article')!
+      expect(within(venusaur).getByText('In my collection')).toBeInTheDocument()
+      const ivysaur = screen.getByRole('link', { name: /Ivysaur/ }).closest('article')!
+      expect(within(ivysaur).queryByText('In my collection')).not.toBeInTheDocument()
+    })
+
+    it('shows no marks, and asks for nothing, to visitors who are not logged in', async () => {
+      const requests: string[] = []
+      mockCatalog(firstPage)
+      mockCollectionIds([1], requests)
+      renderApp(<App />)
+
+      await screen.findByText('Bulbasaur')
+
+      expect(screen.queryByText('In my collection')).not.toBeInTheDocument()
+      expect(requests).toEqual([])
+    })
+
+    it('still shows the whole catalog when the marks cannot be loaded', async () => {
+      mockCatalog(firstPage)
+      mockCollectionIds(failWith(500, 'INTERNAL_ERROR', 'x'))
+      renderApp(<App />, { token: makeToken() })
+
+      expect(await screen.findByRole('link', { name: /Bulbasaur/ })).toBeInTheDocument()
+      expect(screen.queryByText('In my collection')).not.toBeInTheDocument()
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    })
+
+    it('has no accessibility violations with the marks', async () => {
+      mockCatalog(firstPage)
+      mockCollectionIds([1])
+      const { container } = renderApp(<App />, { token: makeToken() })
+      await screen.findByText('In my collection')
+
+      await expectNoA11yViolations(container)
+    })
   })
 })

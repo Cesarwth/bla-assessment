@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import type { PokemonSummary } from '../../../shared/api/types'
 import { formatId, formatList, formatName, formatWeight } from '../../../shared/format'
@@ -5,10 +6,11 @@ import styles from './PokemonCard.module.css'
 import { PokemonImage } from '../../../shared/ui/PokemonImage'
 import { TypeChip } from '../../../shared/ui/TypeChip'
 
-export function PokemonCard({ pokemon }: { pokemon: PokemonSummary }) {
+export function PokemonCard({ pokemon, badge }: { pokemon: PokemonSummary; badge?: ReactNode }) {
   const name = formatName(pokemon.name)
   return (
     <article className={styles.card}>
+      {badge}
       <div className={styles.art} data-type={pokemon.types[0]}>
         <PokemonImage src={pokemon.spriteUrl} alt={name} size={120} fallback="No image" />
       </div>

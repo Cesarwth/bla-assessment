@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ErrorState } from '../../shared/ui/ErrorState'
 import { LoadingStatus } from '../../shared/ui/LoadingStatus'
@@ -9,7 +10,8 @@ import { PokemonCard } from './components/PokemonCard'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useCatalogPage } from './queries'
 
-export function CatalogPage() {
+/** `renderBadge` lets the app add a mark to a card (e.g. "already in my collection") without this feature knowing about it. */
+export function CatalogPage({ renderBadge }: { renderBadge?: (pokemonId: number) => ReactNode }) {
   const { page, apiPage, size, hrefFor, setSize } = usePaging()
   const query = useCatalogPage(apiPage, size)
   useDocumentTitle('Catalog')
@@ -41,7 +43,7 @@ export function CatalogPage() {
         <ul className={styles.grid} aria-busy={query.isPlaceholderData}>
           {query.data.items.map((pokemon) => (
             <li key={pokemon.id}>
-              <PokemonCard pokemon={pokemon} />
+              <PokemonCard pokemon={pokemon} badge={renderBadge?.(pokemon.id)} />
             </li>
           ))}
         </ul>
