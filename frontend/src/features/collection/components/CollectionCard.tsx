@@ -15,7 +15,7 @@ export function CollectionCard({ entry }: { entry: StoredPokemonSummary }) {
       imageSrc={entry.imageUrl ?? entry.spriteUrl}
       title={
         <Link
-          className="text-(--type-ink) no-underline after:absolute after:inset-0 after:content-[''] focus-visible:outline-(--type-ink)"
+          className="text-(--type-ink) no-underline after:absolute after:inset-0 after:z-1 after:content-[''] focus-visible:outline-(--type-ink)"
           to={`/collection/${entry.id}`}
         >
           {name}

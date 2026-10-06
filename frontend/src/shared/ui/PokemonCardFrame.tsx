@@ -10,7 +10,7 @@ interface Props {
   name: string
   /** The official artwork, or the sprite when there is none. */
   imageSrc: string | null
-  /** The title link. It must cover the card (`after:absolute after:inset-0`) so the card is one big target. */
+  /** The title link. It must cover the card (`after:absolute after:inset-0 after:z-1`: the z-index keeps it above the positioned art area) so the card is one big target. */
   title: ReactNode
   /** Marks and controls that sit on the art, above the card-wide link. */
   extras?: ReactNode

@@ -17,7 +17,7 @@ export function PokemonCard({ pokemon, extras }: { pokemon: PokemonSummary; extr
       title={
         // The title link covers the whole card, so the card is one big target with a single accessible name.
         <Link
-          className="text-(--type-ink) no-underline after:absolute after:inset-0 after:content-[''] focus-visible:outline-(--type-ink)"
+          className="text-(--type-ink) no-underline after:absolute after:inset-0 after:z-1 after:content-[''] focus-visible:outline-(--type-ink)"
           to={`/pokemon/${pokemon.id}`}
         >
           {name}

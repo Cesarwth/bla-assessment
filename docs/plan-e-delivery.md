@@ -244,3 +244,7 @@ Reference from the user: a Tailwind card with a type-coloured gradient, a glass 
 - Frontend: `PokemonCardFrame` and `PokemonHero` in `shared/ui`; per-type palettes (`from/to/pill/ink`) in `@theme`; stat bars use a native `<meter>` so the browser picks low/medium/high colours; a stylised pokéball drawn as inline SVG in the header (own drawing, no official logo).
 - Accessibility: gradients are dark enough, or the text ink is dark on light types (fire uses dark text on orange), so every type reaches ≥ 4.5:1; `index.css.test.ts` enforces it for all 18 types plus the unknown fallback.
 - Checked in Chrome: 161 page × width × scheme combinations, no overflow and no console problems except the deliberate 404s.
+
+### Whole-card click fix (2026-10-06)
+
+Manual testing: only the info panel of a card opened the detail. Cause: the title link's `::after` (which makes the whole card a link) sat below the positioned art area, so clicks on the image never reached it (0 of 5 real clicks navigated). Fix: `after:z-1` on the link; the selection checkbox keeps working above it. Verified with real mouse events in Chrome: 49 of 49 probe points over a card hit the link, 5 of 5 clicks navigate, collection cards navigate, and clicking the selection checkbox ticks it without leaving the list.
