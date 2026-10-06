@@ -1,8 +1,11 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
-import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, expect, vi } from 'vitest'
+import * as axeMatchers from 'vitest-axe/matchers'
 import { resetClient } from '../shared/api/client'
 import { server } from './server'
+
+expect.extend(axeMatchers)
 
 const consoleOutput: string[] = []
 

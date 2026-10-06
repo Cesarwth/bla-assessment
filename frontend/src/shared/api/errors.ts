@@ -21,3 +21,12 @@ export class ApiError extends Error {
 export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError
 }
+
+/** What to tell the user about a failure: the backend writes people-friendly messages, so they pass through. */
+export function describeError(error: unknown): string {
+  if (!isApiError(error)) return 'Something unexpected happened. Please try again.'
+  if (error.code === 'CATALOG_UNAVAILABLE' || error.code === 'CATALOG_TIMEOUT') {
+    return 'The Pokémon catalog is not answering right now. Please try again in a moment.'
+  }
+  return error.message
+}

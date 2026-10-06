@@ -1,0 +1,65 @@
+.tree,
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tree ul {
+  margin-top: var(--space-3);
+  padding-left: var(--space-5);
+  border-left: 2px solid var(--color-border);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.requirement {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.node {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+  text-decoration: none;
+  align-self: flex-start;
+}
+
+.node:hover {
+  background: var(--color-surface-muted);
+}
+
+.node[aria-current='page'] {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.sprite {
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+}
+
+/* Wide screens: the line reads left to right and branches fan out downwards. */
+@media (min-width: 48rem) {
+  .tree > li > ul {
+    border-left: 0;
+    padding-left: 0;
+    margin-left: var(--space-6);
+  }
+}

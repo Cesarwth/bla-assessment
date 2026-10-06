@@ -67,6 +67,9 @@ cd frontend && npm ci && npm run typecheck && npm run lint && npm test && npm ru
 
 **Goal:** browse the PokeAPI catalog and open a detailed view.
 
+**Status:** ✅ Complete 2026-10-06
+**Deviation:** the URL uses 1-based pages (`?page=2`) and the client converts to the API's 0-based pages (friendlier shareable links; nonsense in the URL falls back to the defaults); `typeColorFallback` became a CSS rule (`[data-type]` palette with a neutral default) so there is no JS color table to test; stat bars use the semantic `<meter>`; two axe rules (`color-contrast`, `label-content-name-mismatch`) are disabled in the test helper because jsdom has no layout/canvas — verified that axe still fails on a real violation; added `describeError` (+tests) to turn API errors into user messages.
+
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
 | ----- | --------- | --------- | ------- |

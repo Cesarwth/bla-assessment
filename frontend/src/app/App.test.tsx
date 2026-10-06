@@ -1,10 +1,17 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { bulbasaur, pageOf } from '../test/fixtures'
+import { mockCatalog } from '../test/handlers'
 import { makeToken, renderApp } from '../test/utils'
 import { App } from './App'
 
 describe('App shell', () => {
+  // The home route is the catalog; these tests are about the shell around it.
+  beforeEach(() => {
+    mockCatalog(() => pageOf([bulbasaur]))
+  })
+
   it('offers login and register links to anonymous visitors', () => {
     renderApp(<App />)
 
