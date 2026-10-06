@@ -5,6 +5,11 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
+// Spring Boot 4.1.1 (latest 4.1.x) manages Tomcat 11.0.24 and Jackson 3.1.5, which carry published CVEs (3 critical in
+// Tomcat, 5 high in Jackson) fixed in the versions below. Remove these overrides once Boot manages versions >= these.
+ext['tomcat.version'] = '11.0.25'
+ext['jackson-bom.version'] = '3.1.7'
+
 group = 'com.ballastlane'
 version = '0.0.1-SNAPSHOT'
 
