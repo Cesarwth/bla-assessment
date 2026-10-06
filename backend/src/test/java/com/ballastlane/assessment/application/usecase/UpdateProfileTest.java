@@ -1,0 +1,164 @@
+package com.ballastlane.assessment.application.usecase;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.ballastlane.assessment.application.port.in.UpdateProfileCommand;
+import com.ballastlane.assessment.application.port.in.UpdatedProfile;
+import com.ballastlane.assessment.application.port.out.PasswordHasher;
+import com.ballastlane.assessment.application.port.out.TokenIssuer;
+import com.ballastlane.assessment.application.port.out.UserRepository;
+import com.ballastlane.assessment.domain.AuthToken;
+import com.ballastlane.assessment.domain.Role;
+import com.ballastlane.assessment.domain.User;
+import com.ballastlane.assessment.domain.exception.EmailAlreadyExistsException;
+import com.ballastlane.assessment.domain.exception.InvalidCurrentPasswordException;
+import com.ballastlane.assessment.domain.exception.InvalidUserException;
+import com.ballastlane.assessment.domain.exception.UserNotFoundException;
+import com.ballastlane.assessment.domain.exception.UsernameAlreadyExistsException;
+import java.time.Instant;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class UpdateProfileTest {
+
+    private static final User ASH = new User(1L, "ash", "ash@pallet.town", "stored-hash", Role.USER);
+    private static final AuthToken TOKEN = new AuthToken("jwt", Instant.parse("2030-01-01T00:00:00Z"));
+
+    @Mock UserRepository users;
+    @Mock PasswordHasher hasher;
+    @Mock TokenIssuer tokens;
+    UpdateProfile updateProfile;
+
+    @BeforeEach
+    void setUp() {
+        updateProfile = new UpdateProfile(users, hasher, tokens);
+        lenient().when(users.findById(1L)).thenReturn(Optional.of(ASH));
+    }
+
+    private void saveEchoesAndTokenIsIssued() {
+        when(users.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(tokens.issue(any(User.class))).thenReturn(TOKEN);
+    }
+
+    @Test
+    void changesTheUsernameWithoutAPasswordAndIssuesATokenForTheNewName() {
+        saveEchoesAndTokenIsIssued();
+
+        UpdatedProfile result = updateProfile.update(new UpdateProfileCommand(1L, "  Red ", null, null));
+
+        ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
+        verify(users).save(saved.capture());
+        assertThat(saved.getValue().username()).isEqualTo("red");
+        assertThat(saved.getValue().email()).isEqualTo("ash@pallet.town");
+        assertThat(saved.getValue().passwordHash()).isEqualTo("stored-hash");
+        assertThat(result.user().username()).isEqualTo("red");
+        assertThat(result.token()).isEqualTo(TOKEN);
+        verify(tokens).issue(saved.getValue());
+    }
+
+    @Test
+    void changesTheEmailWhenTheCurrentPasswordMatches() {
+        saveEchoesAndTokenIsIssued();
+        when(hasher.matches("Pikachu123", "stored-hash")).thenReturn(true);
+
+        UpdatedProfile result = updateProfile.update(new UpdateProfileCommand(1L, null, " NEW@Pallet.Town", "Pikachu123"));
+
+        assertThat(result.user().email()).isEqualTo("new@pallet.town");
+        assertThat(result.user().username()).isEqualTo("ash");
+    }
+
+    @Test
+    void changingTheEmailWithAWrongPasswordFailsBeforeAnyUniquenessCheck() {
+        when(hasher.matches("wrong", "stored-hash")).thenReturn(false);
+
+        assertThatThrownBy(() -> updateProfile.update(new UpdateProfileCommand(1L, null, "new@pallet.town", "wrong")))
+                .isInstanceOf(InvalidCurrentPasswordException.class);
+        verify(users, never()).existsByEmail(any());
+        verify(users, never()).save(any());
+    }
+
+    @Test
+    void changingTheEmailWithoutAPasswordFails() {
+        assertThatThrownBy(() -> updateProfile.update(new UpdateProfileCommand(1L, null, "new@pallet.town", null)))
+                .isInstanceOf(InvalidCurrentPasswordException.class);
+        verify(users, never()).save(any());
+    }
+
+    @Test
+    void aPasswordBcryptCannotHandleIsAWrongPasswordNotAHasherError() {
+        assertThatThrownBy(() -> updateProfile.update(new UpdateProfileCommand(1L, null, "new@pallet.town", "é".repeat(40))))
+                .isInstanceOf(InvalidCurrentPasswordException.class);
+        verify(hasher, never()).matches(any(), any());
+    }
+
+    @Test
+    void resubmittingTheCurrentEmailIsNotAChangeAndNeedsNoPassword() {
+        saveEchoesAndTokenIsIssued();
+
+        UpdatedProfile result = updateProfile.update(new UpdateProfileCommand(1L, "red", "ASH@pallet.town", null));
+
+        assertThat(result.user().email()).isEqualTo("ash@pallet.town");
+        verify(users, never()).existsByEmail(any());
+    }
+
+    @Test
+    void usernameTakenByAnotherAccountIsAConflict() {
+        when(users.existsByUsername("red")).thenReturn(true);
+
+        assertThatThrownBy(() -> updateProfile.update(new UpdateProfileCommand(1L, "Red", null, null)))
+                .isInstanceOf(UsernameAlreadyExistsException.class);
+        verify(users, never()).save(any());
+    }
+
+    @Test
+    void emailTakenByAnotherAccountIsAConflict() {
+        when(hasher.matches("Pikachu123", "stored-hash")).thenReturn(true);
+        when(users.existsByEmail("red@pallet.town")).thenReturn(true);
+
+        assertThatThrownBy(() -> updateProfile.update(new UpdateProfileCommand(1L, null, "red@pallet.town", "Pikachu123")))
+                .isInstanceOf(EmailAlreadyExistsException.class);
+        verify(users, never()).save(any());
+    }
+
+    @Test
+    void keepingTheSameUsernameDoesNotCollideWithItself() {
+        saveEchoesAndTokenIsIssued();
+
+        updateProfile.update(new UpdateProfileCommand(1L, "ASH", null, null));
+
+        verify(users, never()).existsByUsername(any());
+    }
+
+    @Test
+    void requiresAtLeastOneField() {
+        assertThatThrownBy(() -> updateProfile.update(new UpdateProfileCommand(1L, null, null, "Pikachu123")))
+                .isInstanceOf(InvalidUserException.class);
+    }
+
+    @Test
+    void rejectsAnInvalidNewUsername() {
+        assertThatThrownBy(() -> updateProfile.update(new UpdateProfileCommand(1L, "ab", null, null)))
+                .isInstanceOf(InvalidUserException.class);
+        verify(users, never()).save(any());
+    }
+
+    @Test
+    void failsWhenTheAccountNoLongerExists() {
+        when(users.findById(2L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> updateProfile.update(new UpdateProfileCommand(2L, "red", null, null)))
+                .isInstanceOf(UserNotFoundException.class);
+    }
+}

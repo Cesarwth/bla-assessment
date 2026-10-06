@@ -18,7 +18,10 @@ import com.ballastlane.assessment.domain.exception.InvalidStoredPokemonUpdateExc
 import com.ballastlane.assessment.domain.exception.InvalidSyncSelectionException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
+import com.ballastlane.assessment.domain.exception.InvalidCurrentPasswordException;
+import com.ballastlane.assessment.domain.exception.InvalidResetTokenException;
 import com.ballastlane.assessment.domain.exception.InvalidUserException;
+import com.ballastlane.assessment.domain.exception.UserNotFoundException;
 import com.ballastlane.assessment.domain.exception.UsernameAlreadyExistsException;
 import com.ballastlane.assessment.domain.exception.WeakPasswordException;
 import ch.qos.logback.classic.Logger;
@@ -63,6 +66,18 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("EMAIL_TAKEN"));
         mvc.perform(get("/boom/bad-credentials")).andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    void mapsAccountRecoveryExceptionsToStatusAndStableCode() throws Exception {
+        mvc.perform(get("/boom/bad-current-password")).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_CURRENT_PASSWORD"))
+                .andExpect(jsonPath("$.message").value("The current password is incorrect"));
+        mvc.perform(get("/boom/bad-reset-token")).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_RESET_TOKEN"))
+                .andExpect(jsonPath("$.message").value("This reset link is invalid or has expired"));
+        mvc.perform(get("/boom/user-gone")).andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
     @Test
@@ -169,6 +184,9 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/boom/username-taken") void c() { throw new UsernameAlreadyExistsException("ash"); }
         @GetMapping("/boom/email-taken") void d() { throw new EmailAlreadyExistsException("a@b.co"); }
         @GetMapping("/boom/bad-credentials") void e() { throw new InvalidCredentialsException(); }
+        @GetMapping("/boom/bad-current-password") void y1() { throw new InvalidCurrentPasswordException(); }
+        @GetMapping("/boom/bad-reset-token") void y2() { throw new InvalidResetTokenException(); }
+        @GetMapping("/boom/user-gone") void y3() { throw new UserNotFoundException(); }
         @GetMapping("/boom/unexpected") void f() { throw new IllegalStateException("secret internals"); }
         @GetMapping("/boom/pokemon-missing") void h() { throw new PokemonNotFoundException("x"); }
         @GetMapping("/boom/bad-pagination") void i() { throw new InvalidPaginationException("bad"); }

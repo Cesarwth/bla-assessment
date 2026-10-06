@@ -69,4 +69,28 @@ class JpaUserRepositoryAdapterTest {
         assertThatThrownBy(() -> adapter.save(user("ash2", "ash@pallet.town")))
                 .isInstanceOf(EmailAlreadyExistsException.class);
     }
+
+    @Test
+    void findsByIdAndByEmail() {
+        User saved = adapter.save(user("brock", "brock@pewter.city"));
+
+        assertThat(adapter.findById(saved.id())).hasValueSatisfying(found -> assertThat(found.username()).isEqualTo("brock"));
+        assertThat(adapter.findByEmail("brock@pewter.city")).hasValueSatisfying(found -> assertThat(found.id()).isEqualTo(saved.id()));
+        assertThat(adapter.findById(999_999L)).isEmpty();
+        assertThat(adapter.findByEmail("nobody@pewter.city")).isEmpty();
+    }
+
+    @Test
+    void savingAnExistingIdUpdatesTheRowInsteadOfInsertingOne() {
+        User saved = adapter.save(user("gary", "gary@pallet.town"));
+
+        adapter.save(new User(saved.id(), "blue", "blue@pallet.town", "new-hash", Role.USER));
+
+        assertThat(adapter.findById(saved.id())).hasValueSatisfying(found -> {
+            assertThat(found.username()).isEqualTo("blue");
+            assertThat(found.email()).isEqualTo("blue@pallet.town");
+            assertThat(found.passwordHash()).isEqualTo("new-hash");
+        });
+        assertThat(adapter.existsByUsername("gary")).isFalse();
+    }
 }

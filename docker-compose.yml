@@ -14,11 +14,21 @@ services:
       retries: 10
     # No published port: only the app container can reach the database.
 
+  # A local mailbox for the demo: the password-reset e-mails land here (http://localhost:8025) instead of going out to
+  # the internet. In-memory, no auth: strictly a development tool, bound to this machine only. A real deployment
+  # points MAIL_HOST at a real SMTP server and drops this service.
+  mailpit:
+    image: axllent/mailpit:v1.27.4
+    ports:
+      - "127.0.0.1:8025:8025"
+
   app:
     build: ./backend
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     environment:
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
@@ -30,6 +40,11 @@ services:
       DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-}
       DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+      # Password reset e-mails: where to send them and which address the links in them point to.
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@pokedex.local}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:8081}
     # Bound to this machine only: the browser goes through nginx (below), and a plain-HTTP API must not be reachable
     # from the network. Publish it more widely only behind a TLS-terminating proxy.
     ports:

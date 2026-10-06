@@ -4,6 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.ballastlane.assessment.application.port.in.AuthenticateUserUseCase;
+import com.ballastlane.assessment.application.port.in.ChangePasswordUseCase;
+import com.ballastlane.assessment.application.port.in.GetProfileUseCase;
+import com.ballastlane.assessment.application.port.in.RequestPasswordResetUseCase;
+import com.ballastlane.assessment.application.port.in.ResetPasswordUseCase;
+import com.ballastlane.assessment.application.port.in.UpdateProfileUseCase;
+import com.ballastlane.assessment.application.port.out.PasswordResetNotifier;
+import com.ballastlane.assessment.application.port.out.PasswordResetTokenRepository;
+import com.ballastlane.assessment.application.port.out.ResetTokenGenerator;
 import com.ballastlane.assessment.application.port.in.DeleteStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.GetPokemonDetailUseCase;
 import com.ballastlane.assessment.application.port.in.GetStoredPokemonUseCase;
@@ -30,6 +38,9 @@ class UseCaseConfigTest {
             .withBean(UserRepository.class, () -> mock(UserRepository.class))
             .withBean(PasswordHasher.class, () -> mock(PasswordHasher.class))
             .withBean(TokenIssuer.class, () -> mock(TokenIssuer.class))
+            .withBean(PasswordResetTokenRepository.class, () -> mock(PasswordResetTokenRepository.class))
+            .withBean(ResetTokenGenerator.class, () -> mock(ResetTokenGenerator.class))
+            .withBean(PasswordResetNotifier.class, () -> mock(PasswordResetNotifier.class))
             .withBean(PokeApiGateway.class, () -> mock(PokeApiGateway.class))
             .withBean(PokemonRepository.class, () -> mock(PokemonRepository.class));
 
@@ -41,7 +52,8 @@ class UseCaseConfigTest {
                     RegisterUserUseCase.class, AuthenticateUserUseCase.class, ListPokemonUseCase.class,
                     GetPokemonDetailUseCase.class, SyncPokemonUseCase.class, SyncSelectedPokemonUseCase.class,
                     ListStoredPokemonUseCase.class, ListStoredPokemonIdsUseCase.class, GetStoredPokemonUseCase.class, UpdateStoredPokemonUseCase.class,
-                    DeleteStoredPokemonUseCase.class}) {
+                    DeleteStoredPokemonUseCase.class, RequestPasswordResetUseCase.class, ResetPasswordUseCase.class,
+                    GetProfileUseCase.class, UpdateProfileUseCase.class, ChangePasswordUseCase.class}) {
                 assertThat(context).hasSingleBean(port);
             }
         });

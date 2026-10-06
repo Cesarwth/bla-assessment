@@ -27,6 +27,19 @@ import com.ballastlane.assessment.application.usecase.RegisterUser;
 import com.ballastlane.assessment.application.usecase.SyncPokemon;
 import com.ballastlane.assessment.application.usecase.SyncSelectedPokemon;
 import com.ballastlane.assessment.application.usecase.UpdateStoredPokemon;
+import com.ballastlane.assessment.application.port.in.ChangePasswordUseCase;
+import com.ballastlane.assessment.application.port.in.GetProfileUseCase;
+import com.ballastlane.assessment.application.port.in.RequestPasswordResetUseCase;
+import com.ballastlane.assessment.application.port.in.ResetPasswordUseCase;
+import com.ballastlane.assessment.application.port.in.UpdateProfileUseCase;
+import com.ballastlane.assessment.application.port.out.PasswordResetNotifier;
+import com.ballastlane.assessment.application.port.out.PasswordResetTokenRepository;
+import com.ballastlane.assessment.application.port.out.ResetTokenGenerator;
+import com.ballastlane.assessment.application.usecase.ChangePassword;
+import com.ballastlane.assessment.application.usecase.GetProfile;
+import com.ballastlane.assessment.application.usecase.RequestPasswordReset;
+import com.ballastlane.assessment.application.usecase.ResetPassword;
+import com.ballastlane.assessment.application.usecase.UpdateProfile;
 import java.time.Clock;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -36,7 +49,7 @@ import org.springframework.core.annotation.Order;
 
 /** Application use cases are plain Java; this is the only place where they meet Spring. */
 @Configuration
-@EnableConfigurationProperties(DemoUserProperties.class)
+@EnableConfigurationProperties({DemoUserProperties.class, PasswordResetProperties.class})
 public class UseCaseConfig {
 
     @Bean
@@ -47,6 +60,34 @@ public class UseCaseConfig {
     @Bean
     AuthenticateUserUseCase authenticateUserUseCase(UserRepository users, PasswordHasher hasher, TokenIssuer tokens) {
         return new AuthenticateUser(users, hasher, tokens);
+    }
+
+    @Bean
+    RequestPasswordResetUseCase requestPasswordResetUseCase(UserRepository users, PasswordResetTokenRepository tokens,
+            ResetTokenGenerator generator, PasswordResetNotifier notifier, Clock clock,
+            PasswordResetProperties properties) {
+        return new RequestPasswordReset(users, tokens, generator, notifier, clock, properties.ttl());
+    }
+
+    @Bean
+    ResetPasswordUseCase resetPasswordUseCase(UserRepository users, PasswordResetTokenRepository tokens,
+            ResetTokenGenerator generator, PasswordHasher hasher, Clock clock) {
+        return new ResetPassword(users, tokens, generator, hasher, clock);
+    }
+
+    @Bean
+    GetProfileUseCase getProfileUseCase(UserRepository users) {
+        return new GetProfile(users);
+    }
+
+    @Bean
+    UpdateProfileUseCase updateProfileUseCase(UserRepository users, PasswordHasher hasher, TokenIssuer tokens) {
+        return new UpdateProfile(users, hasher, tokens);
+    }
+
+    @Bean
+    ChangePasswordUseCase changePasswordUseCase(UserRepository users, PasswordHasher hasher) {
+        return new ChangePassword(users, hasher);
     }
 
     @Bean

@@ -60,6 +60,8 @@ Ready.
   Web app : http://localhost:8081
   API     : http://localhost:8080   (health: /actuator/health)
 
+  Mailbox : http://localhost:8025   (the password-reset e-mails of the demo arrive here)
+
   Both ports are bound to this machine only (127.0.0.1); put a TLS-terminating proxy in front to expose them.
 
   Demo accounts (from .env):

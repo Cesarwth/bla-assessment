@@ -13,6 +13,9 @@ import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
 import com.ballastlane.assessment.domain.exception.InvalidCredentialsException;
+import com.ballastlane.assessment.domain.exception.InvalidCurrentPasswordException;
+import com.ballastlane.assessment.domain.exception.InvalidResetTokenException;
+import com.ballastlane.assessment.domain.exception.UserNotFoundException;
 import com.ballastlane.assessment.domain.exception.InvalidUserException;
 import com.ballastlane.assessment.domain.exception.UsernameAlreadyExistsException;
 import com.ballastlane.assessment.domain.exception.WeakPasswordException;
@@ -62,6 +65,23 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidCredentialsException.class)
     ResponseEntity<ErrorResponse> invalidCredentials(InvalidCredentialsException ex) {
         return respond(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", ex.getMessage());
+    }
+
+    // 400, not 401: the web client treats every 401 as "session expired" and would log the user out for a typo.
+    @ExceptionHandler(InvalidCurrentPasswordException.class)
+    ResponseEntity<ErrorResponse> invalidCurrentPassword(InvalidCurrentPasswordException ex) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_CURRENT_PASSWORD", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidResetTokenException.class)
+    ResponseEntity<ErrorResponse> invalidResetToken(InvalidResetTokenException ex) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_RESET_TOKEN", ex.getMessage());
+    }
+
+    // A valid token for a deleted account: the session is no longer good for anything.
+    @ExceptionHandler(UserNotFoundException.class)
+    ResponseEntity<ErrorResponse> userNotFound(UserNotFoundException ex) {
+        return respond(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Authentication is required");
     }
 
     @ExceptionHandler(PokemonNotFoundException.class)

@@ -4,6 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 
 import com.ballastlane.assessment.application.port.in.AuthenticateUserUseCase;
+import com.ballastlane.assessment.application.port.in.ChangePasswordUseCase;
+import com.ballastlane.assessment.application.port.in.GetProfileUseCase;
+import com.ballastlane.assessment.application.port.in.RequestPasswordResetUseCase;
+import com.ballastlane.assessment.application.port.in.ResetPasswordUseCase;
+import com.ballastlane.assessment.application.port.in.UpdateProfileUseCase;
 import com.ballastlane.assessment.application.port.in.DeleteStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.GetPokemonDetailUseCase;
 import com.ballastlane.assessment.application.port.in.GetStoredPokemonUseCase;
@@ -21,6 +26,7 @@ import com.ballastlane.assessment.infrastructure.web.AuthController;
 import com.ballastlane.assessment.infrastructure.web.CollectionController;
 import com.ballastlane.assessment.infrastructure.web.GlobalExceptionHandler;
 import com.ballastlane.assessment.infrastructure.web.PokemonController;
+import com.ballastlane.assessment.infrastructure.web.UserController;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,7 +46,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * security layer only, so "REACHES_APP" means "not stopped by security" (the mocked app may answer 200, 400, 404...).
  * A route added without a security decision, or a rule that quietly opens a write path, fails here.
  */
-@WebMvcTest({AuthController.class, PokemonController.class, CollectionController.class})
+@WebMvcTest({AuthController.class, PokemonController.class, CollectionController.class, UserController.class})
 @ActiveProfiles("test")
 @Import({SecurityConfig.class, JwtConfig.class, GlobalExceptionHandler.class})
 class SecurityRulesMatrixTest {
@@ -53,6 +59,11 @@ class SecurityRulesMatrixTest {
     @Autowired TokenIssuer tokens;
     @MockitoBean RegisterUserUseCase registerUser;
     @MockitoBean AuthenticateUserUseCase authenticateUser;
+    @MockitoBean RequestPasswordResetUseCase requestPasswordReset;
+    @MockitoBean ResetPasswordUseCase resetPassword;
+    @MockitoBean GetProfileUseCase getProfile;
+    @MockitoBean UpdateProfileUseCase updateProfile;
+    @MockitoBean ChangePasswordUseCase changePassword;
     @MockitoBean ListPokemonUseCase listPokemon;
     @MockitoBean GetPokemonDetailUseCase getPokemonDetail;
     @MockitoBean ListStoredPokemonUseCase listStored;
@@ -83,9 +94,16 @@ class SecurityRulesMatrixTest {
         // public: auth and catalog reads
         open(rows, HttpMethod.POST, "/api/v1/auth/login");
         open(rows, HttpMethod.POST, "/api/v1/auth/register");
+        open(rows, HttpMethod.POST, "/api/v1/auth/forgot-password");
+        open(rows, HttpMethod.POST, "/api/v1/auth/reset-password");
         open(rows, HttpMethod.GET, "/api/v1/pokemon");
         open(rows, HttpMethod.GET, "/api/v1/pokemon?q=saur");
         open(rows, HttpMethod.GET, "/api/v1/pokemon/25");
+        // the account is personal: every verb on it needs a token, for any role
+        needsLogin(rows, HttpMethod.GET, "/api/v1/users/me");
+        needsLogin(rows, HttpMethod.PATCH, "/api/v1/users/me");
+        needsLogin(rows, HttpMethod.POST, "/api/v1/users/me/password");
+        needsLogin(rows, HttpMethod.GET, "/api/v1/users/42"); // no other user's account is reachable by id
         // the collection is personal: every verb on it needs a token, for any role
         needsLogin(rows, HttpMethod.GET, "/api/v1/collection");
         needsLogin(rows, HttpMethod.GET, "/api/v1/collection/ids");
