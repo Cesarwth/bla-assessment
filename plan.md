@@ -32,7 +32,7 @@ A single-page React + TypeScript app in `frontend/`, organised by the same domai
 **Goal:** `frontend/` builds, tests run, and a logged-in/out shell with routing works against MSW.
 
 **Status:** ✅ Complete 2026-10-06
-**Deviation:** Vitest stays on 3.2.7: Vitest 4.1.11 would clear the dev-only `npm audit` advisories (`tinypool`, `@vitest/mocker`) but npm 10.9 crashes resolving its peer set; runtime dependencies have 0 advisories and the test runner never ships. No `RequireAuth` component (nothing would use it: pages are public and protected actions are shown conditionally), so `protectedRouteRedirectsToLogin` was dropped; auth tests live in `AuthProvider.test.tsx`; the session-expired banner and its test move to phase 5; the `isExpired`/token decoding also got UTF-8 and malformed-token cases.
+**Deviation:** Vitest started on 3.2.7 because Vitest 4.1.11 crashed npm 10.9 while resolving peers; later moved to **Vitest 5.0.3**, which installs cleanly with Vite 7 and clears the `npm audit` advisories (`tinypool`, `@vitest/mocker`) — `npm audit` now reports 0 vulnerabilities No `RequireAuth` component (nothing would use it: pages are public and protected actions are shown conditionally), so `protectedRouteRedirectsToLogin` was dropped; auth tests live in `AuthProvider.test.tsx`; the session-expired banner and its test move to phase 5; the `isExpired`/token decoding also got UTF-8 and malformed-token cases.
 
 ### Tests to Write First (RED)
 | Level | Test File | Test Case | Asserts |
@@ -215,7 +215,7 @@ README and GenAI document, curated demo data (Plan E); i18n; refresh tokens; cli
 
 | Phase | Status | Deviations |
 | ----- | ------ | ---------- |
-| 1: Scaffold, tooling, API client, auth, shell | ✅ | Vitest 3.2.7 (Vitest 4 crashes npm 10.9); no `RequireAuth` |
+| 1: Scaffold, tooling, API client, auth, shell | ✅ | Vitest 3.2.7 first, then 5.0.3 (0 audit findings); no `RequireAuth` |
 | 2: Catalog list and detail | ✅ | 1-based URL pages; shared UI moved to `shared/` |
 | 3: Login/register and the collection | ✅ | `renderActions` composition; safe return path |
 | 4: Collection entry, edit and delete | ✅ | inline delete confirmation; draft kept after 409 |
