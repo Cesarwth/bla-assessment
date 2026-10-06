@@ -9,7 +9,9 @@
   border-radius: var(--radius-md);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
-  transition: transform 150ms ease, box-shadow 150ms ease;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .card:hover,
@@ -29,7 +31,11 @@
   width: 5rem;
   height: 5rem;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--type-color) 35%, transparent), transparent 70%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--type-color) 35%, transparent),
+    transparent 70%
+  );
 }
 
 .title {

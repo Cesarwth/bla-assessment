@@ -17,27 +17,34 @@ import { RequireLogin } from './RequireLogin'
 export function App() {
   return (
     <SelectionProvider>
-    <Routes>
-      <Route element={<Layout />}>
-        <Route index element={
-            <CatalogPage
-              renderCardExtras={(pokemon) => <CatalogCardExtras pokemon={pokemon} />}
-              renderToolbar={(items) => <SelectionToolbar items={items} />}
-            />
-          } />
-        <Route
-          path="pokemon/:idOrName"
-          element={<PokemonDetailPage renderActions={(pokemon) => <AddToCollection pokemonId={pokemon.id} />} />}
-        />
-        <Route element={<RequireLogin />}>
-          <Route path="collection" element={<CollectionPage />} />
-          <Route path="collection/:id" element={<CollectionEntryPage />} />
+      <Routes>
+        <Route element={<Layout />}>
+          <Route
+            index
+            element={
+              <CatalogPage
+                renderCardExtras={(pokemon) => <CatalogCardExtras pokemon={pokemon} />}
+                renderToolbar={(items) => <SelectionToolbar items={items} />}
+              />
+            }
+          />
+          <Route
+            path="pokemon/:idOrName"
+            element={
+              <PokemonDetailPage
+                renderActions={(pokemon) => <AddToCollection pokemonId={pokemon.id} />}
+              />
+            }
+          />
+          <Route element={<RequireLogin />}>
+            <Route path="collection" element={<CollectionPage />} />
+            <Route path="collection/:id" element={<CollectionEntryPage />} />
+          </Route>
+          <Route path="login" element={<LoginPage />} />
+          <Route path="register" element={<RegisterPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
-        <Route path="login" element={<LoginPage />} />
-        <Route path="register" element={<RegisterPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Route>
-    </Routes>
+      </Routes>
     </SelectionProvider>
   )
 }

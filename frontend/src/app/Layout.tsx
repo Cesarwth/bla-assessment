@@ -32,7 +32,12 @@ export function Layout() {
           <p>
             Your session expired. <Link to="/login">Log in again</Link> to continue.
           </p>
-          <button type="button" className={styles.dismiss} aria-label="Dismiss" onClick={dismissSessionExpired}>
+          <button
+            type="button"
+            className={styles.dismiss}
+            aria-label="Dismiss"
+            onClick={dismissSessionExpired}
+          >
             <span aria-hidden="true">×</span>
           </button>
         </div>
@@ -44,7 +49,8 @@ export function Layout() {
         </ErrorBoundary>
       </main>
       <footer className={styles.footer}>
-        Data from <a href="https://pokeapi.co">PokéAPI</a>. Pokémon is a trademark of Nintendo; this is a learning project.
+        Data from <a href="https://pokeapi.co">PokéAPI</a>. Pokémon is a trademark of Nintendo; this
+        is a learning project.
       </footer>
     </div>
   )

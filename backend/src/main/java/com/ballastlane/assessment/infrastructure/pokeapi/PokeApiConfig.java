@@ -36,7 +36,7 @@ public class PokeApiConfig {
 
     static CacheManager cacheManager(PokeApiProperties props) {
         CaffeineCacheManager manager = new CaffeineCacheManager(
-                PokeApiCaches.PAGES, PokeApiCaches.POKEMON, PokeApiCaches.SPECIES, PokeApiCaches.EVOLUTION_CHAINS);
+                PokeApiCaches.PAGES, PokeApiCaches.NAME_INDEX, PokeApiCaches.POKEMON, PokeApiCaches.SPECIES, PokeApiCaches.EVOLUTION_CHAINS);
         manager.setCaffeine(Caffeine.newBuilder().expireAfterWrite(props.cacheTtl()).maximumSize(props.cacheMaxSize()));
         return manager;
     }

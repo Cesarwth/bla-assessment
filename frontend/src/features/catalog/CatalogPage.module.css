@@ -20,7 +20,12 @@
 .skeleton {
   height: 17rem;
   border-radius: var(--radius-md);
-  background: linear-gradient(100deg, var(--color-surface-muted) 40%, var(--color-surface) 50%, var(--color-surface-muted) 60%);
+  background: linear-gradient(
+    100deg,
+    var(--color-surface-muted) 40%,
+    var(--color-surface) 50%,
+    var(--color-surface-muted) 60%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;
 }

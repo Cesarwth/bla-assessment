@@ -84,6 +84,7 @@ class SecurityRulesMatrixTest {
         open(rows, HttpMethod.POST, "/api/v1/auth/login");
         open(rows, HttpMethod.POST, "/api/v1/auth/register");
         open(rows, HttpMethod.GET, "/api/v1/pokemon");
+        open(rows, HttpMethod.GET, "/api/v1/pokemon?q=saur");
         open(rows, HttpMethod.GET, "/api/v1/pokemon/25");
         // the collection is personal: every verb on it needs a token, for any role
         needsLogin(rows, HttpMethod.GET, "/api/v1/collection");

@@ -15,7 +15,18 @@ interface Props {
   maxLength?: number
 }
 
-export function TextField({ label, name, value, onChange, type = 'text', autoComplete, hint, error, min, maxLength }: Props) {
+export function TextField({
+  label,
+  name,
+  value,
+  onChange,
+  type = 'text',
+  autoComplete,
+  hint,
+  error,
+  min,
+  maxLength,
+}: Props) {
   const id = useId()
   const hintId = `${id}-hint`
   const errorId = `${id}-error`

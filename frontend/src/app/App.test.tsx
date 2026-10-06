@@ -3,7 +3,14 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { bulbasaur, pageOf, pikachu } from '../test/fixtures'
-import { apiUrl, failWith, mockCatalog, mockCollection, mockCollectionIds, mockDetail } from '../test/handlers'
+import {
+  apiUrl,
+  failWith,
+  mockCatalog,
+  mockCollection,
+  mockCollectionIds,
+  mockDetail,
+} from '../test/handlers'
 import { server } from '../test/server'
 import { makeToken, renderApp } from '../test/utils'
 import { App } from './App'
@@ -19,7 +26,10 @@ describe('App shell', () => {
     renderApp(<App />)
 
     expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login')
-    expect(screen.getByRole('link', { name: 'Create profile' })).toHaveAttribute('href', '/register')
+    expect(screen.getByRole('link', { name: 'Create profile' })).toHaveAttribute(
+      'href',
+      '/register',
+    )
     expect(screen.queryByRole('button', { name: 'Log out' })).not.toBeInTheDocument()
   })
 
@@ -32,7 +42,10 @@ describe('App shell', () => {
 
     renderApp(<App />, { token: makeToken() })
     const nav = screen.getByRole('navigation', { name: 'Main' })
-    expect(within(nav).getByRole('link', { name: 'My collection' })).toHaveAttribute('href', '/collection')
+    expect(within(nav).getByRole('link', { name: 'My collection' })).toHaveAttribute(
+      'href',
+      '/collection',
+    )
   })
 
   it('shows the user and a logout button once logged in', () => {

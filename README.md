@@ -72,9 +72,9 @@ The demo trainers start with **18 collection entries over 16 Pokémon** (a snaps
 
 | Story | Behavior | API | UI | Main code (backend) |
 | --- | --- | --- | --- | --- |
-| **US-01 Browse** | Paginated list showing sprite, category (types), mass and abilities; responses cached | `GET /api/v1/pokemon` | Catalog page: cards, paging in the URL, page-size selector, "find by name or number", an "In my collection" mark on what you already have | `ListPokemon`, `PokeApiGatewayAdapter`, `PokeApiClient` (`@Cacheable`) |
+| **US-01 Browse** | Paginated list showing sprite, category (types), mass and abilities; responses cached | `GET /api/v1/pokemon` | Catalog page: cards, paging in the URL, page-size selector, a **filter** that narrows the list as you type (name or number, kept in the URL), an "In my collection" mark on what you already have | `ListPokemon`, `PokeApiGatewayAdapter`, `PokeApiClient` (`@Cacheable`) |
 | **US-02 Detail** | Image, base stats, narrative description, evolution line (branching supported, e.g. Eevee) | `GET /api/v1/pokemon/{idOrName}` | Detail page: artwork, stat bars, evolution tree | `GetPokemonDetail`, `PokeApiMapper` |
-| **US-03 Sync** | Persist PokeAPI data in a relational store; each trainer's own fields (nickname, region, tags) live next to it | `POST /api/v1/collection/{idOrName}/sync`, `POST /api/v1/collection/sync` | "Add to my collection" on the detail page, and **tick several cards in the catalog and add them at once** | `SyncPokemon`, `SyncSelectedPokemon`, `JpaPokemonRepositoryAdapter`, Flyway `V2`/`V4` |
+| **US-03 Sync** | Persist PokeAPI data in a relational store; each trainer's own fields (nickname, region, tags) live next to it | `POST /api/v1/collection/{idOrName}/sync`, `POST /api/v1/collection/sync` | "Add to my collection" on the detail page, and **press "Select Pokémon", tick cards (the chosen names are listed in a tray) and add them all at once** | `SyncPokemon`, `SyncSelectedPokemon`, `JpaPokemonRepositoryAdapter`, Flyway `V2`/`V4` |
 | **US-04 Update** | Edit stored Pokémon; `404` missing, `400` malformed, plus `401/409` | `PATCH /api/v1/collection/{id}`, `DELETE …/{id}` | Entry page: notes view, edit form, tags editor, conflict handling, remove from my collection | `UpdateStoredPokemon`, `LocalAttributes`, `GlobalExceptionHandler` |
 | **Auth** | Register, login, public vs protected routes | `POST /api/v1/auth/register`, `/login` | Login and register pages | `RegisterUser`, `AuthenticateUser`, `SecurityConfig`, `JwtTokenIssuer` |
 
@@ -145,7 +145,7 @@ Send the token as `Authorization: Bearer <token>` (JWT HS256, 60 minutes by defa
 
 | Method | Path | Success |
 | --- | --- | --- |
-| `GET` | `/pokemon?page&size` | `{items[{id,name,spriteUrl,types,weightKg,abilities}], page,size,totalItems,totalPages}` |
+| `GET` | `/pokemon?page&size&q` | `q` (optional) filters: digits = that Pokédex number, text = names containing it (`mr mime` finds `mr-mime`), max 50 chars. `{items[{id,name,spriteUrl,types,weightKg,abilities}], page,size,totalItems,totalPages}` |
 | `GET` | `/pokemon/{idOrName}` | detail: `imageUrl, types, weightKg, heightM, abilities, stats[{name,baseValue}], genus, description, evolutionChain{…evolvesTo[…]}` |
 
 ### Collection (each trainer's own copy; every call needs a token)
@@ -181,7 +181,7 @@ curl -s -X PATCH localhost:8080/api/v1/collection/25 -H "Authorization: Bearer $
 
 | Status | `code` values |
 | --- | --- |
-| `400` | `VALIDATION_FAILED` (with `fieldErrors`), `MALFORMED_REQUEST`, `INVALID_PARAMETER`, `INVALID_PAGINATION`, `INVALID_POKEMON_IDENTIFIER`, `INVALID_LOCAL_ATTRIBUTES`, `INVALID_UPDATE`, `INVALID_SYNC_SELECTION`, `WEAK_PASSWORD`, `INVALID_REQUEST` |
+| `400` | `VALIDATION_FAILED` (with `fieldErrors`), `MALFORMED_REQUEST`, `INVALID_PARAMETER`, `INVALID_PAGINATION`, `INVALID_POKEMON_IDENTIFIER`, `INVALID_LOCAL_ATTRIBUTES`, `INVALID_UPDATE`, `INVALID_SEARCH_QUERY`, `INVALID_SYNC_SELECTION`, `WEAK_PASSWORD`, `INVALID_REQUEST` |
 | `401` | `UNAUTHORIZED` (no/invalid/expired token), `INVALID_CREDENTIALS` |
 | `403` | `FORBIDDEN` (access denied by the route rules) |
 | `404` | `POKEMON_NOT_FOUND`, `STORED_POKEMON_NOT_FOUND` |
@@ -263,9 +263,9 @@ Tests were written **first** (red → green → refactor); the git history and t
 
 | Suite | Command | What it covers |
 | --- | --- | --- |
-| Backend | `cd backend && ./gradlew test` | **380 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
+| Backend | `cd backend && ./gradlew test` | **423 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
 | Backend gate | `./gradlew build` | JaCoCo: fails below **90 % lines / 80 % branches** (actual ≈ 98 % / 86 %) |
-| Frontend | `cd frontend && npm test` | **190 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
+| Frontend | `cd frontend && npm test` | **198 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
 | Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99 % / 93 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
 | Static checks | `npm run typecheck && npm run lint` | strict TypeScript, ESLint with zero warnings |
 | Whole stack | `./scripts/smoke.sh` | 29 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, private collections, two trainers with the same Pokémon, versions |

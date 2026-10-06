@@ -23,7 +23,11 @@ describe('decodeToken', () => {
 
   it('rejects tokens that do not identify a user', () => {
     expect(decodeToken(makeToken({ role: 'GOD' }))).toBeNull()
-    const noUid = [btoa('{}'), btoa(JSON.stringify({ sub: 'ash', role: 'USER', exp: 9e9 })), 'x'].join('.')
+    const noUid = [
+      btoa('{}'),
+      btoa(JSON.stringify({ sub: 'ash', role: 'USER', exp: 9e9 })),
+      'x',
+    ].join('.')
     expect(decodeToken(noUid)).toBeNull()
   })
 

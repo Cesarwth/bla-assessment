@@ -50,7 +50,12 @@ export function AddToCollection({ pokemonId }: { pokemonId: number }) {
 
   return (
     <div className={styles.box}>
-      <button type="button" className={styles.button} disabled={sync.isPending} onClick={() => sync.mutate(pokemonId)}>
+      <button
+        type="button"
+        className={styles.button}
+        disabled={sync.isPending}
+        onClick={() => sync.mutate(pokemonId)}
+      >
         {sync.isPending ? 'Adding…' : 'Add to my collection'}
       </button>
       {sync.isError && <ErrorState error={sync.error} onRetry={() => sync.mutate(pokemonId)} />}

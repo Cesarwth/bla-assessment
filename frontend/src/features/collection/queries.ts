@@ -1,5 +1,14 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { deleteCollectionEntry, fetchCollectionEntry, fetchCollectionIds, fetchCollectionPage, syncPokemon, syncSelection, updateCollectionEntry, type EntryChanges } from './api'
+import {
+  deleteCollectionEntry,
+  fetchCollectionEntry,
+  fetchCollectionIds,
+  fetchCollectionPage,
+  syncPokemon,
+  syncSelection,
+  updateCollectionEntry,
+  type EntryChanges,
+} from './api'
 
 export const collectionKeys = {
   all: ['collection'] as const,
@@ -79,7 +88,10 @@ export function useDeleteEntry(id: number) {
     mutationFn: () => deleteCollectionEntry(id),
     onSuccess: () => {
       // Only mark the entry stale: removing it would make this still-mounted page fetch it again (and get a 404).
-      void queryClient.invalidateQueries({ queryKey: collectionKeys.entry(id), refetchType: 'none' })
+      void queryClient.invalidateQueries({
+        queryKey: collectionKeys.entry(id),
+        refetchType: 'none',
+      })
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: collectionKeys.lists() }),
         queryClient.invalidateQueries({ queryKey: collectionKeys.ids() }),

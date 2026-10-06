@@ -19,7 +19,9 @@ export function resetClient(): void {
   config = defaults
 }
 
-function isErrorBody(body: unknown): body is { code: string; message: string; fieldErrors?: unknown } {
+function isErrorBody(
+  body: unknown,
+): body is { code: string; message: string; fieldErrors?: unknown } {
   return (
     typeof body === 'object' &&
     body !== null &&
@@ -38,7 +40,11 @@ async function toApiError(response: Response): Promise<ApiError> {
   } catch {
     // not JSON (a proxy error page, for instance): fall through to the generic error
   }
-  return new ApiError(response.status, `HTTP_${response.status}`, `Something went wrong (HTTP ${response.status})`)
+  return new ApiError(
+    response.status,
+    `HTTP_${response.status}`,
+    `Something went wrong (HTTP ${response.status})`,
+  )
 }
 
 async function exchange<T>(
@@ -63,7 +69,11 @@ async function exchange<T>(
     })
   } catch (cause) {
     if (signal?.aborted) throw cause
-    throw new ApiError(0, 'NETWORK_ERROR', 'Cannot reach the server. Check your connection and try again.')
+    throw new ApiError(
+      0,
+      'NETWORK_ERROR',
+      'Cannot reach the server. Check your connection and try again.',
+    )
   }
 
   if (response.status === 204) return { status: 204, data: null as T }
@@ -74,7 +84,12 @@ async function exchange<T>(
   return { status: response.status, data: (await response.json()) as T }
 }
 
-async function request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+async function request<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
   return (await exchange<T>(method, path, body, signal)).data
 }
 

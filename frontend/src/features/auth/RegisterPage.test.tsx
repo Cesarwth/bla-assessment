@@ -16,8 +16,17 @@ async function fill(username: string, email: string, password: string) {
   await userEvent.click(screen.getByRole('button', { name: 'Create profile' }))
 }
 
-const registerFails = (status: number, code: string, message: string, fieldErrors: { field: string; message: string }[] = []) =>
-  server.use(http.post(apiUrl('/auth/register'), () => HttpResponse.json(errorBody(status, code, message, fieldErrors), { status })))
+const registerFails = (
+  status: number,
+  code: string,
+  message: string,
+  fieldErrors: { field: string; message: string }[] = [],
+) =>
+  server.use(
+    http.post(apiUrl('/auth/register'), () =>
+      HttpResponse.json(errorBody(status, code, message, fieldErrors), { status }),
+    ),
+  )
 
 describe('RegisterPage', () => {
   beforeEach(() => {
@@ -29,11 +38,18 @@ describe('RegisterPage', () => {
     server.use(
       http.post(apiUrl('/auth/register'), async ({ request }) => {
         calls.push(`register ${JSON.stringify(await request.json())}`)
-        return HttpResponse.json({ id: 9, username: 'misty', email: 'misty@cerulean.city', role: 'USER' }, { status: 201 })
+        return HttpResponse.json(
+          { id: 9, username: 'misty', email: 'misty@cerulean.city', role: 'USER' },
+          { status: 201 },
+        )
       }),
       http.post(apiUrl('/auth/login'), async ({ request }) => {
         calls.push(`login ${JSON.stringify(await request.json())}`)
-        return HttpResponse.json({ token: makeToken({ uid: 9, sub: 'misty' }), tokenType: 'Bearer', expiresAt: 'x' })
+        return HttpResponse.json({
+          token: makeToken({ uid: 9, sub: 'misty' }),
+          tokenType: 'Bearer',
+          expiresAt: 'x',
+        })
       }),
     )
     renderApp(<App />, { route: '/register' })
@@ -51,7 +67,9 @@ describe('RegisterPage', () => {
   it('tells people the password rules up front', () => {
     renderApp(<App />, { route: '/register' })
 
-    expect(screen.getByLabelText('Password')).toHaveAccessibleDescription(/at least 8 characters.*letters and digits/i)
+    expect(screen.getByLabelText('Password')).toHaveAccessibleDescription(
+      /at least 8 characters.*letters and digits/i,
+    )
   })
 
   it('shows "username taken" under the username field', async () => {
@@ -60,7 +78,9 @@ describe('RegisterPage', () => {
 
     await fill('ash', 'ash@pallet.town', 'Pikachu123')
 
-    expect(await screen.findByLabelText('Username')).toHaveAccessibleDescription('Username is already taken')
+    expect(await screen.findByLabelText('Username')).toHaveAccessibleDescription(
+      'Username is already taken',
+    )
     expect(screen.getByLabelText('Username')).toHaveAttribute('aria-invalid', 'true')
   })
 
@@ -70,7 +90,9 @@ describe('RegisterPage', () => {
 
     await fill('ash2', 'ash@pallet.town', 'Pikachu123')
 
-    expect(await screen.findByLabelText('Email')).toHaveAccessibleDescription('Email is already registered')
+    expect(await screen.findByLabelText('Email')).toHaveAccessibleDescription(
+      'Email is already registered',
+    )
   })
 
   it('shows a weak password under the password field', async () => {
@@ -79,7 +101,9 @@ describe('RegisterPage', () => {
 
     await fill('ash', 'ash@pallet.town', 'abc')
 
-    expect(await screen.findByLabelText('Password')).toHaveAccessibleDescription(/Password must have 8 to 72 bytes/)
+    expect(await screen.findByLabelText('Password')).toHaveAccessibleDescription(
+      /Password must have 8 to 72 bytes/,
+    )
   })
 
   it('maps validation errors to every field they refer to', async () => {
@@ -91,8 +115,12 @@ describe('RegisterPage', () => {
 
     await fill('as', 'nope', 'Pikachu123')
 
-    expect(await screen.findByLabelText('Email')).toHaveAccessibleDescription('must be a well-formed email address')
-    expect(screen.getByLabelText('Username')).toHaveAccessibleDescription('size must be between 3 and 50')
+    expect(await screen.findByLabelText('Email')).toHaveAccessibleDescription(
+      'must be a well-formed email address',
+    )
+    expect(screen.getByLabelText('Username')).toHaveAccessibleDescription(
+      'size must be between 3 and 50',
+    )
   })
 
   it('shows unexpected failures as a general alert', async () => {
@@ -108,7 +136,10 @@ describe('RegisterPage', () => {
     renderApp(<App />, { route: '/register' })
 
     expect(screen.getByRole('heading', { name: 'Create your trainer profile' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'I already have a profile' })).toHaveAttribute('href', '/login')
+    expect(screen.getByRole('link', { name: 'I already have a profile' })).toHaveAttribute(
+      'href',
+      '/login',
+    )
   })
 
   it('has no accessibility violations', async () => {

@@ -10,6 +10,7 @@ import com.ballastlane.assessment.domain.exception.DuplicateStoredPokemonExcepti
 import com.ballastlane.assessment.domain.exception.EmailAlreadyExistsException;
 import com.ballastlane.assessment.domain.exception.InvalidPaginationException;
 import com.ballastlane.assessment.domain.exception.InvalidPokemonIdentifierException;
+import com.ballastlane.assessment.domain.exception.InvalidSearchQueryException;
 import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
 import com.ballastlane.assessment.domain.exception.InvalidCredentialsException;
 import com.ballastlane.assessment.domain.exception.InvalidLocalAttributesException;
@@ -70,6 +71,8 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("POKEMON_NOT_FOUND"));
         mvc.perform(get("/boom/bad-pagination")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PAGINATION"));
+        mvc.perform(get("/boom/bad-query")).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_SEARCH_QUERY"));
         mvc.perform(get("/boom/bad-identifier")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_POKEMON_IDENTIFIER"));
         mvc.perform(get("/boom/catalog-down")).andExpect(status().isBadGateway())
@@ -169,6 +172,7 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/boom/unexpected") void f() { throw new IllegalStateException("secret internals"); }
         @GetMapping("/boom/pokemon-missing") void h() { throw new PokemonNotFoundException("x"); }
         @GetMapping("/boom/bad-pagination") void i() { throw new InvalidPaginationException("bad"); }
+        @GetMapping("/boom/bad-query") void s() { throw new InvalidSearchQueryException("q must be at most 50 characters"); }
         @GetMapping("/boom/bad-identifier") void j() { throw new InvalidPokemonIdentifierException("bad"); }
         @GetMapping("/boom/catalog-down") void k() { throw new CatalogUnavailableException("down", false, null); }
         @GetMapping("/boom/catalog-timeout") void l() { throw new CatalogUnavailableException("slow", true, null); }

@@ -58,17 +58,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return resetClient
   }, [clearSession, queryClient])
 
-  const login = useCallback(async (username: string, password: string) => {
-    const { token } = await api.post<AuthResponse>('/auth/login', { username, password })
-    const info = decodeToken(token)
-    if (!info) throw new Error('The server returned a session this app cannot read.')
-    tokenRef.current = token
-    storeToken(token)
-    setSession({ token, user: info.user })
-    setSessionExpired(false)
-    queryClient.removeQueries({ type: 'inactive' })
-    void queryClient.invalidateQueries()
-  }, [queryClient])
+  const login = useCallback(
+    async (username: string, password: string) => {
+      const { token } = await api.post<AuthResponse>('/auth/login', { username, password })
+      const info = decodeToken(token)
+      if (!info) throw new Error('The server returned a session this app cannot read.')
+      tokenRef.current = token
+      storeToken(token)
+      setSession({ token, user: info.user })
+      setSessionExpired(false)
+      queryClient.removeQueries({ type: 'inactive' })
+      void queryClient.invalidateQueries()
+    },
+    [queryClient],
+  )
 
   const dismissSessionExpired = useCallback(() => setSessionExpired(false), [])
 

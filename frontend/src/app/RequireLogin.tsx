@@ -5,6 +5,7 @@ import { useAuth } from '../features/auth/useAuth'
 export function RequireLogin() {
   const { user } = useAuth()
   const location = useLocation()
-  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
+  if (!user)
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
   return <Outlet />
 }

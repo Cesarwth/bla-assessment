@@ -10,10 +10,17 @@ import { server } from '../../test/server'
 import { makeToken, renderApp } from '../../test/utils'
 
 const entries = () =>
-  pageOf([
-    storedSummary(25, 'pikachu', { nickname: 'Pika', region: 'Kanto', tags: ['starter', 'electric'] }),
-    storedSummary(26, 'raichu'),
-  ], { totalItems: 2 })
+  pageOf(
+    [
+      storedSummary(25, 'pikachu', {
+        nickname: 'Pika',
+        region: 'Kanto',
+        tags: ['starter', 'electric'],
+      }),
+      storedSummary(26, 'raichu'),
+    ],
+    { totalItems: 2 },
+  )
 
 describe('CollectionPage', () => {
   it('is the trainer’s own list, and points to the catalog to add more', async () => {
@@ -22,7 +29,9 @@ describe('CollectionPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'My collection' })).toBeInTheDocument()
     expect(screen.getByText(/Your Pokémon\./)).toBeInTheDocument()
-    expect(screen.getByText(/Select Pokémon in the catalog to add several at once/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Select Pokémon in the catalog to add several at once/),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('form')).not.toBeInTheDocument()
     expect(screen.queryByText(/import/i)).not.toBeInTheDocument()
     expect(screen.queryByText('Yours')).not.toBeInTheDocument()
@@ -31,7 +40,9 @@ describe('CollectionPage', () => {
   it('sends anonymous visitors to the login page and brings them back after logging in', async () => {
     mockCollection(entries)
     server.use(
-      http.post(apiUrl('/auth/login'), () => HttpResponse.json({ token: makeToken(), tokenType: 'Bearer', expiresAt: 'x' })),
+      http.post(apiUrl('/auth/login'), () =>
+        HttpResponse.json({ token: makeToken(), tokenType: 'Bearer', expiresAt: 'x' }),
+      ),
     )
     renderApp(<App />, { route: '/collection?page=1&size=12' })
 
@@ -61,7 +72,10 @@ describe('CollectionPage', () => {
     expect(within(card).getByText('Kanto')).toBeInTheDocument()
     expect(within(card).getByText('starter')).toBeInTheDocument()
     expect(within(card).getByText('electric')).toBeInTheDocument()
-    expect(within(card).getByRole('link', { name: /Pikachu/ })).toHaveAttribute('href', '/collection/25')
+    expect(within(card).getByRole('link', { name: /Pikachu/ })).toHaveAttribute(
+      'href',
+      '/collection/25',
+    )
   })
 
   it('an entry without local data just shows the Pokémon', async () => {
@@ -78,7 +92,10 @@ describe('CollectionPage', () => {
     renderApp(<App />, { route: '/collection', token: makeToken() })
 
     expect(await screen.findByText('Page 1 of 3')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Next page' })).toHaveAttribute('href', '/collection?page=2&size=12')
+    expect(screen.getByRole('link', { name: 'Next page' })).toHaveAttribute(
+      'href',
+      '/collection?page=2&size=12',
+    )
     expect(requests).toEqual(['page=0&size=12'])
   })
 
@@ -95,7 +112,10 @@ describe('CollectionPage', () => {
     renderApp(<App />, { route: '/collection?page=100', token: makeToken() })
 
     expect(await screen.findByText('No entries on this page')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Go to the first page' })).toHaveAttribute('href', '/collection?page=1&size=12')
+    expect(screen.getByRole('link', { name: 'Go to the first page' })).toHaveAttribute(
+      'href',
+      '/collection?page=1&size=12',
+    )
   })
 
   it('reports failures and lets the user retry', async () => {

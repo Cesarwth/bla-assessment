@@ -6,7 +6,7 @@ import { LoadingStatus } from '../../shared/ui/LoadingStatus'
 import { Pagination } from '../../shared/ui/Pagination'
 import { PAGE_SIZES, usePaging } from '../../shared/usePaging'
 import styles from './CatalogPage.module.css'
-import { GoToBox } from './components/GoToBox'
+import { CatalogFilter } from './components/CatalogFilter'
 import { PokemonCard } from './components/PokemonCard'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useCatalogPage } from './queries'
@@ -19,12 +19,14 @@ interface Props {
 }
 
 export function CatalogPage({ renderCardExtras, renderToolbar }: Props) {
-  const { page, apiPage, size, hrefFor, setSize } = usePaging()
-  const query = useCatalogPage(apiPage, size)
+  const { page, apiPage, size, filter, hrefFor, hrefWithoutFilter, setSize, setFilter } =
+    usePaging()
+  const query = useCatalogPage(apiPage, size, filter)
   useDocumentTitle('Catalog')
 
   function renderResults() {
-    if (query.isError) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+    if (query.isError)
+      return <ErrorState error={query.error} onRetry={() => void query.refetch()} />
     if (query.isPending) {
       return (
         <>
@@ -35,6 +37,14 @@ export function CatalogPage({ renderCardExtras, renderToolbar }: Props) {
             ))}
           </ul>
         </>
+      )
+    }
+    if (query.data.items.length === 0 && filter) {
+      return (
+        <div className={styles.empty}>
+          <h2>No Pokémon match “{filter}”</h2>
+          <Link to={hrefWithoutFilter}>Show all Pokémon</Link>
+        </div>
       )
     }
     if (query.data.items.length === 0) {
@@ -69,8 +79,10 @@ export function CatalogPage({ renderCardExtras, renderToolbar }: Props) {
   return (
     <section>
       <h1>Catalog</h1>
-      <p className={styles.intro}>Browse every Pokémon. Open one to see its stats and how it evolves.</p>
-      <GoToBox />
+      <p className={styles.intro}>
+        Browse every Pokémon. Open one to see its stats and how it evolves.
+      </p>
+      <CatalogFilter value={filter} onChange={setFilter} />
       {renderToolbar?.(query.data?.items ?? [])}
       {renderResults()}
     </section>

@@ -7,8 +7,20 @@ import type {
   StoredPokemonSummary,
 } from '../shared/api/types'
 
-export function summary(id: number, name: string, types: string[] = ['normal'], weightKg = 10): PokemonSummary {
-  return { id, name, spriteUrl: `https://img.test/sprites/${id}.png`, types, weightKg, abilities: ['run-away'] }
+export function summary(
+  id: number,
+  name: string,
+  types: string[] = ['normal'],
+  weightKg = 10,
+): PokemonSummary {
+  return {
+    id,
+    name,
+    spriteUrl: `https://img.test/sprites/${id}.png`,
+    types,
+    weightKg,
+    abilities: ['run-away'],
+  }
 }
 
 export const bulbasaur: PokemonSummary = {
@@ -20,11 +32,19 @@ export const bulbasaur: PokemonSummary = {
   abilities: ['overgrow', 'chlorophyll'],
 }
 
-export function pageOf<T>(items: T[], { page = 0, size = 12, totalItems = 1351 } = {}): PageResponse<T> {
+export function pageOf<T>(
+  items: T[],
+  { page = 0, size = 12, totalItems = 1351 } = {},
+): PageResponse<T> {
   return { items, page, size, totalItems, totalPages: Math.ceil(totalItems / size) }
 }
 
-function node(id: number, name: string, requirements: string[] = [], evolvesTo: EvolutionNode[] = []): EvolutionNode {
+function node(
+  id: number,
+  name: string,
+  requirements: string[] = [],
+  evolvesTo: EvolutionNode[] = [],
+): EvolutionNode {
   return { id, name, spriteUrl: `https://img.test/sprites/${id}.png`, requirements, evolvesTo }
 }
 
@@ -53,8 +73,21 @@ export const pikachu: PokemonDetail = {
     { name: 'speed', baseValue: 90 },
   ],
   genus: 'Mouse Pokémon',
-  description: 'When several of these POKéMON gather, their electricity could build and cause lightning storms.',
-  evolutionChain: node(172, 'pichu', [], [node(25, 'pikachu', ['Level up (happiness 220)'], [node(26, 'raichu', ['Use thunder-stone'])])]),
+  description:
+    'When several of these POKéMON gather, their electricity could build and cause lightning storms.',
+  evolutionChain: node(
+    172,
+    'pichu',
+    [],
+    [
+      node(
+        25,
+        'pikachu',
+        ['Level up (happiness 220)'],
+        [node(26, 'raichu', ['Use thunder-stone'])],
+      ),
+    ],
+  ),
 }
 
 export const eevee: PokemonDetail = {
@@ -66,11 +99,16 @@ export const eevee: PokemonDetail = {
   abilities: ['run-away', 'adaptability'],
   genus: 'Evolution Pokémon',
   description: 'Its genetic code is irregular.',
-  evolutionChain: node(133, 'eevee', [], [
-    node(134, 'vaporeon', ['Use water-stone']),
-    node(135, 'jolteon', ['Use thunder-stone']),
-    node(136, 'flareon', ['Use fire-stone']),
-  ]),
+  evolutionChain: node(
+    133,
+    'eevee',
+    [],
+    [
+      node(134, 'vaporeon', ['Use water-stone']),
+      node(135, 'jolteon', ['Use thunder-stone']),
+      node(136, 'flareon', ['Use fire-stone']),
+    ],
+  ),
 }
 
 /** A Pokémon with nothing optional: no image, no text, no evolution data. */
@@ -107,7 +145,11 @@ export function stored(id: number, name: string, over: Partial<StoredPokemon> = 
   }
 }
 
-export function storedSummary(id: number, name: string, over: Partial<StoredPokemonSummary> = {}): StoredPokemonSummary {
+export function storedSummary(
+  id: number,
+  name: string,
+  over: Partial<StoredPokemonSummary> = {},
+): StoredPokemonSummary {
   return {
     id,
     name,

@@ -62,6 +62,30 @@ class PokeApiCachingTest {
     }
 
     @Test
+    void theNameIndexIsFetchedOnceForManySearches() {
+        server.expect(once(), requestTo(BASE + "/pokemon?limit=100000&offset=0"))
+                .andRespond(withSuccess(Fixtures.read("list.json"), MediaType.APPLICATION_JSON));
+
+        client.getNameIndex();
+        client.getNameIndex();
+
+        server.verify();
+    }
+
+    @Test
+    void aFailedNameIndexIsNotCached() {
+        server.expect(once(), requestTo(BASE + "/pokemon?limit=100000&offset=0"))
+                .andRespond(withStatus(HttpStatus.BAD_GATEWAY));
+        server.expect(once(), requestTo(BASE + "/pokemon?limit=100000&offset=0"))
+                .andRespond(withSuccess(Fixtures.read("list.json"), MediaType.APPLICATION_JSON));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(client::getNameIndex).isNotNull();
+        assertThat(client.getNameIndex().results()).hasSize(3);
+
+        server.verify();
+    }
+
+    @Test
     void notFoundIsNotCached() {
         server.expect(times(2), requestTo(BASE + "/pokemon/missingno")).andRespond(withStatus(HttpStatus.NOT_FOUND));
 

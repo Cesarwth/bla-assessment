@@ -18,7 +18,9 @@ function Probe() {
       <p>admin: {String(isAdmin)}</p>
       <p>expired: {String(sessionExpired)}</p>
       <p>error: {error}</p>
-      <button onClick={() => login('ash', 'Pikachu123').catch((e: Error) => setError(e.message))}>login</button>
+      <button onClick={() => login('ash', 'Pikachu123').catch((e: Error) => setError(e.message))}>
+        login
+      </button>
       <button onClick={logout}>logout</button>
       <button onClick={() => api.get('/anything').catch(() => undefined)}>call api</button>
     </div>
@@ -54,7 +56,12 @@ describe('AuthProvider', () => {
     server.use(
       http.post('*/api/v1/auth/login', () =>
         HttpResponse.json(
-          { status: 401, code: 'INVALID_CREDENTIALS', message: 'Invalid username or password', fieldErrors: [] },
+          {
+            status: 401,
+            code: 'INVALID_CREDENTIALS',
+            message: 'Invalid username or password',
+            fieldErrors: [],
+          },
           { status: 401 },
         ),
       ),

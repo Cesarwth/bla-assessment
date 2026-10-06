@@ -23,7 +23,11 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
         <h2>Something went wrong</h2>
         <p>An unexpected error stopped this page from loading. Your data is safe.</p>
         <div className={styles.actions}>
-          <button type="button" className={styles.retry} onClick={() => this.setState({ failed: false })}>
+          <button
+            type="button"
+            className={styles.retry}
+            onClick={() => this.setState({ failed: false })}
+          >
             Try again
           </button>
           <a href="/">Go to the catalog</a>

@@ -11,7 +11,9 @@ import { makeToken, renderApp } from '../../test/utils'
 import { SESSION_KEY } from './storage'
 
 const loginOk = (token = makeToken({ uid: 5, sub: 'ash' })) =>
-  http.post(apiUrl('/auth/login'), () => HttpResponse.json({ token, tokenType: 'Bearer', expiresAt: '2030-01-01T00:00:00Z' }))
+  http.post(apiUrl('/auth/login'), () =>
+    HttpResponse.json({ token, tokenType: 'Bearer', expiresAt: '2030-01-01T00:00:00Z' }),
+  )
 
 async function fillAndSubmit(username: string, password: string) {
   if (username) await userEvent.type(screen.getByLabelText('Username'), username)
@@ -72,7 +74,9 @@ describe('LoginPage', () => {
   it('shows the message of the API when the credentials are wrong and keeps the user anonymous', async () => {
     server.use(
       http.post(apiUrl('/auth/login'), () =>
-        HttpResponse.json(errorBody(401, 'INVALID_CREDENTIALS', 'Invalid username or password'), { status: 401 }),
+        HttpResponse.json(errorBody(401, 'INVALID_CREDENTIALS', 'Invalid username or password'), {
+          status: 401,
+        }),
       ),
     )
     renderApp(<App />, { route: '/login' })
@@ -88,7 +92,9 @@ describe('LoginPage', () => {
   it('does not treat a failed login as an expired session', async () => {
     server.use(
       http.post(apiUrl('/auth/login'), () =>
-        HttpResponse.json(errorBody(401, 'INVALID_CREDENTIALS', 'Invalid username or password'), { status: 401 }),
+        HttpResponse.json(errorBody(401, 'INVALID_CREDENTIALS', 'Invalid username or password'), {
+          status: 401,
+        }),
       ),
     )
     renderApp(<App />, { route: '/login' })
@@ -103,7 +109,9 @@ describe('LoginPage', () => {
     server.use(
       http.post(apiUrl('/auth/login'), () =>
         HttpResponse.json(
-          errorBody(400, 'VALIDATION_FAILED', 'Request validation failed', [{ field: 'username', message: 'must not be blank' }]),
+          errorBody(400, 'VALIDATION_FAILED', 'Request validation failed', [
+            { field: 'username', message: 'must not be blank' },
+          ]),
           { status: 400 },
         ),
       ),
@@ -153,7 +161,10 @@ describe('LoginPage', () => {
     renderApp(<App />, { route: '/login' })
 
     expect(screen.getByText('New trainer?')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Create your profile' })).toHaveAttribute('href', '/register')
+    expect(screen.getByRole('link', { name: 'Create your profile' })).toHaveAttribute(
+      'href',
+      '/register',
+    )
   })
 
   it('has no accessibility violations', async () => {

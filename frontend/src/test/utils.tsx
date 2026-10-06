@@ -23,7 +23,11 @@ function base64Url(value: object): string {
 /** A token shaped like the ones the API issues (HS256, claims sub/uid/role/exp); the signature is irrelevant here. */
 export function makeToken({ uid = 1, sub = 'ash', role = 'USER', exp }: TokenOptions = {}): string {
   const expiresAt = exp ?? Math.floor(Date.now() / 1000) + 3600
-  return [base64Url({ alg: 'HS256' }), base64Url({ uid, sub, role, exp: expiresAt }), 'signature'].join('.')
+  return [
+    base64Url({ alg: 'HS256' }),
+    base64Url({ uid, sub, role, exp: expiresAt }),
+    'signature',
+  ].join('.')
 }
 
 interface RenderOptions {

@@ -1,34 +1,59 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { useAuth } from '../auth/useAuth'
-import { MAX_SELECTION, SelectionContext, type SelectionValue } from './SelectionContext'
+import {
+  MAX_SELECTION,
+  SelectionContext,
+  type SelectedPokemon,
+  type SelectionValue,
+} from './SelectionContext'
 
 function SelectionState({ children }: { children: ReactNode }) {
-  const [ids, setIds] = useState<number[]>([])
+  const [active, setActive] = useState(false)
+  const [items, setItems] = useState<SelectedPokemon[]>([])
 
-  const toggle = useCallback((id: number) => {
-    setIds((current) => {
-      if (current.includes(id)) return current.filter((other) => other !== id)
-      return current.length >= MAX_SELECTION ? current : [...current, id]
+  const toggle = useCallback((pokemon: SelectedPokemon) => {
+    setItems((current) => {
+      if (current.some((other) => other.id === pokemon.id))
+        return current.filter((other) => other.id !== pokemon.id)
+      return current.length >= MAX_SELECTION
+        ? current
+        : [...current, { id: pokemon.id, name: pokemon.name }]
     })
   }, [])
-  const addMany = useCallback((more: number[]) => {
-    setIds((current) => {
-      const fresh = more.filter((id) => !current.includes(id))
-      return [...current, ...fresh].slice(0, MAX_SELECTION)
+  const remove = useCallback(
+    (id: number) => setItems((current) => current.filter((other) => other.id !== id)),
+    [],
+  )
+  const addMany = useCallback((more: SelectedPokemon[]) => {
+    setItems((current) => {
+      const fresh = more.filter((pokemon) => !current.some((other) => other.id === pokemon.id))
+      return [...current, ...fresh.map(({ id, name }) => ({ id, name }))].slice(0, MAX_SELECTION)
     })
   }, [])
-  const clear = useCallback(() => setIds([]), [])
+  const clear = useCallback(() => setItems([]), [])
 
   const value = useMemo<SelectionValue>(
-    () => ({ ids, isFull: ids.length >= MAX_SELECTION, has: (id) => ids.includes(id), toggle, addMany, clear }),
-    [ids, toggle, addMany, clear],
+    () => ({
+      active,
+      setActive,
+      items,
+      ids: items.map((pokemon) => pokemon.id),
+      isFull: items.length >= MAX_SELECTION,
+      has: (id) => items.some((pokemon) => pokemon.id === id),
+      toggle,
+      remove,
+      addMany,
+      clear,
+    }),
+    [active, items, toggle, remove, addMany, clear],
   )
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>
 }
 
 /**
- * Which Pokémon the trainer ticked in the catalog. It lives above the routes so the selection survives paging
- * (and a visit to a detail page); the key drops it when the session changes, so one trainer's ticks never leak to the next.
+ * Which Pokémon the trainer chose in the catalog, and whether the catalog is in selection mode. It lives above the
+ * routes so the selection survives paging, filtering and a visit to a detail page; the key drops it when the session
+ * changes, so one trainer's choices never leak to the next.
  */
 export function SelectionProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()

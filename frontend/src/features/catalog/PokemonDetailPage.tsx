@@ -35,7 +35,10 @@ export function PokemonDetailPage({ renderActions }: Props) {
       return (
         <section className={styles.missing}>
           <h1>We couldn’t find that Pokémon</h1>
-          <p>There is nothing called “{idOrName}” in the catalog. Check the spelling or try its number.</p>
+          <p>
+            There is nothing called “{idOrName}” in the catalog. Check the spelling or try its
+            number.
+          </p>
           <Link to="/">Back to the catalog</Link>
         </section>
       )

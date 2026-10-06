@@ -5,12 +5,26 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { App } from '../../app/App'
 import { expectNoA11yViolations } from '../../test/axe'
 import { pageOf, pikachu, stored, storedSummary, summary } from '../../test/fixtures'
-import { apiUrl, failWith, mockCatalog, mockCollection, mockCollectionIds, mockDetail, mockEntry } from '../../test/handlers'
+import {
+  apiUrl,
+  failWith,
+  mockCatalog,
+  mockCollection,
+  mockCollectionIds,
+  mockDetail,
+  mockEntry,
+} from '../../test/handlers'
 import { server } from '../../test/server'
 import { makeToken, renderApp } from '../../test/utils'
 
 const entry = (over = {}) =>
-  stored(25, 'pikachu', { version: 3, nickname: 'Pika', region: 'Kanto', tags: ['starter'], ...over })
+  stored(25, 'pikachu', {
+    version: 3,
+    nickname: 'Pika',
+    region: 'Kanto',
+    tags: ['starter'],
+    ...over,
+  })
 
 const asTrainer = () => ({ route: '/collection/25', token: makeToken({ sub: 'ash' }) })
 
@@ -32,7 +46,8 @@ function mockPatch(base = entry()) {
 }
 
 /** The notes are shown read-only; the form only opens on request. */
-const startEditing = async () => userEvent.click(await screen.findByRole('button', { name: 'Edit notes' }))
+const startEditing = async () =>
+  userEvent.click(await screen.findByRole('button', { name: 'Edit notes' }))
 
 describe('CollectionEntryPage', () => {
   it('shows a loading state, then the full record with its trainer notes', async () => {
@@ -43,9 +58,14 @@ describe('CollectionEntryPage', () => {
     expect(await screen.findByRole('heading', { name: 'Pikachu' })).toBeInTheDocument()
     expect(screen.getByText('“Pika”')).toBeInTheDocument()
     expect(screen.getByText('Kanto')).toBeInTheDocument()
-    expect(within(screen.getByRole('list', { name: 'Tags' })).getByText('starter')).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('list', { name: 'Tags' })).getByText('starter'),
+    ).toBeInTheDocument()
     expect(screen.getByRole('list', { name: 'Base stats' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'See it in the catalog' })).toHaveAttribute('href', '/pokemon/25')
+    expect(screen.getByRole('link', { name: 'See it in the catalog' })).toHaveAttribute(
+      'href',
+      '/pokemon/25',
+    )
   })
 
   describe('the trainer’s own entry', () => {
@@ -67,7 +87,9 @@ describe('CollectionEntryPage', () => {
       mockEntry(25, entry())
       renderApp(<App />, asTrainer())
 
-      expect(await screen.findByRole('button', { name: 'Remove from my collection' })).toBeInTheDocument()
+      expect(
+        await screen.findByRole('button', { name: 'Remove from my collection' }),
+      ).toBeInTheDocument()
     })
 
     it('sends anonymous visitors to the login page', async () => {
@@ -179,7 +201,9 @@ describe('CollectionEntryPage', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('nickname must have at most 50 characters')
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'nickname must have at most 50 characters',
+      )
     })
 
     it('on a conflict (409) offers to load the latest version and keeps what the user typed', async () => {
@@ -196,7 +220,11 @@ describe('CollectionEntryPage', () => {
           const body = (await request.json()) as Record<string, unknown>
           bodies.push(body)
           return bodies.length === 1
-            ? failWith(409, 'CONCURRENT_MODIFICATION', 'The record was modified by someone else; reload it and try again')
+            ? failWith(
+                409,
+                'CONCURRENT_MODIFICATION',
+                'The record was modified by someone else; reload it and try again',
+              )
             : HttpResponse.json(entry({ version: 5, nickname: 'Sparky', region: 'Johto' }))
         }),
       )
@@ -224,7 +252,9 @@ describe('CollectionEntryPage', () => {
         http.get(apiUrl('/collection/25'), () => {
           reads += 1
           // meanwhile somebody else renamed the Pokémon
-          return HttpResponse.json(reads === 1 ? entry() : entry({ version: 4, nickname: 'Renamed by someone else' }))
+          return HttpResponse.json(
+            reads === 1 ? entry() : entry({ version: 4, nickname: 'Renamed by someone else' }),
+          )
         }),
       )
       const bodies: Record<string, unknown>[] = []
@@ -233,7 +263,9 @@ describe('CollectionEntryPage', () => {
           bodies.push((await request.json()) as Record<string, unknown>)
           return bodies.length === 1
             ? failWith(409, 'CONCURRENT_MODIFICATION', 'modified by someone else')
-            : HttpResponse.json(entry({ version: 5, nickname: 'Renamed by someone else', region: 'Hoenn' }))
+            : HttpResponse.json(
+                entry({ version: 5, nickname: 'Renamed by someone else', region: 'Hoenn' }),
+              )
         }),
       )
       renderApp(<App />, asTrainer())
@@ -259,9 +291,14 @@ describe('CollectionEntryPage', () => {
       await userEvent.type(await screen.findByLabelText('Nickname'), 'x')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-      expect(await screen.findByText(/Saved changes to Pikachu\. In your collection\./)).toBeInTheDocument()
+      expect(
+        await screen.findByText(/Saved changes to Pikachu\. In your collection\./),
+      ).toBeInTheDocument()
       expect(screen.getByRole('heading', { name: 'Pikachu' })).toBeInTheDocument()
-      expect(screen.getByRole('link', { name: 'View it in my collection' })).toHaveAttribute('href', '/collection/25')
+      expect(screen.getByRole('link', { name: 'View it in my collection' })).toHaveAttribute(
+        'href',
+        '/collection/25',
+      )
     })
 
     it('saves a tag that was typed but not confirmed with “Add tag”', async () => {
@@ -331,9 +368,13 @@ describe('CollectionEntryPage', () => {
       )
       renderApp(<App />, asTrainer())
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Remove from my collection' }))
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Remove from my collection' }),
+      )
       expect(deleted).toBe(false)
-      expect(screen.getByText('Remove Pikachu from your collection? This can’t be undone.')).toBeInTheDocument()
+      expect(
+        screen.getByText('Remove Pikachu from your collection? This can’t be undone.'),
+      ).toBeInTheDocument()
       await userEvent.click(screen.getByRole('button', { name: 'Yes, remove it' }))
 
       expect(await screen.findByRole('heading', { name: 'My collection' })).toBeInTheDocument()
@@ -355,21 +396,31 @@ describe('CollectionEntryPage', () => {
       )
       renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
       await userEvent.click(await screen.findByRole('link', { name: 'View it in my collection' }))
-      await userEvent.click(await screen.findByRole('button', { name: 'Remove from my collection' }))
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Remove from my collection' }),
+      )
       await userEvent.click(screen.getByRole('button', { name: 'Yes, remove it' }))
       await screen.findByRole('heading', { name: 'My collection' })
 
-      await userEvent.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'Catalog' }))
+      await userEvent.click(
+        within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', {
+          name: 'Catalog',
+        }),
+      )
       await userEvent.click(await screen.findByRole('link', { name: /Pikachu/ }))
 
-      expect(await screen.findByRole('button', { name: 'Add to my collection' })).toBeInTheDocument()
+      expect(
+        await screen.findByRole('button', { name: 'Add to my collection' }),
+      ).toBeInTheDocument()
     })
 
     it('cancelling does nothing', async () => {
       mockEntry(25, entry())
       renderApp(<App />, asTrainer())
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Remove from my collection' }))
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Remove from my collection' }),
+      )
       await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
       expect(screen.queryByText(/This can’t be undone/)).not.toBeInTheDocument()
@@ -378,10 +429,16 @@ describe('CollectionEntryPage', () => {
 
     it('reports a failed deletion and stays on the page', async () => {
       mockEntry(25, entry())
-      server.use(http.delete(apiUrl('/collection/25'), () => failWith(500, 'INTERNAL_ERROR', 'Unexpected error')))
+      server.use(
+        http.delete(apiUrl('/collection/25'), () =>
+          failWith(500, 'INTERNAL_ERROR', 'Unexpected error'),
+        ),
+      )
       renderApp(<App />, asTrainer())
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Remove from my collection' }))
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Remove from my collection' }),
+      )
       await userEvent.click(screen.getByRole('button', { name: 'Yes, remove it' }))
 
       expect(await screen.findByRole('alert')).toHaveTextContent('Unexpected error')
@@ -390,11 +447,19 @@ describe('CollectionEntryPage', () => {
   })
 
   it('shows a friendly page when the entry does not exist', async () => {
-    mockEntry(25, failWith(404, 'STORED_POKEMON_NOT_FOUND', 'Pokemon 25 is not in the local collection'))
+    mockEntry(
+      25,
+      failWith(404, 'STORED_POKEMON_NOT_FOUND', 'Pokemon 25 is not in the local collection'),
+    )
     renderApp(<App />, asTrainer())
 
-    expect(await screen.findByRole('heading', { name: 'This Pokémon isn’t in your collection' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Back to the collection' })).toHaveAttribute('href', '/collection')
+    expect(
+      await screen.findByRole('heading', { name: 'This Pokémon isn’t in your collection' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Back to the collection' })).toHaveAttribute(
+      'href',
+      '/collection',
+    )
   })
 
   it('reports other failures with a retry', async () => {
@@ -402,7 +467,9 @@ describe('CollectionEntryPage', () => {
     server.use(
       http.get(apiUrl('/collection/25'), () => {
         calls += 1
-        return calls === 1 ? failWith(500, 'INTERNAL_ERROR', 'Unexpected error') : HttpResponse.json(entry())
+        return calls === 1
+          ? failWith(500, 'INTERNAL_ERROR', 'Unexpected error')
+          : HttpResponse.json(entry())
       }),
     )
     renderApp(<App />, asTrainer())

@@ -14,7 +14,8 @@ export function CollectionPage() {
   useDocumentTitle('My collection')
 
   function renderResults() {
-    if (query.isError) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+    if (query.isError)
+      return <ErrorState error={query.error} onRetry={() => void query.refetch()} />
     if (query.isPending) {
       return (
         <>
@@ -31,7 +32,10 @@ export function CollectionPage() {
       return (
         <div className={styles.empty}>
           <h2>Your collection is empty</h2>
-          <p>Select Pokémon in the catalog to add several at once, then give them a nickname, a region and tags.</p>
+          <p>
+            Select Pokémon in the catalog to add several at once, then give them a nickname, a
+            region and tags.
+          </p>
           <Link to="/">Browse the catalog</Link>
         </div>
       )

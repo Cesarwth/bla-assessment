@@ -22,6 +22,9 @@ import org.springframework.web.client.RestClientResponseException;
  */
 public class PokeApiClient {
 
+    // Well above the catalog size (~1350), so one call returns everything.
+    private static final int NAME_INDEX_LIMIT = 100_000;
+
     private final RestClient http;
 
     public PokeApiClient(RestClient http) {
@@ -30,11 +33,21 @@ public class PokeApiClient {
 
     @Cacheable(cacheNames = PokeApiCaches.PAGES)
     public PokeApiPage getPage(int limit, int offset) {
+        return getPageUncached(limit, offset);
+    }
+
+    private PokeApiPage getPageUncached(int limit, int offset) {
         return fetch(client -> client.get()
                         .uri(uri -> uri.path("/pokemon").queryParam("limit", limit).queryParam("offset", offset).build())
                         .retrieve()
                         .body(PokeApiPage.class))
                 .orElseThrow(() -> new CatalogUnavailableException("PokeAPI returned no list", false, null));
+    }
+
+    /** Every {name, url} PokeAPI knows, in one call, so name filtering needs no per-page upstream scan. */
+    @Cacheable(cacheNames = PokeApiCaches.NAME_INDEX)
+    public PokeApiPage getNameIndex() {
+        return getPageUncached(NAME_INDEX_LIMIT, 0);
     }
 
     @Cacheable(cacheNames = PokeApiCaches.POKEMON, unless = "#result == null")

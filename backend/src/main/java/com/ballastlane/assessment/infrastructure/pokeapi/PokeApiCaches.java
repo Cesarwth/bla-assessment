@@ -4,6 +4,7 @@ package com.ballastlane.assessment.infrastructure.pokeapi;
 final class PokeApiCaches {
 
     static final String PAGES = "pokeapi-pages";
+    static final String NAME_INDEX = "pokeapi-name-index";
     static final String POKEMON = "pokeapi-pokemon";
     static final String SPECIES = "pokeapi-species";
     static final String EVOLUTION_CHAINS = "pokeapi-evolution-chains";

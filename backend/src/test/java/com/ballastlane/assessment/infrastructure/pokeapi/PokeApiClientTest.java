@@ -73,6 +73,17 @@ class PokeApiClientTest {
     }
 
     @Test
+    void fetchesTheWholeNameIndexInOneCall() {
+        server.expect(requestTo(BASE + "/pokemon?limit=100000&offset=0"))
+                .andRespond(withSuccess(Fixtures.read("list.json"), MediaType.APPLICATION_JSON));
+
+        PokeApiPage index = client.getNameIndex();
+
+        assertThat(index.results()).extracting(PokeApiPage.Entry::name).containsExactly("bulbasaur", "ivysaur", "venusaur");
+        server.verify();
+    }
+
+    @Test
     void fetchesSpeciesAndEvolutionChain() {
         server.expect(requestTo(BASE + "/pokemon-species/25"))
                 .andRespond(withSuccess(Fixtures.read("species-25.json"), MediaType.APPLICATION_JSON));

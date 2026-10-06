@@ -21,7 +21,9 @@ const toDraft = (entry: StoredPokemon): Draft => ({
 })
 
 function sameValue(field: keyof Draft, a: Draft[keyof Draft], b: Draft[keyof Draft]): boolean {
-  return field === 'tags' ? (a as string[]).join('\n') === (b as string[]).join('\n') : (a as string).trim() === (b as string).trim()
+  return field === 'tags'
+    ? (a as string[]).join('\n') === (b as string[]).join('\n')
+    : (a as string).trim() === (b as string).trim()
 }
 
 /**
@@ -31,9 +33,12 @@ function sameValue(field: keyof Draft, a: Draft[keyof Draft], b: Draft[keyof Dra
 function changesOf(entry: StoredPokemon, edits: Partial<Draft>): Omit<EntryChanges, 'version'> {
   const base = toDraft(entry)
   const changes: Omit<EntryChanges, 'version'> = {}
-  if (edits.nickname !== undefined && !sameValue('nickname', edits.nickname, base.nickname)) changes.nickname = edits.nickname.trim()
-  if (edits.region !== undefined && !sameValue('region', edits.region, base.region)) changes.region = edits.region.trim()
-  if (edits.tags !== undefined && !sameValue('tags', edits.tags, base.tags)) changes.tags = edits.tags
+  if (edits.nickname !== undefined && !sameValue('nickname', edits.nickname, base.nickname))
+    changes.nickname = edits.nickname.trim()
+  if (edits.region !== undefined && !sameValue('region', edits.region, base.region))
+    changes.region = edits.region.trim()
+  if (edits.tags !== undefined && !sameValue('tags', edits.tags, base.tags))
+    changes.tags = edits.tags
   return changes
 }
 
@@ -52,16 +57,19 @@ export function EditForm({ entry, onReload, onSaved, onCancel }: Props) {
   // reload the form follows the latest version while keeping what the user typed.
   const [edits, setEdits] = useState<Partial<Draft>>({})
   const [pendingTag, setPendingTag] = useState('')
-  const valueOf = <K extends keyof Draft>(field: K): Draft[K] => (edits[field] ?? toDraft(entry)[field]) as Draft[K]
+  const valueOf = <K extends keyof Draft>(field: K): Draft[K] =>
+    (edits[field] ?? toDraft(entry)[field]) as Draft[K]
   const update = useUpdateEntry(entry.id)
   // A tag typed but not confirmed with “Add tag” or Enter still counts: saving must not silently drop it.
   const pending = addTag(valueOf('tags'), pendingTag)
-  const effective: Partial<Draft> = pendingTag.trim() !== '' && !pending.error ? { ...edits, tags: pending.tags } : edits
+  const effective: Partial<Draft> =
+    pendingTag.trim() !== '' && !pending.error ? { ...edits, tags: pending.tags } : edits
   const changes = changesOf(entry, effective)
   const dirty = Object.keys(changes).length > 0 && !pending.error
   const conflict = isApiError(update.error) && update.error.code === 'CONCURRENT_MODIFICATION'
 
-  const edit = <K extends keyof Draft>(field: K, value: Draft[K]) => setEdits((current) => ({ ...current, [field]: value }))
+  const edit = <K extends keyof Draft>(field: K, value: Draft[K]) =>
+    setEdits((current) => ({ ...current, [field]: value }))
 
   function submit(event: FormEvent) {
     event.preventDefault()
@@ -91,7 +99,12 @@ export function EditForm({ entry, onReload, onSaved, onCancel }: Props) {
         maxLength={50}
         hint="For example Kanto, or the place where you met it."
       />
-      <TagInput tags={valueOf('tags')} onChange={(tags) => edit('tags', tags)} text={pendingTag} onTextChange={setPendingTag} />
+      <TagInput
+        tags={valueOf('tags')}
+        onChange={(tags) => edit('tags', tags)}
+        text={pendingTag}
+        onTextChange={setPendingTag}
+      />
 
       {conflict ? (
         <p role="alert" className={styles.alert}>
@@ -112,7 +125,12 @@ export function EditForm({ entry, onReload, onSaved, onCancel }: Props) {
         <button type="submit" className={styles.save} disabled={!dirty || update.isPending}>
           {update.isPending ? 'Saving…' : 'Save changes'}
         </button>
-        <button type="button" className={styles.cancel} onClick={onCancel} disabled={update.isPending}>
+        <button
+          type="button"
+          className={styles.cancel}
+          onClick={onCancel}
+          disabled={update.isPending}
+        >
           Cancel
         </button>
       </div>

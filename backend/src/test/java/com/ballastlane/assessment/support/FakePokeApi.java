@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Local stand-in for PokeAPI serving the captured fixtures over real HTTP (so real client timeouts apply).
  * Special names: {@code glitch} answers 503, {@code slowpoke} never answers until the stub is stopped (so a client
  * timeout is the only way out, with no dependence on how long a sleep lasts), unknown paths answer 404.
- * Numeric ids 1..1025 (except 25, which is the Pikachu fixture) return the Pikachu fixture with that id.
+ * The whole-catalog name index (limit=100000) is served from {@code index.json}. Numeric ids 1..1025 (except 25, which is the Pikachu fixture) return the Pikachu fixture with that id.
  */
 public final class FakePokeApi {
 
@@ -26,6 +26,7 @@ public final class FakePokeApi {
     private final HttpServer server;
     private final Map<String, AtomicInteger> hits = new ConcurrentHashMap<>();
     private final CountDownLatch release = new CountDownLatch(1);
+    private volatile boolean indexDown;
 
     private FakePokeApi(HttpServer server) {
         this.server = server;
@@ -52,6 +53,11 @@ public final class FakePokeApi {
         return hits.values().stream().mapToInt(AtomicInteger::get).sum();
     }
 
+    /** Makes the full name index (limit=100000) answer 503 until switched back. */
+    public void setIndexDown(boolean down) {
+        indexDown = down;
+    }
+
     public void resetHits() {
         hits.clear();
     }
@@ -73,7 +79,14 @@ public final class FakePokeApi {
                 }
             }
             switch (path) {
-                case "/pokemon" -> respond(exchange, 200, fixture("list.json"));
+                case "/pokemon" -> {
+                    String query = String.valueOf(exchange.getRequestURI().getQuery());
+                    if (query.contains("limit=100000")) {
+                        respond(exchange, indexDown ? 503 : 200, indexDown ? "{}" : fixture("index.json"));
+                    } else {
+                        respond(exchange, 200, fixture("list.json"));
+                    }
+                }
                 case "/pokemon/pikachu" -> respond(exchange, 200, fixture("pokemon-25.json"));
                 case "/pokemon-species/25" -> respond(exchange, 200, fixture("species-25.json"));
                 case "/evolution-chain/10" -> respond(exchange, 200, fixture("evolution-10.json"));

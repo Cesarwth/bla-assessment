@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.ballastlane.assessment.support.FakePokeApi;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,11 @@ class PokemonFlowIT {
     void resetCachesAndCounters() {
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
         UPSTREAM.resetHits();
+    }
+
+    @AfterEach
+    void restoreIndex() {
+        UPSTREAM.setIndexDown(false);
     }
 
     @AfterAll
@@ -79,6 +85,78 @@ class PokemonFlowIT {
 
         assertThat(upstreamCallsAfterFirst).isEqualTo(4); // 1 list + 3 details
         assertThat(UPSTREAM.totalHits()).isEqualTo(upstreamCallsAfterFirst);
+    }
+
+    @Test
+    void filtersTheCatalogByNameSubstringAndPagesTheMatches() throws Exception {
+        mvc.perform(get("/api/v1/pokemon").param("q", "  SAUR ").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andExpect(jsonPath("$.items[0].id").value(1))
+                .andExpect(jsonPath("$.items[1].id").value(2))
+                .andExpect(jsonPath("$.totalItems").value(3))
+                .andExpect(jsonPath("$.totalPages").value(2));
+        mvc.perform(get("/api/v1/pokemon").param("q", "saur").param("size", "2").param("page", "1"))
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(3));
+    }
+
+    @Test
+    void filtersByIdAndFindsHyphenatedNamesTypedWithASpace() throws Exception {
+        mvc.perform(get("/api/v1/pokemon").param("q", "25"))
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(25))
+                .andExpect(jsonPath("$.totalItems").value(1));
+        mvc.perform(get("/api/v1/pokemon").param("q", "mr mime"))
+                .andExpect(jsonPath("$.items[0].id").value(122));
+    }
+
+    @Test
+    void aFilterWithoutMatchesIsAnEmptyPage() throws Exception {
+        for (String q : new String[] {"zzz", "999", "%", ".*", "[a-z]+"}) {
+            mvc.perform(get("/api/v1/pokemon").param("q", q))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items").isEmpty())
+                    .andExpect(jsonPath("$.totalItems").value(0));
+        }
+    }
+
+    @Test
+    void aFilterPageBeyondTheLastKeepsTheTotals() throws Exception {
+        mvc.perform(get("/api/v1/pokemon").param("q", "saur").param("page", "9"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty())
+                .andExpect(jsonPath("$.totalItems").value(3));
+    }
+
+    @Test
+    void aTooLongFilterIs400AndTheSizeLimitStillApplies() throws Exception {
+        mvc.perform(get("/api/v1/pokemon").param("q", "a".repeat(51)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_SEARCH_QUERY"));
+        mvc.perform(get("/api/v1/pokemon").param("q", "saur").param("size", "51"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_PAGINATION"));
+    }
+
+    @Test
+    void theNameIndexIsFetchedOnceForTwoSearches() throws Exception {
+        mvc.perform(get("/api/v1/pokemon").param("q", "saur")).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/pokemon").param("q", "mew")).andExpect(status().isOk());
+
+        // 1 index + details of 1,2,3 + detail of 150
+        assertThat(UPSTREAM.totalHits()).isEqualTo(5);
+    }
+
+    @Test
+    void anUnavailableNameIndexBecomes502AndIsNotRemembered() throws Exception {
+        UPSTREAM.setIndexDown(true);
+        mvc.perform(get("/api/v1/pokemon").param("q", "saur"))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.code").value("CATALOG_UNAVAILABLE"));
+
+        UPSTREAM.setIndexDown(false);
+        mvc.perform(get("/api/v1/pokemon").param("q", "saur")).andExpect(status().isOk());
     }
 
     @Test

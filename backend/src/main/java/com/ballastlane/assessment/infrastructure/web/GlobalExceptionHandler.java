@@ -6,6 +6,7 @@ import com.ballastlane.assessment.domain.exception.EmailAlreadyExistsException;
 import com.ballastlane.assessment.domain.exception.InvalidLocalAttributesException;
 import com.ballastlane.assessment.domain.exception.InvalidPaginationException;
 import com.ballastlane.assessment.domain.exception.InvalidPokemonIdentifierException;
+import com.ballastlane.assessment.domain.exception.InvalidSearchQueryException;
 import com.ballastlane.assessment.domain.exception.InvalidStoredPokemonUpdateException;
 import com.ballastlane.assessment.domain.exception.InvalidSyncSelectionException;
 import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
@@ -108,6 +109,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidPaginationException.class)
     ResponseEntity<ErrorResponse> invalidPagination(InvalidPaginationException ex) {
         return respond(HttpStatus.BAD_REQUEST, "INVALID_PAGINATION", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidSearchQueryException.class)
+    ResponseEntity<ErrorResponse> invalidSearchQuery(InvalidSearchQueryException ex) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_SEARCH_QUERY", ex.getMessage());
     }
 
     @ExceptionHandler(InvalidPokemonIdentifierException.class)

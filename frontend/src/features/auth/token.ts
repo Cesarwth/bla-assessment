@@ -32,7 +32,13 @@ export function decodeToken(token: string): TokenInfo | null {
     const claims: unknown = JSON.parse(decodeBase64Url(parts[1] ?? ''))
     if (typeof claims !== 'object' || claims === null) return null
     const { uid, sub, role, exp } = claims as Record<string, unknown>
-    if (!Number.isInteger(uid) || typeof sub !== 'string' || sub === '' || !isRole(role) || typeof exp !== 'number') {
+    if (
+      !Number.isInteger(uid) ||
+      typeof sub !== 'string' ||
+      sub === '' ||
+      !isRole(role) ||
+      typeof exp !== 'number'
+    ) {
       return null
     }
     return { user: { id: uid as number, username: sub, role }, expiresAt: exp * 1000 }

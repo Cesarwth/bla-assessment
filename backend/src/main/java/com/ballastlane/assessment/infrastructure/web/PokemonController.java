@@ -32,9 +32,10 @@ public class PokemonController {
     // Nullable on purpose: defaults and bounds are business rules owned by the use case, not by annotations here.
     @GetMapping
     public ResponseEntity<PageResponse<PokemonSummaryResponse>> list(
-            @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+            @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String q) {
         return ResponseEntity.ok().cacheControl(CLIENT_CACHE)
-                .body(PageResponse.from(listPokemon.list(page, size), PokemonSummaryResponse::from));
+                .body(PageResponse.from(listPokemon.list(page, size, q), PokemonSummaryResponse::from));
     }
 
     @GetMapping("/{idOrName}")

@@ -28,7 +28,7 @@ class PokeApiConfigTest {
             assertThat(context).hasSingleBean(PokeApiClient.class);
             CacheManager caches = context.getBean(CacheManager.class);
             assertThat(caches.getCacheNames()).containsExactlyInAnyOrder(
-                    PokeApiCaches.PAGES, PokeApiCaches.POKEMON, PokeApiCaches.SPECIES, PokeApiCaches.EVOLUTION_CHAINS);
+                    PokeApiCaches.PAGES, PokeApiCaches.NAME_INDEX, PokeApiCaches.POKEMON, PokeApiCaches.SPECIES, PokeApiCaches.EVOLUTION_CHAINS);
         });
     }
 

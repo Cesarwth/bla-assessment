@@ -11,10 +11,12 @@ import { makeToken, renderApp } from '../../test/utils'
 
 describe('PokemonDetailPage', () => {
   it('shows a loading state first', async () => {
-    server.use(http.get(apiUrl('/pokemon/25'), async () => {
-      await delay(50)
-      return HttpResponse.json(pikachu)
-    }))
+    server.use(
+      http.get(apiUrl('/pokemon/25'), async () => {
+        await delay(50)
+        return HttpResponse.json(pikachu)
+      }),
+    )
     renderApp(<App />, { route: '/pokemon/25' })
 
     expect(screen.getByRole('status')).toHaveTextContent('Loading Pokémon')
@@ -26,7 +28,10 @@ describe('PokemonDetailPage', () => {
     renderApp(<App />, { route: '/pokemon/25' })
 
     expect(await screen.findByRole('heading', { name: 'Pikachu' })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Pikachu' })).toHaveAttribute('src', 'https://img.test/artwork/25.png')
+    expect(screen.getByRole('img', { name: 'Pikachu' })).toHaveAttribute(
+      'src',
+      'https://img.test/artwork/25.png',
+    )
     expect(screen.getByText('#025')).toBeInTheDocument()
     expect(screen.getByText('Mouse Pokémon')).toBeInTheDocument()
     expect(screen.getByText('Electric')).toHaveAttribute('data-type', 'electric')
@@ -65,12 +70,22 @@ describe('PokemonDetailPage', () => {
     const evolution = screen.getByRole('region', { name: 'Evolution' })
     const links = within(evolution).getAllByRole('link')
     expect(links.map((link) => link.textContent)).toEqual(
-      expect.arrayContaining([expect.stringContaining('Pichu'), expect.stringContaining('Pikachu'), expect.stringContaining('Raichu')]),
+      expect.arrayContaining([
+        expect.stringContaining('Pichu'),
+        expect.stringContaining('Pikachu'),
+        expect.stringContaining('Raichu'),
+      ]),
     )
     expect(within(evolution).getByText('Level up (happiness 220)')).toBeInTheDocument()
     expect(within(evolution).getByText('Use thunder-stone')).toBeInTheDocument()
-    expect(within(evolution).getByRole('link', { name: /Pikachu/ })).toHaveAttribute('aria-current', 'page')
-    expect(within(evolution).getByRole('link', { name: /Raichu/ })).toHaveAttribute('href', '/pokemon/26')
+    expect(within(evolution).getByRole('link', { name: /Pikachu/ })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(within(evolution).getByRole('link', { name: /Raichu/ })).toHaveAttribute(
+      'href',
+      '/pokemon/26',
+    )
   })
 
   it('draws branching evolutions (Eevee) with the requirement of each branch', async () => {
@@ -111,7 +126,10 @@ describe('PokemonDetailPage', () => {
     mockDetail('25', { ...pikachu, imageUrl: null })
     renderApp(<App />, { route: '/pokemon/25' })
 
-    expect(await screen.findByRole('img', { name: 'Pikachu' })).toHaveAttribute('src', 'https://img.test/sprites/25.png')
+    expect(await screen.findByRole('img', { name: 'Pikachu' })).toHaveAttribute(
+      'src',
+      'https://img.test/sprites/25.png',
+    )
   })
 
   it('renders descriptions as plain text, never as HTML', async () => {
@@ -134,7 +152,10 @@ describe('PokemonDetailPage', () => {
   })
 
   it('treats a malformed identifier like a missing Pokémon', async () => {
-    mockDetail('bad!', failWith(400, 'INVALID_POKEMON_IDENTIFIER', 'Pokemon id or name is not valid'))
+    mockDetail(
+      'bad!',
+      failWith(400, 'INVALID_POKEMON_IDENTIFIER', 'Pokemon id or name is not valid'),
+    )
     renderApp(<App />, { route: '/pokemon/bad!' })
 
     expect(await screen.findByRole('heading', { name: /couldn.t find/i })).toBeInTheDocument()
@@ -142,10 +163,14 @@ describe('PokemonDetailPage', () => {
 
   it('reports an outage with a retry button that works', async () => {
     let calls = 0
-    server.use(http.get(apiUrl('/pokemon/25'), () => {
-      calls += 1
-      return calls === 1 ? failWith(504, 'CATALOG_TIMEOUT', 'The Pokemon catalog took too long to answer') : HttpResponse.json(pikachu)
-    }))
+    server.use(
+      http.get(apiUrl('/pokemon/25'), () => {
+        calls += 1
+        return calls === 1
+          ? failWith(504, 'CATALOG_TIMEOUT', 'The Pokemon catalog took too long to answer')
+          : HttpResponse.json(pikachu)
+      }),
+    )
     renderApp(<App />, { route: '/pokemon/25' })
 
     expect(await screen.findByRole('alert')).toHaveTextContent('not answering right now')
@@ -160,7 +185,11 @@ describe('PokemonDetailPage', () => {
     renderApp(<App />, { route: '/pokemon/25' })
     await screen.findByRole('heading', { name: 'Pikachu' })
 
-    await userEvent.click(within(screen.getByRole('region', { name: 'Evolution' })).getByRole('link', { name: /Raichu/ }))
+    await userEvent.click(
+      within(screen.getByRole('region', { name: 'Evolution' })).getByRole('link', {
+        name: /Raichu/,
+      }),
+    )
 
     expect(await screen.findByRole('heading', { name: 'Raichu' })).toBeInTheDocument()
   })
@@ -180,10 +209,12 @@ describe('PokemonDetailPage', () => {
       ids = []
     })
     const syncReturns = (status: number, body: object) =>
-      server.use(http.post(apiUrl('/collection/25/sync'), () => {
-        ids = [...ids, 25]
-        return HttpResponse.json(body, { status })
-      }))
+      server.use(
+        http.post(apiUrl('/collection/25/sync'), () => {
+          ids = [...ids, 25]
+          return HttpResponse.json(body, { status })
+        }),
+      )
     const notInCollection = () => mockCollectionIds(() => ids)
     const inCollection = () => {
       ids = [4, 25]
@@ -194,10 +225,12 @@ describe('PokemonDetailPage', () => {
       mockDetail('25', pikachu)
       notInCollection()
       const entryRequests: string[] = []
-      server.use(http.get(apiUrl('/collection/25'), () => {
-        entryRequests.push('entry')
-        return failWith(404, 'POKEMON_NOT_STORED', 'x')
-      }))
+      server.use(
+        http.get(apiUrl('/collection/25'), () => {
+          entryRequests.push('entry')
+          return failWith(404, 'POKEMON_NOT_STORED', 'x')
+        }),
+      )
       renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
 
       await screen.findByRole('button', { name: 'Add to my collection' })
@@ -208,15 +241,19 @@ describe('PokemonDetailPage', () => {
     it('shows a placeholder while it checks the collection', async () => {
       mockDetail('25', pikachu)
       mockCollectionIds([])
-      server.use(http.get(apiUrl('/collection/ids'), async () => {
-        await delay(60)
-        return HttpResponse.json([])
-      }))
+      server.use(
+        http.get(apiUrl('/collection/ids'), async () => {
+          await delay(60)
+          return HttpResponse.json([])
+        }),
+      )
       renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
       await screen.findByRole('heading', { name: 'Pikachu' })
 
       expect(screen.getByText('Checking the collection…')).toBeInTheDocument()
-      expect(await screen.findByRole('button', { name: 'Add to my collection' })).toBeInTheDocument()
+      expect(
+        await screen.findByRole('button', { name: 'Add to my collection' }),
+      ).toBeInTheDocument()
     })
 
     it('shows the button for an empty collection', async () => {
@@ -224,7 +261,9 @@ describe('PokemonDetailPage', () => {
       mockCollectionIds([])
       renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
 
-      expect(await screen.findByRole('button', { name: 'Add to my collection' })).toBeInTheDocument()
+      expect(
+        await screen.findByRole('button', { name: 'Add to my collection' }),
+      ).toBeInTheDocument()
     })
 
     it('makes no request about the collection for anonymous visitors', async () => {
@@ -240,10 +279,15 @@ describe('PokemonDetailPage', () => {
     it('mentions the saved changes when sent here by the edit form', async () => {
       mockDetail('25', pikachu)
       inCollection()
-      renderApp(<App />, { route: { pathname: '/pokemon/25', state: { saved: 'Pikachu' } }, token: makeToken() })
+      renderApp(<App />, {
+        route: { pathname: '/pokemon/25', state: { saved: 'Pikachu' } },
+        token: makeToken(),
+      })
 
       await screen.findByRole('heading', { name: 'Pikachu' })
-      expect(await screen.findByText('Saved changes to Pikachu. In your collection.')).toBeInTheDocument()
+      expect(
+        await screen.findByText('Saved changes to Pikachu. In your collection.'),
+      ).toBeInTheDocument()
     })
 
     it('asks anonymous visitors to log in and remembers where they were', async () => {
@@ -252,7 +296,9 @@ describe('PokemonDetailPage', () => {
       await screen.findByRole('heading', { name: 'Pikachu' })
 
       expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
-      expect(screen.getByRole('link', { name: 'Log in to add this Pokémon to the collection' })).toHaveAttribute('href', '/login')
+      expect(
+        screen.getByRole('link', { name: 'Log in to add this Pokémon to the collection' }),
+      ).toHaveAttribute('href', '/login')
     })
 
     it('says so, and still links to the entry, when it was already there and was only refreshed (200)', async () => {
@@ -278,7 +324,10 @@ describe('PokemonDetailPage', () => {
       await userEvent.click(await screen.findByRole('button', { name: 'Add to my collection' }))
 
       expect(await screen.findByRole('status')).toHaveTextContent('Added to your collection.')
-      expect(screen.getByRole('link', { name: 'View it in my collection' })).toHaveAttribute('href', '/collection/25')
+      expect(screen.getByRole('link', { name: 'View it in my collection' })).toHaveAttribute(
+        'href',
+        '/collection/25',
+      )
       expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
     })
 
@@ -290,7 +339,10 @@ describe('PokemonDetailPage', () => {
 
       expect(await screen.findByRole('status')).toHaveTextContent('In your collection.')
       expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
-      expect(screen.getByRole('link', { name: 'View it in my collection' })).toHaveAttribute('href', '/collection/25')
+      expect(screen.getByRole('link', { name: 'View it in my collection' })).toHaveAttribute(
+        'href',
+        '/collection/25',
+      )
     })
 
     it('disables the button while adding', async () => {
@@ -315,7 +367,9 @@ describe('PokemonDetailPage', () => {
     it('reports an outage while adding without losing the page', async () => {
       mockDetail('25', pikachu)
       notInCollection()
-      server.use(http.post(apiUrl('/collection/25/sync'), () => failWith(502, 'CATALOG_UNAVAILABLE', 'x')))
+      server.use(
+        http.post(apiUrl('/collection/25/sync'), () => failWith(502, 'CATALOG_UNAVAILABLE', 'x')),
+      )
       renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
       await screen.findByRole('heading', { name: 'Pikachu' })
 
@@ -336,7 +390,9 @@ describe('PokemonDetailPage', () => {
       notInCollection()
       await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
 
-      expect(await screen.findByRole('button', { name: 'Add to my collection' })).toBeInTheDocument()
+      expect(
+        await screen.findByRole('button', { name: 'Add to my collection' }),
+      ).toBeInTheDocument()
     })
   })
 })

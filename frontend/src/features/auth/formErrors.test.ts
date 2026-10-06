@@ -20,14 +20,21 @@ describe('toFormErrors', () => {
     ['EMAIL_TAKEN', 'email'],
     ['WEAK_PASSWORD', 'password'],
   ])('puts %s under the %s field', (code, field) => {
-    expect(toFormErrors(new ApiError(409, code, 'message from the API'))).toEqual({ fields: { [field]: 'message from the API' } })
+    expect(toFormErrors(new ApiError(409, code, 'message from the API'))).toEqual({
+      fields: { [field]: 'message from the API' },
+    })
   })
 
   it('shows everything else as a general message', () => {
-    expect(toFormErrors(new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid username or password'))).toEqual({
+    expect(
+      toFormErrors(new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid username or password')),
+    ).toEqual({
       fields: {},
       general: 'Invalid username or password',
     })
-    expect(toFormErrors(new Error('boom'))).toEqual({ fields: {}, general: 'Something unexpected happened. Please try again.' })
+    expect(toFormErrors(new Error('boom'))).toEqual({
+      fields: {},
+      general: 'Something unexpected happened. Please try again.',
+    })
   })
 })

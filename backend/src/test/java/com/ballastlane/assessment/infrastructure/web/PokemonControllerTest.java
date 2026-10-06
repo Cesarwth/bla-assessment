@@ -17,6 +17,7 @@ import com.ballastlane.assessment.domain.PokemonStat;
 import com.ballastlane.assessment.domain.PokemonSummary;
 import com.ballastlane.assessment.domain.exception.CatalogUnavailableException;
 import com.ballastlane.assessment.domain.exception.InvalidPaginationException;
+import com.ballastlane.assessment.domain.exception.InvalidSearchQueryException;
 import com.ballastlane.assessment.domain.exception.InvalidPokemonIdentifierException;
 import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
 import com.ballastlane.assessment.infrastructure.security.JwtConfig;
@@ -44,7 +45,7 @@ class PokemonControllerTest {
 
     @Test
     void listReturnsPagedSummariesWithoutAToken() throws Exception {
-        when(listPokemon.list(1, 1)).thenReturn(new PageResult<>(List.of(PIKACHU), 1, 1, 1351));
+        when(listPokemon.list(1, 1, null)).thenReturn(new PageResult<>(List.of(PIKACHU), 1, 1, 1351));
 
         mvc.perform(get("/api/v1/pokemon").param("page", "1").param("size", "1"))
                 .andExpect(status().isOk())
@@ -63,22 +64,54 @@ class PokemonControllerTest {
 
     @Test
     void listLeavesDefaultsToTheUseCaseWhenParametersAreMissing() throws Exception {
-        when(listPokemon.list(null, null)).thenReturn(new PageResult<>(List.of(), 0, 12, 0));
+        when(listPokemon.list(null, null, null)).thenReturn(new PageResult<>(List.of(), 0, 12, 0));
 
         mvc.perform(get("/api/v1/pokemon")).andExpect(status().isOk());
 
-        verify(listPokemon).list(null, null);
+        verify(listPokemon).list(null, null, null);
     }
 
     @Test
     void list400WhenPaginationIsInvalid() throws Exception {
-        when(listPokemon.list(any(), any())).thenThrow(new InvalidPaginationException("size must be between 1 and 50"));
+        when(listPokemon.list(any(), any(), any())).thenThrow(new InvalidPaginationException("size must be between 1 and 50"));
 
         mvc.perform(get("/api/v1/pokemon").param("size", "500"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PAGINATION"))
                 // Errors must never inherit the 60s public cache that successful reads get.
                 .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("max-age=60"))));
+    }
+
+    @Test
+    void listPassesTheFilterTextToTheUseCase() throws Exception {
+        when(listPokemon.list(0, 12, " Mr Mime ")).thenReturn(new PageResult<>(List.of(PIKACHU), 0, 12, 1));
+
+        mvc.perform(get("/api/v1/pokemon").param("page", "0").param("size", "12").param("q", " Mr Mime "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(25))
+                .andExpect(jsonPath("$.totalItems").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    void listWithoutMatchesIsAnEmpty200() throws Exception {
+        when(listPokemon.list(null, null, "zzz")).thenReturn(new PageResult<>(List.of(), 0, 12, 0));
+
+        mvc.perform(get("/api/v1/pokemon").param("q", "zzz"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty())
+                .andExpect(jsonPath("$.totalItems").value(0))
+                .andExpect(jsonPath("$.totalPages").value(0));
+    }
+
+    @Test
+    void list400WhenTheFilterIsTooLong() throws Exception {
+        when(listPokemon.list(any(), any(), any())).thenThrow(new InvalidSearchQueryException("q must be at most 50 characters"));
+
+        mvc.perform(get("/api/v1/pokemon").param("q", "a".repeat(51)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_SEARCH_QUERY"))
+                .andExpect(jsonPath("$.message").value("q must be at most 50 characters"));
     }
 
     @Test

@@ -62,7 +62,8 @@ export function CollectionEntryPage() {
   if (!validId) return <NotInCollection />
   if (query.isPending) return <LoadingStatus label="Loading the entry…" />
   if (query.isError) {
-    if (isApiError(query.error) && query.error.code === 'STORED_POKEMON_NOT_FOUND') return <NotInCollection />
+    if (isApiError(query.error) && query.error.code === 'STORED_POKEMON_NOT_FOUND')
+      return <NotInCollection />
     return <ErrorState error={query.error} onRetry={() => void query.refetch()} />
   }
 
@@ -74,7 +75,13 @@ export function CollectionEntryPage() {
     <article>
       <div className={styles.layout}>
         <div className={styles.artCard} data-type={entry.types[0]}>
-          <PokemonImage src={entry.imageUrl ?? entry.spriteUrl} alt={name} size={256} fallback="No image available" priority />
+          <PokemonImage
+            src={entry.imageUrl ?? entry.spriteUrl}
+            alt={name}
+            size={256}
+            fallback="No image available"
+            priority
+          />
         </div>
         <div>
           <div className={styles.headline}>
@@ -99,7 +106,11 @@ export function CollectionEntryPage() {
             ) : (
               <>
                 <NotesList entry={entry} />
-                <button type="button" className={styles.editButton} onClick={() => setEditing(true)}>
+                <button
+                  type="button"
+                  className={styles.editButton}
+                  onClick={() => setEditing(true)}
+                >
                   Edit notes
                 </button>
               </>
@@ -126,7 +137,9 @@ export function CollectionEntryPage() {
 
       <p className={styles.footer}>
         <Link to={`/pokemon/${entry.id}`}>See it in the catalog</Link> · Last synced{' '}
-        <time dateTime={entry.syncedAt}>{new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(new Date(entry.syncedAt))}</time>
+        <time dateTime={entry.syncedAt}>
+          {new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(new Date(entry.syncedAt))}
+        </time>
       </p>
     </article>
   )

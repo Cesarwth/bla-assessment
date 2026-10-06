@@ -12,17 +12,29 @@ import { server } from './server'
 export const apiUrl = (path: string) => `*/api/v1${path}`
 
 /** The error body the backend sends for every failure. */
-export function errorBody(status: number, code: string, message: string, fieldErrors: FieldError[] = []) {
+export function errorBody(
+  status: number,
+  code: string,
+  message: string,
+  fieldErrors: FieldError[] = [],
+) {
   return { timestamp: '2026-10-06T00:00:00Z', status, code, message, fieldErrors }
 }
 
-export function failWith(status: number, code: string, message: string, fieldErrors: FieldError[] = []) {
+export function failWith(
+  status: number,
+  code: string,
+  message: string,
+  fieldErrors: FieldError[] = [],
+) {
   return HttpResponse.json(errorBody(status, code, message, fieldErrors), { status })
 }
 
 /** Answers GET /pokemon and records the query string of every request in `requests`. */
 export function mockCatalog(
-  respond: (params: URLSearchParams) => PageResponse<PokemonSummary> | Response | Promise<PageResponse<PokemonSummary> | Response>,
+  respond: (
+    params: URLSearchParams,
+  ) => PageResponse<PokemonSummary> | Response | Promise<PageResponse<PokemonSummary> | Response>,
   requests: string[] = [],
 ): HttpHandler {
   const handler = http.get(apiUrl('/pokemon'), async ({ request }) => {
@@ -45,7 +57,12 @@ export function mockDetail(idOrName: string, detail: PokemonDetail | Response): 
 
 /** Answers GET /collection and records the query string of every request in `requests`. */
 export function mockCollection(
-  respond: (params: URLSearchParams) => PageResponse<StoredPokemonSummary> | Response | Promise<PageResponse<StoredPokemonSummary> | Response>,
+  respond: (
+    params: URLSearchParams,
+  ) =>
+    | PageResponse<StoredPokemonSummary>
+    | Response
+    | Promise<PageResponse<StoredPokemonSummary> | Response>,
   requests: string[] = [],
 ): void {
   server.use(
@@ -60,12 +77,17 @@ export function mockCollection(
 
 export function mockEntry(id: number, entry: StoredPokemon | Response): void {
   server.use(
-    http.get(apiUrl(`/collection/${id}`), () => (entry instanceof Response ? entry : HttpResponse.json(entry))),
+    http.get(apiUrl(`/collection/${id}`), () =>
+      entry instanceof Response ? entry : HttpResponse.json(entry),
+    ),
   )
 }
 
 /** Answers GET /collection/ids with whatever `ids()` returns at that moment, so a test can change it between requests. */
-export function mockCollectionIds(ids: number[] | Response | (() => number[] | Response), requests: string[] = []): void {
+export function mockCollectionIds(
+  ids: number[] | Response | (() => number[] | Response),
+  requests: string[] = [],
+): void {
   server.use(
     http.get(apiUrl('/collection/ids'), () => {
       requests.push('ids')

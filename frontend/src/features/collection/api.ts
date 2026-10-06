@@ -1,5 +1,10 @@
 import { api } from '../../shared/api/client'
-import type { PageResponse, StoredPokemon, StoredPokemonSummary, SyncReport } from '../../shared/api/types'
+import type {
+  PageResponse,
+  StoredPokemon,
+  StoredPokemonSummary,
+  SyncReport,
+} from '../../shared/api/types'
 
 /** `version` is the one the client last read; fields left out stay as they are, empty ones are cleared. */
 export interface EntryChanges {
@@ -10,7 +15,10 @@ export interface EntryChanges {
 }
 
 export function fetchCollectionPage(page: number, size: number, signal?: AbortSignal) {
-  return api.get<PageResponse<StoredPokemonSummary>>(`/collection?page=${page}&size=${size}`, signal)
+  return api.get<PageResponse<StoredPokemonSummary>>(
+    `/collection?page=${page}&size=${size}`,
+    signal,
+  )
 }
 
 /** 201 means the Pokémon was added now, 200 that it was already there and its PokeAPI data was refreshed. */

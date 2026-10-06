@@ -41,7 +41,11 @@ export function Pagination({ page, totalPages, size, sizes, hrefFor, onSizeChang
       </div>
       <div className={styles.size}>
         <label htmlFor={sizeId}>Per page</label>
-        <select id={sizeId} value={size} onChange={(event) => onSizeChange(Number(event.target.value))}>
+        <select
+          id={sizeId}
+          value={size}
+          onChange={(event) => onSizeChange(Number(event.target.value))}
+        >
           {sizes.map((option) => (
             <option key={option} value={option}>
               {option}

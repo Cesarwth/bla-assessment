@@ -9,7 +9,14 @@
   border-radius: var(--radius-md);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
-  transition: transform 150ms ease, box-shadow 150ms ease;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.card:has(input:checked) {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary);
 }
 
 .card:hover,
@@ -23,7 +30,11 @@
   width: 7.5rem;
   height: 7.5rem;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--type-color) 35%, transparent), transparent 70%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--type-color) 35%, transparent),
+    transparent 70%
+  );
 }
 
 .id {

@@ -53,7 +53,13 @@ export function TagInput({ tags, onChange, text, onTextChange }: Props) {
         </ul>
       )}
       <div className={styles.add}>
-        <input id={inputId} value={text} onChange={(event) => onTextChange(event.target.value)} onKeyDown={onKeyDown} autoComplete="off" />
+        <input
+          id={inputId}
+          value={text}
+          onChange={(event) => onTextChange(event.target.value)}
+          onKeyDown={onKeyDown}
+          autoComplete="off"
+        />
         <button type="button" onClick={add}>
           Add tag
         </button>

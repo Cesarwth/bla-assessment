@@ -31,7 +31,11 @@
   height: 1.5rem;
   border-radius: 50%;
   border: 2px solid var(--color-text);
-  background: linear-gradient(var(--color-primary) 46%, var(--color-text) 46% 54%, var(--color-surface) 54%);
+  background: linear-gradient(
+    var(--color-primary) 46%,
+    var(--color-text) 46% 54%,
+    var(--color-surface) 54%
+  );
 }
 
 .nav {

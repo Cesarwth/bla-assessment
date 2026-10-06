@@ -3,6 +3,7 @@ package com.ballastlane.assessment.application.usecase;
 import com.ballastlane.assessment.application.port.in.ListPokemonUseCase;
 import com.ballastlane.assessment.application.port.out.PokeApiGateway;
 import com.ballastlane.assessment.domain.PageResult;
+import com.ballastlane.assessment.domain.PokemonSearchQuery;
 import com.ballastlane.assessment.domain.PokemonSummary;
 
 public class ListPokemon implements ListPokemonUseCase {
@@ -17,8 +18,10 @@ public class ListPokemon implements ListPokemonUseCase {
     }
 
     @Override
-    public PageResult<PokemonSummary> list(Integer page, Integer size) {
+    public PageResult<PokemonSummary> list(Integer page, Integer size, String query) {
         Pagination pagination = Pagination.of(page, size);
-        return gateway.findPage(pagination.page(), pagination.size());
+        return PokemonSearchQuery.of(query)
+                .map(search -> gateway.search(search, pagination.page(), pagination.size()))
+                .orElseGet(() -> gateway.findPage(pagination.page(), pagination.size()));
     }
 }
