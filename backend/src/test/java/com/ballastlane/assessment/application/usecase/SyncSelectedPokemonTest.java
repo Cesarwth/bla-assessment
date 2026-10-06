@@ -3,6 +3,7 @@ package com.ballastlane.assessment.application.usecase;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -14,10 +15,14 @@ import com.ballastlane.assessment.domain.SyncOutcome;
 import com.ballastlane.assessment.domain.SyncReport;
 import com.ballastlane.assessment.domain.SyncResult;
 import com.ballastlane.assessment.domain.exception.CatalogUnavailableException;
-import com.ballastlane.assessment.domain.exception.InvalidSyncRangeException;
+import com.ballastlane.assessment.domain.exception.InvalidSyncSelectionException;
 import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.support.TestData;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,16 +30,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SyncPokemonRangeTest {
+class SyncSelectedPokemonTest {
 
     private static final Actor ACTOR = TestData.user(5);
 
     @Mock SyncPokemonUseCase syncOne;
-    SyncPokemonRange syncRange;
+    SyncSelectedPokemon syncSelected;
 
     @BeforeEach
     void setUp() {
-        syncRange = new SyncPokemonRange(syncOne);
+        syncSelected = new SyncSelectedPokemon(syncOne);
     }
 
     private static SyncResult result(SyncOutcome outcome, int id) {
@@ -42,12 +47,12 @@ class SyncPokemonRangeTest {
     }
 
     @Test
-    void syncsEveryIdInTheRangeAndCountsOutcomes() {
+    void syncsEveryIdInTheSelectionAndCountsOutcomes() {
         when(syncOne.sync("1", ACTOR)).thenReturn(result(SyncOutcome.CREATED, 1));
         when(syncOne.sync("2", ACTOR)).thenReturn(result(SyncOutcome.UPDATED, 2));
         when(syncOne.sync("3", ACTOR)).thenReturn(result(SyncOutcome.CREATED, 3));
 
-        SyncReport report = syncRange.sync(1, 3, ACTOR);
+        SyncReport report = syncSelected.sync(List.of(1, 2, 3), ACTOR);
 
         assertThat(report.created()).isEqualTo(2);
         assertThat(report.updated()).isEqualTo(1);
@@ -60,7 +65,7 @@ class SyncPokemonRangeTest {
         when(syncOne.sync("1", other)).thenReturn(result(SyncOutcome.CREATED, 1));
         when(syncOne.sync("2", other)).thenReturn(result(SyncOutcome.CREATED, 2));
 
-        assertThat(syncRange.sync(1, 2, other).created()).isEqualTo(2);
+        assertThat(syncSelected.sync(List.of(1, 2), other).created()).isEqualTo(2);
     }
 
     @Test
@@ -69,7 +74,7 @@ class SyncPokemonRangeTest {
         when(syncOne.sync("1026", ACTOR)).thenThrow(new PokemonNotFoundException("1026"));
         when(syncOne.sync("1027", ACTOR)).thenThrow(new PokemonNotFoundException("1027"));
 
-        SyncReport report = syncRange.sync(1025, 1027, ACTOR);
+        SyncReport report = syncSelected.sync(List.of(1025, 1026, 1027), ACTOR);
 
         assertThat(report.created()).isEqualTo(1);
         assertThat(report.failures()).extracting(SyncReport.Failure::identifier).containsExactly("1026", "1027");
@@ -81,7 +86,7 @@ class SyncPokemonRangeTest {
         when(syncOne.sync("1", ACTOR)).thenReturn(result(SyncOutcome.CREATED, 1));
         when(syncOne.sync("2", ACTOR)).thenThrow(new CatalogUnavailableException("down", false, null));
 
-        SyncReport report = syncRange.sync(1, 5, ACTOR);
+        SyncReport report = syncSelected.sync(List.of(1, 2, 3, 4, 5), ACTOR);
 
         assertThat(report.created()).isEqualTo(1);
         assertThat(report.abortedReason()).contains("2");
@@ -92,7 +97,7 @@ class SyncPokemonRangeTest {
     void rethrowsWhenTheCatalogIsDownBeforeAnythingWasProcessed() {
         when(syncOne.sync("1", ACTOR)).thenThrow(new CatalogUnavailableException("down", true, null));
 
-        assertThatThrownBy(() -> syncRange.sync(1, 5, ACTOR))
+        assertThatThrownBy(() -> syncSelected.sync(List.of(1, 2, 3, 4, 5), ACTOR))
                 .isInstanceOfSatisfying(CatalogUnavailableException.class, e -> assertThat(e.isTimeout()).isTrue());
     }
 
@@ -101,7 +106,7 @@ class SyncPokemonRangeTest {
         when(syncOne.sync("1", ACTOR)).thenThrow(new StaleStoredPokemonException(1));
         when(syncOne.sync("2", ACTOR)).thenReturn(result(SyncOutcome.CREATED, 2));
 
-        SyncReport report = syncRange.sync(1, 2, ACTOR);
+        SyncReport report = syncSelected.sync(List.of(1, 2), ACTOR);
 
         assertThat(report.created()).isEqualTo(1);
         assertThat(report.failures()).extracting(SyncReport.Failure::identifier).containsExactly("1");
@@ -110,18 +115,42 @@ class SyncPokemonRangeTest {
     }
 
     @Test
-    void acceptsTheMaximumRangeSize() {
-        when(syncOne.sync(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.eq(ACTOR))).thenReturn(result(SyncOutcome.CREATED, 2));
+    void keepsTheOrderGivenAndSyncsEachDistinctIdOnce() {
+        when(syncOne.sync(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.eq(ACTOR)))
+                .thenReturn(result(SyncOutcome.CREATED, 1));
 
-        assertThat(syncRange.sync(1, SyncPokemonRange.MAX_RANGE, ACTOR).created()).isEqualTo(SyncPokemonRange.MAX_RANGE);
+        SyncReport report = syncSelected.sync(List.of(7, 1, 7, 4, 1), ACTOR);
+
+        assertThat(report.created()).isEqualTo(3);
+        var order = org.mockito.Mockito.inOrder(syncOne);
+        order.verify(syncOne).sync("7", ACTOR);
+        order.verify(syncOne).sync("1", ACTOR);
+        order.verify(syncOne).sync("4", ACTOR);
+        verify(syncOne, times(1)).sync("7", ACTOR);
+        verify(syncOne, times(1)).sync("1", ACTOR);
     }
 
     @Test
-    void rejectsInvalidRangesWithoutTouchingUpstream() {
-        assertThatThrownBy(() -> syncRange.sync(1, SyncPokemonRange.MAX_RANGE + 1, ACTOR)).isInstanceOf(InvalidSyncRangeException.class);
-        assertThatThrownBy(() -> syncRange.sync(5, 4, ACTOR)).isInstanceOf(InvalidSyncRangeException.class);
-        assertThatThrownBy(() -> syncRange.sync(0, 3, ACTOR)).isInstanceOf(InvalidSyncRangeException.class);
-        assertThatThrownBy(() -> syncRange.sync(-2, 3, ACTOR)).isInstanceOf(InvalidSyncRangeException.class);
+    void acceptsTheMaximumSelectionSize() {
+        when(syncOne.sync(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.eq(ACTOR))).thenReturn(result(SyncOutcome.CREATED, 2));
+        List<Integer> ids = IntStream.rangeClosed(1, SyncSelectedPokemon.MAX_SELECTION).boxed().toList();
+
+        assertThat(syncSelected.sync(ids, ACTOR).created()).isEqualTo(SyncSelectedPokemon.MAX_SELECTION);
+    }
+
+    @Test
+    void rejectsInvalidSelectionsWithoutTouchingUpstream() {
+        List<Integer> tooMany = new ArrayList<>(IntStream.rangeClosed(1, SyncSelectedPokemon.MAX_SELECTION + 1).boxed().toList());
+
+        assertThatThrownBy(() -> syncSelected.sync(null, ACTOR)).isInstanceOf(InvalidSyncSelectionException.class);
+        assertThatThrownBy(() -> syncSelected.sync(List.of(), ACTOR)).isInstanceOf(InvalidSyncSelectionException.class)
+                .hasMessageContaining("at least one");
+        assertThatThrownBy(() -> syncSelected.sync(tooMany, ACTOR)).isInstanceOf(InvalidSyncSelectionException.class)
+                .hasMessageContaining("at most " + SyncSelectedPokemon.MAX_SELECTION);
+        assertThatThrownBy(() -> syncSelected.sync(List.of(1, 0), ACTOR)).isInstanceOf(InvalidSyncSelectionException.class)
+                .hasMessageContaining("positive");
+        assertThatThrownBy(() -> syncSelected.sync(List.of(-2), ACTOR)).isInstanceOf(InvalidSyncSelectionException.class);
+        assertThatThrownBy(() -> syncSelected.sync(Arrays.asList(1, null), ACTOR)).isInstanceOf(InvalidSyncSelectionException.class);
         verifyNoInteractions(syncOne);
     }
 }

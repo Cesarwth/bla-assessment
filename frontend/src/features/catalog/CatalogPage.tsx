@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { PokemonSummary } from '../../shared/api/types'
 import { Link } from 'react-router'
 import { ErrorState } from '../../shared/ui/ErrorState'
 import { LoadingStatus } from '../../shared/ui/LoadingStatus'
@@ -10,8 +11,14 @@ import { PokemonCard } from './components/PokemonCard'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useCatalogPage } from './queries'
 
-/** `renderBadge` lets the app add a mark to a card (e.g. "already in my collection") without this feature knowing about it. */
-export function CatalogPage({ renderBadge }: { renderBadge?: (pokemonId: number) => ReactNode }) {
+interface Props {
+  /** Per-card extras (a mark, a checkbox) supplied by the app, so this feature does not know about collections. */
+  renderCardExtras?: (pokemon: PokemonSummary) => ReactNode
+  /** A toolbar above the results; it gets the Pokémon of the current page and stays mounted while paging. */
+  renderToolbar?: (pageItems: PokemonSummary[]) => ReactNode
+}
+
+export function CatalogPage({ renderCardExtras, renderToolbar }: Props) {
   const { page, apiPage, size, hrefFor, setSize } = usePaging()
   const query = useCatalogPage(apiPage, size)
   useDocumentTitle('Catalog')
@@ -43,7 +50,7 @@ export function CatalogPage({ renderBadge }: { renderBadge?: (pokemonId: number)
         <ul className={styles.grid} aria-busy={query.isPlaceholderData}>
           {query.data.items.map((pokemon) => (
             <li key={pokemon.id}>
-              <PokemonCard pokemon={pokemon} badge={renderBadge?.(pokemon.id)} />
+              <PokemonCard pokemon={pokemon} extras={renderCardExtras?.(pokemon)} />
             </li>
           ))}
         </ul>
@@ -64,6 +71,7 @@ export function CatalogPage({ renderBadge }: { renderBadge?: (pokemonId: number)
       <h1>Catalog</h1>
       <p className={styles.intro}>Browse every Pokémon. Open one to see its stats and how it evolves.</p>
       <GoToBox />
+      {renderToolbar?.(query.data?.items ?? [])}
       {renderResults()}
     </section>
   )

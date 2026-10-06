@@ -196,7 +196,7 @@ Final review (architecture, correctness, security, tests): 0 critical, 7 major. 
 | API published on `0.0.0.0:8080` | API and app bound to `127.0.0.1`; DB not published |
 | No TLS/HSTS story | documented; nginx passes `X-Forwarded-Proto` through and sends HSTS only over HTTPS |
 | Edit conflict could overwrite untouched fields (data loss) | `EditForm` tracks only the fields the user edited, sends only those, and rebases the rest on the latest version; typing during a save is kept |
-| 15 s proxy timeout cut range imports | exact-match route `/api/v1/collection/sync` with 120 s; shared `proxy-api.conf` |
+| 15 s proxy timeout cut bulk adds | exact-match route `/api/v1/collection/sync` with 120 s; shared `proxy-api.conf` |
 | Delete's admin-only rule lived only in the URL config | `DeleteStoredPokemon.delete(id, actor)` throws `AdminRequiredException` (403 `FORBIDDEN`); route rule kept as defense in depth |
 | Gates not enforced anywhere | `.github/workflows/ci.yml` (backend build, frontend checks, stack smoke); linted with actionlint |
 
@@ -221,3 +221,7 @@ Trying the app with two accounts showed that "the first user to sync a Pokémon 
 Migration `V4__trainer_collections.sql` keeps existing data: every owned row becomes an entry of its owner (notes and tags copied), ownerless rows stay catalog-only. It was verified on H2 (`TrainerCollectionsMigrationTest`) and on a real PostgreSQL volume that held the previous schema with 16 owned rows.
 
 Not done on purpose: an admin view of every trainer's collection (not in the brief; the `ADMIN` role already travels in the token, so it would be a small extension).
+
+### Selecting Pokémon instead of importing a number range (2026-10-06)
+
+The "Import Pokémon" form asked for a Pokédex number range (1–20), which nobody can use without knowing the numbers. It was replaced by selection in the catalog: logged-in trainers tick cards (or "select all on this page") and add them with one button. The API changed accordingly: `POST /collection/sync` takes `{ids:[…]}` (1–50 distinct ids, 50 = the largest catalog page) instead of `{from,to}`; the report shape is unchanged. Cards already collected carry the "In my collection" mark and no checkbox.

@@ -7,7 +7,7 @@ import com.ballastlane.assessment.domain.exception.InvalidLocalAttributesExcepti
 import com.ballastlane.assessment.domain.exception.InvalidPaginationException;
 import com.ballastlane.assessment.domain.exception.InvalidPokemonIdentifierException;
 import com.ballastlane.assessment.domain.exception.InvalidStoredPokemonUpdateException;
-import com.ballastlane.assessment.domain.exception.InvalidSyncRangeException;
+import com.ballastlane.assessment.domain.exception.InvalidSyncSelectionException;
 import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
@@ -83,9 +83,9 @@ public class GlobalExceptionHandler {
         return respond(HttpStatus.BAD_REQUEST, "INVALID_UPDATE", ex.getMessage());
     }
 
-    @ExceptionHandler(InvalidSyncRangeException.class)
-    ResponseEntity<ErrorResponse> invalidSyncRange(InvalidSyncRangeException ex) {
-        return respond(HttpStatus.BAD_REQUEST, "INVALID_SYNC_RANGE", ex.getMessage());
+    @ExceptionHandler(InvalidSyncSelectionException.class)
+    ResponseEntity<ErrorResponse> invalidSyncSelection(InvalidSyncSelectionException ex) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_SYNC_SELECTION", ex.getMessage());
     }
 
     @ExceptionHandler(DuplicateStoredPokemonException.class)

@@ -4,7 +4,7 @@ import com.ballastlane.assessment.application.port.in.DeleteStoredPokemonUseCase
 import com.ballastlane.assessment.application.port.in.GetStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonIdsUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonUseCase;
-import com.ballastlane.assessment.application.port.in.SyncPokemonRangeUseCase;
+import com.ballastlane.assessment.application.port.in.SyncSelectedPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.SyncPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.UpdateStoredPokemonCommand;
 import com.ballastlane.assessment.application.port.in.UpdateStoredPokemonUseCase;
@@ -13,7 +13,7 @@ import com.ballastlane.assessment.domain.SyncResult;
 import com.ballastlane.assessment.infrastructure.web.dto.PageResponse;
 import com.ballastlane.assessment.infrastructure.web.dto.StoredPokemonResponse;
 import com.ballastlane.assessment.infrastructure.web.dto.StoredPokemonSummaryResponse;
-import com.ballastlane.assessment.infrastructure.web.dto.SyncRangeRequest;
+import com.ballastlane.assessment.infrastructure.web.dto.SyncSelectionRequest;
 import com.ballastlane.assessment.infrastructure.web.dto.SyncReportResponse;
 import com.ballastlane.assessment.infrastructure.web.dto.UpdatePokemonRequest;
 import jakarta.validation.Valid;
@@ -42,7 +42,7 @@ public class CollectionController {
     private final ListStoredPokemonIdsUseCase listIds;
     private final GetStoredPokemonUseCase getStored;
     private final SyncPokemonUseCase syncOne;
-    private final SyncPokemonRangeUseCase syncRange;
+    private final SyncSelectedPokemonUseCase syncSelected;
     private final UpdateStoredPokemonUseCase updateStored;
     private final DeleteStoredPokemonUseCase deleteStored;
 
@@ -51,14 +51,14 @@ public class CollectionController {
             ListStoredPokemonIdsUseCase listIds,
             GetStoredPokemonUseCase getStored,
             SyncPokemonUseCase syncOne,
-            SyncPokemonRangeUseCase syncRange,
+            SyncSelectedPokemonUseCase syncSelected,
             UpdateStoredPokemonUseCase updateStored,
             DeleteStoredPokemonUseCase deleteStored) {
         this.listStored = listStored;
         this.listIds = listIds;
         this.getStored = getStored;
         this.syncOne = syncOne;
-        this.syncRange = syncRange;
+        this.syncSelected = syncSelected;
         this.updateStored = updateStored;
         this.deleteStored = deleteStored;
     }
@@ -89,8 +89,8 @@ public class CollectionController {
     }
 
     @PostMapping("/sync")
-    public SyncReportResponse syncRange(@Valid @RequestBody SyncRangeRequest request, @AuthenticationPrincipal Jwt jwt) {
-        return SyncReportResponse.from(syncRange.sync(request.from(), request.to(), ActorResolver.from(jwt)));
+    public SyncReportResponse syncSelected(@Valid @RequestBody SyncSelectionRequest request, @AuthenticationPrincipal Jwt jwt) {
+        return SyncReportResponse.from(syncSelected.sync(request.ids(), ActorResolver.from(jwt)));
     }
 
     @PatchMapping("/{pokeApiId}")

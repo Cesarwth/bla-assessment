@@ -11,7 +11,7 @@ import com.ballastlane.assessment.application.port.in.ListPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonIdsUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.RegisterUserUseCase;
-import com.ballastlane.assessment.application.port.in.SyncPokemonRangeUseCase;
+import com.ballastlane.assessment.application.port.in.SyncSelectedPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.SyncPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.UpdateStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.out.TokenIssuer;
@@ -59,7 +59,7 @@ class SecurityRulesMatrixTest {
     @MockitoBean GetStoredPokemonUseCase getStored;
     @MockitoBean SyncPokemonUseCase syncOne;
     @MockitoBean ListStoredPokemonIdsUseCase listIds;
-    @MockitoBean SyncPokemonRangeUseCase syncRange;
+    @MockitoBean SyncSelectedPokemonUseCase syncSelected;
     @MockitoBean UpdateStoredPokemonUseCase updateStored;
     @MockitoBean DeleteStoredPokemonUseCase deleteStored;
 

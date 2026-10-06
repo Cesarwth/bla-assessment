@@ -4,7 +4,6 @@ import { LoadingStatus } from '../../shared/ui/LoadingStatus'
 import { Pagination } from '../../shared/ui/Pagination'
 import { PAGE_SIZES, usePaging } from '../../shared/usePaging'
 import { CollectionCard } from './components/CollectionCard'
-import { ImportRangeForm } from './components/ImportRangeForm'
 import styles from './CollectionPage.module.css'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useCollectionPage } from './queries'
@@ -32,7 +31,7 @@ export function CollectionPage() {
       return (
         <div className={styles.empty}>
           <h2>Your collection is empty</h2>
-          <p>Add Pokémon from the catalog, or import a range, and give them a nickname, a region and tags.</p>
+          <p>Select Pokémon in the catalog to add several at once, then give them a nickname, a region and tags.</p>
           <Link to="/">Browse the catalog</Link>
         </div>
       )
@@ -71,9 +70,8 @@ export function CollectionPage() {
     <section>
       <h1>My collection</h1>
       <p className={styles.intro}>
-        Your Pokémon. Add them from the catalog or import a range.
+        Your Pokémon. Select Pokémon in the catalog to add several at once.
       </p>
-      <ImportRangeForm />
       {renderResults()}
     </section>
   )

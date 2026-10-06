@@ -8,7 +8,7 @@ import com.ballastlane.assessment.application.port.in.ListPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonIdsUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.RegisterUserUseCase;
-import com.ballastlane.assessment.application.port.in.SyncPokemonRangeUseCase;
+import com.ballastlane.assessment.application.port.in.SyncSelectedPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.SyncPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.UpdateStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.out.PasswordHasher;
@@ -25,7 +25,7 @@ import com.ballastlane.assessment.application.usecase.ListStoredPokemon;
 import com.ballastlane.assessment.application.usecase.ListStoredPokemonIds;
 import com.ballastlane.assessment.application.usecase.RegisterUser;
 import com.ballastlane.assessment.application.usecase.SyncPokemon;
-import com.ballastlane.assessment.application.usecase.SyncPokemonRange;
+import com.ballastlane.assessment.application.usecase.SyncSelectedPokemon;
 import com.ballastlane.assessment.application.usecase.UpdateStoredPokemon;
 import java.time.Clock;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -70,8 +70,8 @@ public class UseCaseConfig {
     }
 
     @Bean
-    SyncPokemonRangeUseCase syncPokemonRangeUseCase(SyncPokemonUseCase syncPokemon) {
-        return new SyncPokemonRange(syncPokemon);
+    SyncSelectedPokemonUseCase syncSelectedPokemonUseCase(SyncPokemonUseCase syncPokemon) {
+        return new SyncSelectedPokemon(syncPokemon);
     }
 
     @Bean

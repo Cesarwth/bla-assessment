@@ -292,10 +292,10 @@ class CollectionFlowIT {
     }
 
     @Test
-    void rangeSyncReportsTheIdsMissingUpstreamAsFailuresAndAddsWhatItCreatesToTheCallersCollection() throws Exception {
+    void selectionSyncReportsTheIdsMissingUpstreamAsFailuresAndAddsWhatItCreatesToTheCallersCollection() throws Exception {
         String token = user();
         mvc.perform(post("/api/v1/collection/sync").header("Authorization", token).contentType(JSON)
-                        .content("{\"from\":1025,\"to\":1027}"))
+                        .content("{\"ids\":[1025,1026,1027,1025]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.created").value(1))
                 .andExpect(jsonPath("$.updated").value(0))
@@ -306,9 +306,9 @@ class CollectionFlowIT {
         mvc.perform(get("/api/v1/collection/1025").header("Authorization", token)).andExpect(status().isOk());
 
         mvc.perform(post("/api/v1/collection/sync").header("Authorization", token).contentType(JSON)
-                        .content("{\"from\":1,\"to\":21}"))
+                        .content("{\"ids\":[]}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_SYNC_RANGE"));
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
     }
 
     @Test

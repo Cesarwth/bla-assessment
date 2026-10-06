@@ -18,8 +18,9 @@ export function syncPokemon(id: number) {
   return api.postWithStatus<StoredPokemon>(`/collection/${id}/sync`)
 }
 
-export function syncRange(from: number, to: number) {
-  return api.post<SyncReport>('/collection/sync', { from, to })
+/** Adds the chosen Pokémon (1 to 50 distinct ids) in one call; the report says what was created, refreshed or failed. */
+export function syncSelection(ids: number[]) {
+  return api.post<SyncReport>('/collection/sync', { ids })
 }
 
 /** The PokeAPI ids in the caller's collection, ascending. */

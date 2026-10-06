@@ -48,7 +48,7 @@ Prefer to do it by hand? `cp .env.example .env`, put a random value in `JWT_SECR
 Check that everything works, the way a browser reaches it (through nginx):
 
 ```bash
-./scripts/smoke.sh        # 26 checks, exit code 0 when all pass (the same script runs in CI)
+./scripts/smoke.sh        # 29 checks, exit code 0 when all pass (the same script runs in CI)
 ```
 
 Stop it with `docker compose down` (add `-v` to also erase the database).
@@ -74,7 +74,7 @@ The demo trainers start with **18 collection entries over 16 Pokémon** (a snaps
 | --- | --- | --- | --- | --- |
 | **US-01 Browse** | Paginated list showing sprite, category (types), mass and abilities; responses cached | `GET /api/v1/pokemon` | Catalog page: cards, paging in the URL, page-size selector, "find by name or number", an "In my collection" mark on what you already have | `ListPokemon`, `PokeApiGatewayAdapter`, `PokeApiClient` (`@Cacheable`) |
 | **US-02 Detail** | Image, base stats, narrative description, evolution line (branching supported, e.g. Eevee) | `GET /api/v1/pokemon/{idOrName}` | Detail page: artwork, stat bars, evolution tree | `GetPokemonDetail`, `PokeApiMapper` |
-| **US-03 Sync** | Persist PokeAPI data in a relational store; each trainer's own fields (nickname, region, tags) live next to it | `POST /api/v1/collection/{idOrName}/sync`, `POST /api/v1/collection/sync` | "Add to my collection", "Import Pokémon" by number range | `SyncPokemon`, `SyncPokemonRange`, `JpaPokemonRepositoryAdapter`, Flyway `V2`/`V4` |
+| **US-03 Sync** | Persist PokeAPI data in a relational store; each trainer's own fields (nickname, region, tags) live next to it | `POST /api/v1/collection/{idOrName}/sync`, `POST /api/v1/collection/sync` | "Add to my collection" on the detail page, and **tick several cards in the catalog and add them at once** | `SyncPokemon`, `SyncSelectedPokemon`, `JpaPokemonRepositoryAdapter`, Flyway `V2`/`V4` |
 | **US-04 Update** | Edit stored Pokémon; `404` missing, `400` malformed, plus `401/409` | `PATCH /api/v1/collection/{id}`, `DELETE …/{id}` | Entry page: notes view, edit form, tags editor, conflict handling, remove from my collection | `UpdateStoredPokemon`, `LocalAttributes`, `GlobalExceptionHandler` |
 | **Auth** | Register, login, public vs protected routes | `POST /api/v1/auth/register`, `/login` | Login and register pages | `RegisterUser`, `AuthenticateUser`, `SecurityConfig`, `JwtTokenIssuer` |
 
@@ -156,7 +156,7 @@ Send the token as `Authorization: Bearer <token>` (JWT HS256, 60 minutes by defa
 | `GET` | `/collection/ids` | the PokeAPI ids you already have, e.g. `[1,4,25]` (the app uses it to offer "Add" only when needed) |
 | `GET` | `/collection/{pokeApiId}` | your full entry (+ `version`, `syncedAt`); `404` if it is not in **your** collection |
 | `POST` | `/collection/{idOrName}/sync` | `201` added to your collection · `200` already there, PokeAPI data refreshed, your notes untouched |
-| `POST` | `/collection/sync` `{from,to}` | `200 {created, updated, failures[], abortedReason}`; at most 20 numbers per call |
+| `POST` | `/collection/sync` `{ids:[…]}` | adds several at once (1–50 distinct ids): `200 {created, updated, failures[], abortedReason}` |
 | `PATCH` | `/collection/{pokeApiId}` `{version, nickname?, region?, tags?}` | `200` updated entry. Missing field = unchanged; `""` / `[]` = clear |
 | `DELETE` | `/collection/{pokeApiId}` | `204`, removes it from **your** collection only |
 
@@ -181,7 +181,7 @@ curl -s -X PATCH localhost:8080/api/v1/collection/25 -H "Authorization: Bearer $
 
 | Status | `code` values |
 | --- | --- |
-| `400` | `VALIDATION_FAILED` (with `fieldErrors`), `MALFORMED_REQUEST`, `INVALID_PARAMETER`, `INVALID_PAGINATION`, `INVALID_POKEMON_IDENTIFIER`, `INVALID_LOCAL_ATTRIBUTES`, `INVALID_UPDATE`, `INVALID_SYNC_RANGE`, `WEAK_PASSWORD`, `INVALID_REQUEST` |
+| `400` | `VALIDATION_FAILED` (with `fieldErrors`), `MALFORMED_REQUEST`, `INVALID_PARAMETER`, `INVALID_PAGINATION`, `INVALID_POKEMON_IDENTIFIER`, `INVALID_LOCAL_ATTRIBUTES`, `INVALID_UPDATE`, `INVALID_SYNC_SELECTION`, `WEAK_PASSWORD`, `INVALID_REQUEST` |
 | `401` | `UNAUTHORIZED` (no/invalid/expired token), `INVALID_CREDENTIALS` |
 | `403` | `FORBIDDEN` (access denied by the route rules) |
 | `404` | `POKEMON_NOT_FOUND`, `STORED_POKEMON_NOT_FOUND` |
@@ -207,7 +207,7 @@ frontend/src/
   features/
     auth/         login, register, session (JWT in sessionStorage), AuthProvider
     catalog/      catalog list, detail page, queries
-    collection/   collection list, entry page, edit form, tags, import, delete
+    collection/   collection list, entry page, edit form, tags, delete; the catalog's multi-select
   shared/         API client (the only code that calls fetch), UI atoms, formatting, paging
   test/           MSW server, fixtures, helpers, console guard
 ```
@@ -263,12 +263,12 @@ Tests were written **first** (red → green → refactor); the git history and t
 
 | Suite | Command | What it covers |
 | --- | --- | --- |
-| Backend | `cd backend && ./gradlew test` | **371 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
+| Backend | `cd backend && ./gradlew test` | **380 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
 | Backend gate | `./gradlew build` | JaCoCo: fails below **90 % lines / 80 % branches** (actual ≈ 98 % / 86 %) |
-| Frontend | `cd frontend && npm test` | **185 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
+| Frontend | `cd frontend && npm test` | **190 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
 | Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99 % / 93 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
 | Static checks | `npm run typecheck && npm run lint` | strict TypeScript, ESLint with zero warnings |
-| Whole stack | `./scripts/smoke.sh` | 26 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, private collections, two trainers with the same Pokémon, versions |
+| Whole stack | `./scripts/smoke.sh` | 29 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, private collections, two trainers with the same Pokémon, versions |
 | CI | `.github/workflows/ci.yml` | on every push to `main` and every pull request: backend `build` (tests + coverage gate), frontend typecheck/lint/coverage/build/audit, and the whole stack with `start.sh` + `smoke.sh` |
 
 Beyond what jsdom can see (real CORS, CSP, nginx, layout) the delivered stack was also checked in Chrome through the DevTools protocol on desktop, mobile and dark mode, logged in and out: **no console warnings or errors, no CSP violations, no failed requests**. That pass found and fixed a real bug (nginx dropped the port from `Host`, so the API treated the browser's `Origin` as foreign and refused every `POST`/`PATCH`/`DELETE`); the smoke script now guards it.
@@ -322,7 +322,7 @@ CLAUDE.md           the conventions the code follows (architecture rules, TDD po
 | Want a clean slate | `docker compose down -v && ./scripts/start.sh` |
 | The API exits with `password authentication failed for user "pokemon"` | the database volume was created with another password (you deleted `.env` and kept the volume). `docker compose down -v` erases it and starts clean |
 | The API exits saying `app.jwt.secret is still the placeholder` | you copied `.env.example` by hand: put a random value in `JWT_SECRET` (`openssl rand -hex 32`) or use `./scripts/start.sh` |
-| Importing a range ends in a gateway timeout | the import runs up to ~60 PokeAPI calls; nginx allows 120 s for that route (15 s for the rest). Check your connection to pokeapi.co and retry: already imported ones are skipped as updates |
+| Adding many Pokémon at once ends in a gateway timeout | a selection of 50 can need up to ~150 PokeAPI calls; nginx allows 120 s for that route (15 s for the rest). Check your connection to pokeapi.co and retry: the ones already added are just refreshed |
 | Something fails | `docker compose logs app` (API), `docker compose logs frontend` (nginx), `docker compose ps` |
 
 ## How it was built (process and AI)

@@ -63,6 +63,10 @@ other_login="{\"username\":\"$OTHER\",\"password\":\"Smoke${$}pass1\"}"
 check "a new trainer can create a profile" 201 "$(status -X POST "$BASE/api/v1/auth/register" -H "$JSON" -d "$register_body")"
 OTHER_AUTH="Authorization: Bearer $(curl -s -X POST "$BASE/api/v1/auth/login" -H "$JSON" -d "$other_login" | field token)"
 check "a new trainer starts with an empty collection" 0 "$(curl -s "$COLLECTION" -H "$OTHER_AUTH" | field totalItems)"
+bulk_body='{"ids":[1,4,7,4]}'
+check "several selected Pokémon are added at once (duplicates collapsed)" 3 "$(curl -s -X POST "$COLLECTION/sync" -H "$OTHER_AUTH" -H "$JSON" -d "$bulk_body" | field created)"
+check "they show up as collected" "[1,4,7]" "$(curl -s "$COLLECTION/ids" -H "$OTHER_AUTH")"
+check "an empty selection is refused" 400 "$(status -X POST "$COLLECTION/sync" -H "$OTHER_AUTH" -H "$JSON" -d '{"ids":[]}')"
 
 # Mew (151) is not part of the demo data, so adding and removing it never touches it.
 sync_status="$(status -X POST "$COLLECTION/mew/sync" -H "$AUTH")"

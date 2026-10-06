@@ -218,7 +218,7 @@ describe('CatalogPage', () => {
 
     it('still shows the whole catalog when the marks cannot be loaded', async () => {
       mockCatalog(firstPage)
-      mockCollectionIds(failWith(500, 'INTERNAL_ERROR', 'x'))
+      mockCollectionIds(() => failWith(500, 'INTERNAL_ERROR', 'x'))
       renderApp(<App />, { token: makeToken() })
 
       expect(await screen.findByRole('link', { name: /Bulbasaur/ })).toBeInTheDocument()

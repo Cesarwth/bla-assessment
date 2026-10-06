@@ -11,7 +11,7 @@ import com.ballastlane.assessment.application.port.in.ListPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonIdsUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.RegisterUserUseCase;
-import com.ballastlane.assessment.application.port.in.SyncPokemonRangeUseCase;
+import com.ballastlane.assessment.application.port.in.SyncSelectedPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.SyncPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.UpdateStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.out.PasswordHasher;
@@ -39,7 +39,7 @@ class UseCaseConfigTest {
             assertThat(context).hasNotFailed();
             for (Class<?> port : new Class<?>[] {
                     RegisterUserUseCase.class, AuthenticateUserUseCase.class, ListPokemonUseCase.class,
-                    GetPokemonDetailUseCase.class, SyncPokemonUseCase.class, SyncPokemonRangeUseCase.class,
+                    GetPokemonDetailUseCase.class, SyncPokemonUseCase.class, SyncSelectedPokemonUseCase.class,
                     ListStoredPokemonUseCase.class, ListStoredPokemonIdsUseCase.class, GetStoredPokemonUseCase.class, UpdateStoredPokemonUseCase.class,
                     DeleteStoredPokemonUseCase.class}) {
                 assertThat(context).hasSingleBean(port);

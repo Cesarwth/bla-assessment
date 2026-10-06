@@ -13,11 +13,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import com.ballastlane.assessment.application.port.in.DeleteStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.GetStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonIdsUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonUseCase;
-import com.ballastlane.assessment.application.port.in.SyncPokemonRangeUseCase;
+import com.ballastlane.assessment.application.port.in.SyncSelectedPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.SyncPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.UpdateStoredPokemonCommand;
 import com.ballastlane.assessment.application.port.in.UpdateStoredPokemonUseCase;
@@ -33,7 +37,7 @@ import com.ballastlane.assessment.domain.SyncResult;
 import com.ballastlane.assessment.domain.User;
 import com.ballastlane.assessment.domain.exception.InvalidLocalAttributesException;
 import com.ballastlane.assessment.domain.exception.InvalidStoredPokemonUpdateException;
-import com.ballastlane.assessment.domain.exception.InvalidSyncRangeException;
+import com.ballastlane.assessment.domain.exception.InvalidSyncSelectionException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
 import com.ballastlane.assessment.infrastructure.security.JwtConfig;
@@ -64,7 +68,7 @@ class CollectionControllerTest {
     @MockitoBean ListStoredPokemonIdsUseCase listIds;
     @MockitoBean GetStoredPokemonUseCase getStored;
     @MockitoBean SyncPokemonUseCase syncOne;
-    @MockitoBean SyncPokemonRangeUseCase syncRange;
+    @MockitoBean SyncSelectedPokemonUseCase syncSelected;
     @MockitoBean UpdateStoredPokemonUseCase updateStored;
     @MockitoBean DeleteStoredPokemonUseCase deleteStored;
 
@@ -171,11 +175,11 @@ class CollectionControllerTest {
     }
 
     @Test
-    void syncRangeReturnsTheReport() throws Exception {
-        when(syncRange.sync(eq(1), eq(3), any())).thenReturn(new SyncReport(2, 0, List.of(new SyncReport.Failure("3", "Not found upstream"))));
+    void syncSelectedReturnsTheReport() throws Exception {
+        when(syncSelected.sync(eq(List.of(1, 2, 3)), any())).thenReturn(new SyncReport(2, 0, List.of(new SyncReport.Failure("3", "Not found upstream"))));
 
         mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
-                        .contentType(JSON).content("{\"from\":1,\"to\":3}"))
+                        .contentType(JSON).content("{\"ids\":[1,2,3]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.created").value(2))
                 .andExpect(jsonPath("$.updated").value(0))
@@ -185,11 +189,11 @@ class CollectionControllerTest {
     }
 
     @Test
-    void syncRangeTellsTheClientWhenTheRunWasCutShort() throws Exception {
-        when(syncRange.sync(eq(1), eq(5), any())).thenReturn(new SyncReport(1, 0, List.of(), "Catalog unavailable at id 2"));
+    void syncSelectedTellsTheClientWhenTheRunWasCutShort() throws Exception {
+        when(syncSelected.sync(eq(List.of(1, 4, 7)), any())).thenReturn(new SyncReport(1, 0, List.of(), "Catalog unavailable at id 2"));
 
         mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
-                        .contentType(JSON).content("{\"from\":1,\"to\":5}"))
+                        .contentType(JSON).content("{\"ids\":[1,4,7]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.created").value(1))
                 .andExpect(jsonPath("$.abortedReason").value("Catalog unavailable at id 2"));
@@ -198,24 +202,56 @@ class CollectionControllerTest {
     @Test
     void syncRequiresAToken() throws Exception {
         mvc.perform(post("/api/v1/collection/pikachu/sync")).andExpect(status().isUnauthorized());
-        mvc.perform(post("/api/v1/collection/sync").contentType(JSON).content("{\"from\":1,\"to\":3}"))
+        mvc.perform(post("/api/v1/collection/sync").contentType(JSON).content("{\"ids\":[1,2,3]}"))
                 .andExpect(status().isUnauthorized());
-        verifyNoInteractions(syncOne, syncRange);
+        verifyNoInteractions(syncOne, syncSelected);
     }
 
     @Test
-    void syncRange400WhenTheRangeIsInvalidOrFieldsAreMissing() throws Exception {
-        when(syncRange.sync(eq(1), eq(500), any())).thenThrow(new InvalidSyncRangeException("too wide"));
+    void syncSelected400WhenTheUseCaseRejectsTheSelection() throws Exception {
+        when(syncSelected.sync(eq(List.of(1, 2)), any())).thenThrow(new InvalidSyncSelectionException("too many"));
 
         mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
-                        .contentType(JSON).content("{\"from\":1,\"to\":500}"))
+                        .contentType(JSON).content("{\"ids\":[1,2]}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_SYNC_RANGE"));
+                .andExpect(jsonPath("$.code").value("INVALID_SYNC_SELECTION"))
+                .andExpect(jsonPath("$.message").value("too many"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"ids\":null}", "{\"ids\":[]}", "{\"ids\":[1,null]}", "{\"ids\":[0]}",
+            "{\"ids\":[3,-1]}"})
+    void syncSelected400WhenTheIdsFailTheShapeCheck(String body) throws Exception {
         mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
-                        .contentType(JSON).content("{\"from\":1}"))
+                        .contentType(JSON).content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.fieldErrors[0].field").value("to"));
+                .andExpect(jsonPath("$.fieldErrors[0].field").value(org.hamcrest.Matchers.startsWith("ids")));
+        verifyNoInteractions(syncSelected);
+    }
+
+    @Test
+    void syncSelected400WhenMoreThanFiftyIdsAreSent() throws Exception {
+        String ids = IntStream.rangeClosed(1, 51).mapToObj(String::valueOf).collect(Collectors.joining(","));
+
+        mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
+                        .contentType(JSON).content("{\"ids\":[" + ids + "]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.fieldErrors[0].message").value("must contain at most 50 ids"));
+        verifyNoInteractions(syncSelected);
+    }
+
+    @Test
+    void syncSelected400WhenTheBodyIsNotTheExpectedShape() throws Exception {
+        mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
+                        .contentType(JSON).content("{\"from\":1,\"to\":3}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
+                        .contentType(JSON).content("{\"ids\":[\"a\"]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"));
+        verifyNoInteractions(syncSelected);
     }
 
     // ---- patch ----
@@ -330,16 +366,16 @@ class CollectionControllerTest {
     @Test
     void syncPassesTheActorBuiltFromTheTokenNotFromTheRequest() throws Exception {
         when(syncOne.sync(eq("pikachu"), any())).thenReturn(new SyncResult(SyncOutcome.CREATED, STORED));
-        when(syncRange.sync(eq(1), eq(2), any())).thenReturn(new SyncReport(2, 0, List.of()));
+        when(syncSelected.sync(eq(List.of(1, 2)), any())).thenReturn(new SyncReport(2, 0, List.of()));
 
         mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", bearer(Role.ADMIN)))
                 .andExpect(status().isCreated());
         mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
-                        .contentType(JSON).content("{\"from\":1,\"to\":2}"))
+                        .contentType(JSON).content("{\"ids\":[1,2]}"))
                 .andExpect(status().isOk());
 
         verify(syncOne).sync("pikachu", new Actor(1L, "someone", Role.ADMIN));
-        verify(syncRange).sync(1, 2, USER_ACTOR);
+        verify(syncSelected).sync(List.of(1, 2), USER_ACTOR);
     }
 
     @Test

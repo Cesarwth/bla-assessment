@@ -14,7 +14,7 @@ import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
 import com.ballastlane.assessment.domain.exception.InvalidCredentialsException;
 import com.ballastlane.assessment.domain.exception.InvalidLocalAttributesException;
 import com.ballastlane.assessment.domain.exception.InvalidStoredPokemonUpdateException;
-import com.ballastlane.assessment.domain.exception.InvalidSyncRangeException;
+import com.ballastlane.assessment.domain.exception.InvalidSyncSelectionException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
 import com.ballastlane.assessment.domain.exception.InvalidUserException;
@@ -86,8 +86,8 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("INVALID_LOCAL_ATTRIBUTES"));
         mvc.perform(get("/boom/bad-update")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_UPDATE"));
-        mvc.perform(get("/boom/bad-range")).andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_SYNC_RANGE"));
+        mvc.perform(get("/boom/bad-selection")).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_SYNC_SELECTION"));
         mvc.perform(get("/boom/stale")).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONCURRENT_MODIFICATION"));
         mvc.perform(get("/boom/duplicate")).andExpect(status().isConflict())
@@ -175,7 +175,7 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/boom/stored-missing") void n() { throw new StoredPokemonNotFoundException(25); }
         @GetMapping("/boom/bad-attributes") void o() { throw new InvalidLocalAttributesException("bad"); }
         @GetMapping("/boom/bad-update") void q() { throw new InvalidStoredPokemonUpdateException("bad"); }
-        @GetMapping("/boom/bad-range") void r() { throw new InvalidSyncRangeException("bad"); }
+        @GetMapping("/boom/bad-selection") void r() { throw new InvalidSyncSelectionException("bad"); }
         @GetMapping("/boom/auth") void x() { throw new BadCredentialsException("token without uid"); }
         @GetMapping("/boom/duplicate") void v() { throw new DuplicateStoredPokemonException(25); }
         @GetMapping("/boom/stale") void t() { throw new StaleStoredPokemonException(25); }

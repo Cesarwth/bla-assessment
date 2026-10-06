@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { stored } from '../../test/fixtures'
 import { apiUrl, mockCollectionIds } from '../../test/handlers'
 import { server } from '../../test/server'
-import { collectionKeys, useCollectionIds, useDeleteEntry, useImportRange, useSyncPokemon } from './queries'
+import { collectionKeys, useCollectionIds, useDeleteEntry, useSyncSelection, useSyncPokemon } from './queries'
 
 function setup() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60_000 } } })
@@ -40,12 +40,12 @@ describe('the ids of the collection', () => {
 
   it.each([
     ['adding one Pokémon', () => useSyncPokemon(), (m: ReturnType<typeof useSyncPokemon>) => m.mutate(25)],
-    ['importing a range', () => useImportRange(), (m: ReturnType<typeof useImportRange>) => m.mutate({ from: 1, to: 3 })],
+    ['adding a selection', () => useSyncSelection(), (m: ReturnType<typeof useSyncSelection>) => m.mutate([1, 3])],
     ['removing an entry', () => useDeleteEntry(25), (m: ReturnType<typeof useDeleteEntry>) => m.mutate()],
   ] as const)('are marked stale after %s', async (_name, useHook, run) => {
     server.use(
       http.post(apiUrl('/collection/25/sync'), () => HttpResponse.json(stored(25, 'pikachu'), { status: 201 })),
-      http.post(apiUrl('/collection/sync'), () => HttpResponse.json({ requested: 3, created: 3, updated: 0, failed: [] })),
+      http.post(apiUrl('/collection/sync'), () => HttpResponse.json({ created: 3, updated: 0, failures: [], abortedReason: null })),
       http.delete(apiUrl('/collection/25'), () => new HttpResponse(null, { status: 204 })),
     )
     const { queryClient, wrapper } = setup()

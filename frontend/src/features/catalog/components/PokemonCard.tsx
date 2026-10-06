@@ -6,11 +6,11 @@ import styles from './PokemonCard.module.css'
 import { PokemonImage } from '../../../shared/ui/PokemonImage'
 import { TypeChip } from '../../../shared/ui/TypeChip'
 
-export function PokemonCard({ pokemon, badge }: { pokemon: PokemonSummary; badge?: ReactNode }) {
+export function PokemonCard({ pokemon, extras }: { pokemon: PokemonSummary; extras?: ReactNode }) {
   const name = formatName(pokemon.name)
   return (
     <article className={styles.card}>
-      {badge}
+      {extras}
       <div className={styles.art} data-type={pokemon.types[0]}>
         <PokemonImage src={pokemon.spriteUrl} alt={name} size={120} fallback="No image" />
       </div>

@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { deleteCollectionEntry, fetchCollectionEntry, fetchCollectionIds, fetchCollectionPage, syncPokemon, syncRange, updateCollectionEntry, type EntryChanges } from './api'
+import { deleteCollectionEntry, fetchCollectionEntry, fetchCollectionIds, fetchCollectionPage, syncPokemon, syncSelection, updateCollectionEntry, type EntryChanges } from './api'
 
 export const collectionKeys = {
   all: ['collection'] as const,
@@ -40,11 +40,11 @@ export function useSyncPokemon() {
   })
 }
 
-export function useImportRange() {
+export function useSyncSelection() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ from, to }: { from: number; to: number }) => syncRange(from, to),
-    // New entries must show up in the list without a manual reload.
+    mutationFn: (ids: number[]) => syncSelection(ids),
+    // New entries must show up in the lists, and the catalog cards must flip to "In my collection", without a reload.
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: collectionKeys.lists() }),
