@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { ErrorState } from '../../shared/ui/ErrorState'
 import { LoadingStatus } from '../../shared/ui/LoadingStatus'
 import { Pagination } from '../../shared/ui/Pagination'
@@ -12,6 +12,7 @@ import { useCollectionPage } from './queries'
 
 export function CollectionPage() {
   const { user } = useAuth()
+  const saved = (useLocation().state as { saved?: string } | null)?.saved
   const { page, apiPage, size, hrefFor, setSize } = usePaging()
   const query = useCollectionPage(apiPage, size)
   useDocumentTitle('Collection')
@@ -72,6 +73,11 @@ export function CollectionPage() {
   return (
     <section>
       <h1>Collection</h1>
+      {saved && (
+        <p role="status" className={styles.saved}>
+          Saved changes to {saved}.
+        </p>
+      )}
       <p className={styles.intro}>
         Pokémon saved by trainers. Everyone can look; you can edit the ones you added.
       </p>

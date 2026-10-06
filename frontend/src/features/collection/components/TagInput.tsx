@@ -1,23 +1,24 @@
-import { useId, useState, type KeyboardEvent } from 'react'
+import { useId, type KeyboardEvent } from 'react'
 import { addTag } from '../tags'
 import styles from './TagInput.module.css'
 
 interface Props {
   tags: string[]
   onChange: (tags: string[]) => void
+  /** What is typed but not yet confirmed: the form saves it too, so it is owned by the form. */
+  text: string
+  onTextChange: (text: string) => void
 }
 
-export function TagInput({ tags, onChange }: Props) {
+export function TagInput({ tags, onChange, text, onTextChange }: Props) {
   const inputId = useId()
-  const [text, setText] = useState('')
-  const [error, setError] = useState<string>()
+  const { error } = addTag(tags, text)
 
   function add() {
     const result = addTag(tags, text)
-    setError(result.error)
     if (!result.error) {
       onChange(result.tags)
-      setText('')
+      onTextChange('')
     }
   }
 
@@ -52,7 +53,7 @@ export function TagInput({ tags, onChange }: Props) {
         </ul>
       )}
       <div className={styles.add}>
-        <input id={inputId} value={text} onChange={(event) => setText(event.target.value)} onKeyDown={onKeyDown} autoComplete="off" />
+        <input id={inputId} value={text} onChange={(event) => onTextChange(event.target.value)} onKeyDown={onKeyDown} autoComplete="off" />
         <button type="button" onClick={add}>
           Add tag
         </button>

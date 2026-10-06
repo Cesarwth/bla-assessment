@@ -176,6 +176,10 @@ describe('PokemonDetailPage', () => {
   describe('adding to the collection', () => {
     const syncReturns = (status: number, body: object) =>
       server.use(http.post(apiUrl('/collection/25/sync'), () => HttpResponse.json(body, { status })))
+    const notInCollection = () =>
+      server.use(http.get(apiUrl('/collection/25'), () => failWith(404, 'POKEMON_NOT_STORED', 'Not in the collection')))
+    const inCollection = (ownerId: number | null) =>
+      server.use(http.get(apiUrl('/collection/25'), () => HttpResponse.json(stored(25, 'pikachu', { ownerId }))))
 
     it('asks anonymous visitors to log in and remembers where they were', async () => {
       mockDetail('25', pikachu)
@@ -188,53 +192,52 @@ describe('PokemonDetailPage', () => {
 
     it('adds it and links to the new entry', async () => {
       mockDetail('25', pikachu)
+      notInCollection()
       syncReturns(201, stored(25, 'pikachu'))
       renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
       await screen.findByRole('heading', { name: 'Pikachu' })
 
-      await userEvent.click(screen.getByRole('button', { name: 'Add to my collection' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Add to my collection' }))
 
       expect(await screen.findByRole('status')).toHaveTextContent('Added to the collection.')
       expect(screen.getByRole('link', { name: 'View it in the collection' })).toHaveAttribute('href', '/collection/25')
+      expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
     })
 
-    it('says so when it was already there and its data was refreshed', async () => {
+    it('offers no button when you already added it', async () => {
       mockDetail('25', pikachu)
-      syncReturns(200, stored(25, 'pikachu'))
-      renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
-      await screen.findByRole('heading', { name: 'Pikachu' })
-
-      await userEvent.click(screen.getByRole('button', { name: 'Add to my collection' }))
-
-      expect(await screen.findByRole('status')).toHaveTextContent('Already in the collection. Its data was refreshed.')
-    })
-
-    it('tells you it already belongs to another trainer and stays theirs', async () => {
-      mockDetail('25', pikachu)
-      syncReturns(200, stored(25, 'pikachu', { ownerId: 2 }))
+      inCollection(1)
       renderApp(<App />, { route: '/pokemon/25', token: makeToken({ uid: 1 }) })
       await screen.findByRole('heading', { name: 'Pikachu' })
 
-      await userEvent.click(screen.getByRole('button', { name: 'Add to my collection' }))
-
-      expect(await screen.findByRole('status')).toHaveTextContent(
-        'Already in the collection, added by another trainer, so it stays theirs. Its data was refreshed.',
-      )
+      expect(await screen.findByText(/^In the collection/)).toHaveTextContent('In the collection, added by you.')
+      expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'View it in the collection' })).toHaveAttribute('href', '/collection/25')
     })
 
-    it('does not mention another trainer when the entry has no owner', async () => {
+    it('offers no button when another trainer already has it', async () => {
       mockDetail('25', pikachu)
-      syncReturns(200, stored(25, 'pikachu', { ownerId: null }))
+      inCollection(2)
       renderApp(<App />, { route: '/pokemon/25', token: makeToken({ uid: 1 }) })
       await screen.findByRole('heading', { name: 'Pikachu' })
 
-      await userEvent.click(screen.getByRole('button', { name: 'Add to my collection' }))
+      expect(await screen.findByText(/^In the collection/)).toHaveTextContent('In the collection, added by another trainer.')
+      expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
+    })
 
-      expect(await screen.findByRole('status')).toHaveTextContent('Already in the collection. Its data was refreshed.')
+    it('says so when the entry has no owner', async () => {
+      mockDetail('25', pikachu)
+      inCollection(null)
+      renderApp(<App />, { route: '/pokemon/25', token: makeToken({ uid: 1 }) })
+      await screen.findByRole('heading', { name: 'Pikachu' })
+
+      expect(await screen.findByText(/^In the collection/)).toHaveTextContent('In the collection, with no owner (only admins can edit it).')
+      expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
     })
 
     it('disables the button while adding', async () => {
       mockDetail('25', pikachu)
+      notInCollection()
       server.use(
         http.post(apiUrl('/collection/25/sync'), async () => {
           await delay(60)
@@ -244,7 +247,7 @@ describe('PokemonDetailPage', () => {
       renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
       await screen.findByRole('heading', { name: 'Pikachu' })
 
-      await userEvent.click(screen.getByRole('button', { name: 'Add to my collection' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Add to my collection' }))
 
       expect(screen.getByRole('button', { name: 'Adding…' })).toBeDisabled()
       await screen.findByRole('status')
@@ -252,14 +255,29 @@ describe('PokemonDetailPage', () => {
 
     it('reports an outage while adding without losing the page', async () => {
       mockDetail('25', pikachu)
+      notInCollection()
       server.use(http.post(apiUrl('/collection/25/sync'), () => failWith(502, 'CATALOG_UNAVAILABLE', 'x')))
       renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
       await screen.findByRole('heading', { name: 'Pikachu' })
 
-      await userEvent.click(screen.getByRole('button', { name: 'Add to my collection' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Add to my collection' }))
 
       expect(await screen.findByRole('alert')).toHaveTextContent('not answering right now')
       expect(screen.getByRole('heading', { name: 'Pikachu' })).toBeInTheDocument()
+    })
+
+    it('does not offer to add when it cannot tell whether it is already there, and lets you retry', async () => {
+      mockDetail('25', pikachu)
+      server.use(http.get(apiUrl('/collection/25'), () => failWith(500, 'INTERNAL_ERROR', 'x')))
+      renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
+
+      expect(await screen.findByRole('alert')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
+
+      notInCollection()
+      await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+      expect(await screen.findByRole('button', { name: 'Add to my collection' })).toBeInTheDocument()
     })
   })
 })

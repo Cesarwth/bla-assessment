@@ -1,4 +1,4 @@
-import { Link, useLocation, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { isApiError } from '../../shared/api/errors'
 import { formatId, formatName } from '../../shared/format'
 import { EvolutionTree } from '../../shared/ui/EvolutionTree'
@@ -30,6 +30,7 @@ export function CollectionEntryPage() {
   const validId = Number.isInteger(entryId) && entryId >= 1
   const { user, isAdmin } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const query = useCollectionEntry(entryId, validId)
   useDocumentTitle(query.data ? formatName(query.data.name) : undefined)
 
@@ -68,7 +69,11 @@ export function CollectionEntryPage() {
           <section className={`${styles.notes} ${styles.section}`} aria-labelledby="notes-heading">
             <h2 id="notes-heading">Trainer notes</h2>
             {canEdit ? (
-              <EditForm entry={entry} onReload={() => void query.refetch()} />
+              <EditForm
+                entry={entry}
+                onReload={() => void query.refetch()}
+                onSaved={() => navigate('/collection', { state: { saved: name } })}
+              />
             ) : (
               <>
                 <dl className={styles.readOnly}>

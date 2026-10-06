@@ -6,6 +6,7 @@ import type { EntryChanges } from '../api'
 import { useUpdateEntry } from '../queries'
 import styles from './EditForm.module.css'
 import { TagInput } from './TagInput'
+import { addTag } from '../tags'
 
 interface Draft {
   nickname: string
@@ -40,39 +41,30 @@ interface Props {
   entry: StoredPokemon
   /** Refetches the entry from the API (used after a conflict). */
   onReload: () => void
+  /** Called once the changes are saved; the page leaves the form. */
+  onSaved: () => void
 }
 
-export function EditForm({ entry, onReload }: Props) {
+export function EditForm({ entry, onReload, onSaved }: Props) {
   // `edits` holds only the fields the user touched; every other field shows the entry as it is now, so after a
   // reload the form follows the latest version while keeping what the user typed.
   const [edits, setEdits] = useState<Partial<Draft>>({})
+  const [pendingTag, setPendingTag] = useState('')
+  const valueOf = <K extends keyof Draft>(field: K): Draft[K] => (edits[field] ?? toDraft(entry)[field]) as Draft[K]
   const update = useUpdateEntry(entry.id)
-  const base = toDraft(entry)
-  const changes = changesOf(entry, edits)
-  const dirty = Object.keys(changes).length > 0
+  // A tag typed but not confirmed with “Add tag” or Enter still counts: saving must not silently drop it.
+  const pending = addTag(valueOf('tags'), pendingTag)
+  const effective: Partial<Draft> = pendingTag.trim() !== '' && !pending.error ? { ...edits, tags: pending.tags } : edits
+  const changes = changesOf(entry, effective)
+  const dirty = Object.keys(changes).length > 0 && !pending.error
   const conflict = isApiError(update.error) && update.error.code === 'CONCURRENT_MODIFICATION'
 
-  const valueOf = <K extends keyof Draft>(field: K): Draft[K] => (edits[field] ?? base[field]) as Draft[K]
   const edit = <K extends keyof Draft>(field: K, value: Draft[K]) => setEdits((current) => ({ ...current, [field]: value }))
 
   function submit(event: FormEvent) {
     event.preventDefault()
     if (!dirty) return
-    const sent = changes
-    update.mutate(
-      { version: entry.version, ...sent },
-      {
-        // The saved values now are the entry: forget those edits, but keep anything typed while the request ran.
-        onSuccess: () =>
-          setEdits((current) => {
-            const remaining = { ...current }
-            if (sent.nickname !== undefined && current.nickname?.trim() === sent.nickname) delete remaining.nickname
-            if (sent.region !== undefined && current.region?.trim() === sent.region) delete remaining.region
-            if (sent.tags !== undefined && current.tags && sameValue('tags', current.tags, sent.tags)) delete remaining.tags
-            return remaining
-          }),
-      },
-    )
+    update.mutate({ version: entry.version, ...changes }, { onSuccess: onSaved })
   }
 
   function loadLatest() {
@@ -97,7 +89,7 @@ export function EditForm({ entry, onReload }: Props) {
         maxLength={50}
         hint="For example Kanto, or the place where you met it."
       />
-      <TagInput tags={valueOf('tags')} onChange={(tags) => edit('tags', tags)} />
+      <TagInput tags={valueOf('tags')} onChange={(tags) => edit('tags', tags)} text={pendingTag} onTextChange={setPendingTag} />
 
       {conflict ? (
         <p role="alert" className={styles.alert}>
@@ -118,11 +110,6 @@ export function EditForm({ entry, onReload }: Props) {
         <button type="submit" className={styles.save} disabled={!dirty || update.isPending}>
           {update.isPending ? 'Saving…' : 'Save changes'}
         </button>
-        {update.isSuccess && !dirty && (
-          <p role="status" className={styles.saved}>
-            Saved.
-          </p>
-        )}
       </div>
     </form>
   )

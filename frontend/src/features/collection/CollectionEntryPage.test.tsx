@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { App } from '../../app/App'
 import { expectNoA11yViolations } from '../../test/axe'
 import { pageOf, stored, storedSummary } from '../../test/fixtures'
@@ -106,6 +106,9 @@ describe('CollectionEntryPage', () => {
   })
 
   describe('editing', () => {
+    // Saving leads back to the collection, which loads its list.
+    beforeEach(() => mockCollection(() => pageOf([storedSummary(25, 'pikachu')], { totalItems: 1 })))
+
     it('starts with nothing to save', async () => {
       mockEntry(25, entry())
       renderApp(<App />, asOwner())
@@ -123,24 +126,8 @@ describe('CollectionEntryPage', () => {
       await userEvent.type(nickname, 'Sparky')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-      expect(await screen.findByText('Saved.')).toBeInTheDocument()
+      expect(await screen.findByText('Saved changes to Pikachu.')).toBeInTheDocument()
       expect(bodies).toEqual([{ version: 3, nickname: 'Sparky' }])
-    })
-
-    it('uses the version of the response for the next save', async () => {
-      mockEntry(25, entry())
-      const bodies = mockPatch()
-      renderApp(<App />, asOwner())
-      const region = await screen.findByLabelText('Region')
-
-      await userEvent.type(region, '!')
-      await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
-      await screen.findByText('Saved.')
-      await userEvent.type(region, '?')
-      await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
-
-      await screen.findByText('Saved.')
-      expect(bodies.map((body) => body.version)).toEqual([3, 4])
     })
 
     it('clearing a field sends an empty value, which the API understands as "clear"', async () => {
@@ -153,7 +140,7 @@ describe('CollectionEntryPage', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Remove tag starter' }))
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-      await screen.findByText('Saved.')
+      await screen.findByText('Saved changes to Pikachu.')
       expect(bodies).toEqual([{ version: 3, nickname: '', region: '', tags: [] }])
     })
 
@@ -171,7 +158,7 @@ describe('CollectionEntryPage', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
       expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled()
-      await screen.findByText('Saved.')
+      await screen.findByText('Saved changes to Pikachu.')
     })
 
     it('normalizes tags as they are added and ignores duplicates', async () => {
@@ -184,7 +171,7 @@ describe('CollectionEntryPage', () => {
       await userEvent.type(input, 'ELECTRIC{Enter}')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-      await screen.findByText('Saved.')
+      await screen.findByText('Saved changes to Pikachu.')
       expect(bodies).toEqual([{ version: 3, tags: ['starter', 'electric'] }])
     })
 
@@ -259,7 +246,7 @@ describe('CollectionEntryPage', () => {
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
       expect(nickname).toHaveValue('Sparky') // ...while what the user typed is kept
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
-      await screen.findByText('Saved.')
+      await screen.findByText('Saved changes to Pikachu.')
       expect(bodies[1]).toEqual({ version: 4, nickname: 'Sparky' }) // based on the latest version, and only what the user changed
     })
 
@@ -290,32 +277,42 @@ describe('CollectionEntryPage', () => {
 
       expect(await screen.findByLabelText('Nickname')).toHaveValue('Renamed by someone else')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
-      await screen.findByText('Saved.')
+      await screen.findByText('Saved changes to Pikachu.')
       expect(bodies[1]).toEqual({ version: 4, region: 'Hoenn' }) // the nickname is not sent: nobody's change is lost
     })
 
-    it('keeps what was typed while a save was in flight', async () => {
+    it('goes back to the collection and confirms the save', async () => {
       mockEntry(25, entry())
-      server.use(
-        http.patch(apiUrl('/collection/25'), async () => {
-          await delay(80)
-          return HttpResponse.json(entry({ version: 4, nickname: 'First' }))
-        }),
-      )
+      mockPatch()
       renderApp(<App />, asOwner())
-      const nickname = await screen.findByLabelText('Nickname')
-      await userEvent.clear(nickname)
-      await userEvent.type(nickname, 'First')
+
+      await userEvent.type(await screen.findByLabelText('Nickname'), 'x')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-      await userEvent.type(screen.getByLabelText('Region'), '!') // typed while the request is still running
-      // once the request finishes the button is back: "Saved." stays hidden because there is a new unsaved edit
-      const save = await screen.findByRole('button', { name: 'Save changes' })
+      expect(await screen.findByRole('heading', { name: 'Collection' })).toBeInTheDocument()
+      expect(screen.getByRole('status')).toHaveTextContent('Saved changes to Pikachu.')
+    })
 
-      expect(save).toBeEnabled()
-      expect(screen.getByLabelText('Region')).toHaveValue('Kanto!')
-      expect(screen.getByLabelText('Nickname')).toHaveValue('First')
-      expect(screen.queryByText('Saved.')).not.toBeInTheDocument()
+    it('saves a tag that was typed but not confirmed with “Add tag”', async () => {
+      mockEntry(25, entry())
+      const bodies = mockPatch()
+      renderApp(<App />, asOwner())
+
+      await userEvent.type(await screen.findByLabelText('Add a tag'), 'Test')
+      await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+      await screen.findByText('Saved changes to Pikachu.')
+      expect(bodies).toEqual([{ version: 3, tags: ['starter', 'test'] }])
+    })
+
+    it('does not save while the typed tag is invalid, and says why', async () => {
+      mockEntry(25, entry())
+      renderApp(<App />, asOwner())
+
+      await userEvent.type(await screen.findByLabelText('Add a tag'), 'x'.repeat(31))
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Tags can have at most 30 characters.')
+      expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled()
     })
 
     it('undoing a change leaves nothing to save', async () => {

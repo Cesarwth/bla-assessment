@@ -1,12 +1,15 @@
 import { Link, useLocation } from 'react-router'
+import { ApiError } from '../../../shared/api/errors'
 import { ErrorState } from '../../../shared/ui/ErrorState'
 import { useAuth } from '../../auth/useAuth'
-import { useSyncPokemon } from '../queries'
+import { useCollectionEntry, useSyncPokemon } from '../queries'
 import styles from './AddToCollection.module.css'
 
+/** Whoever adds a Pokémon first owns it, so the button only exists while nobody has claimed it. */
 export function AddToCollection({ pokemonId }: { pokemonId: number }) {
   const { user } = useAuth()
   const location = useLocation()
+  const entry = useCollectionEntry(pokemonId, user !== null)
   const sync = useSyncPokemon()
 
   if (!user) {
@@ -19,21 +22,34 @@ export function AddToCollection({ pokemonId }: { pokemonId: number }) {
     )
   }
 
-  if (sync.isSuccess) {
-    // Whoever syncs a Pokémon first owns it; a later add only refreshes its data, so say whose it stays.
-    const ofSomeoneElse = sync.data.status !== 201 && sync.data.data.ownerId !== null && sync.data.data.ownerId !== user.id
+  if (entry.data) {
+    const { ownerId } = entry.data
     const message =
-      sync.data.status === 201
+      sync.data?.status === 201
         ? 'Added to the collection.'
-        : ofSomeoneElse
-          ? 'Already in the collection, added by another trainer, so it stays theirs. Its data was refreshed.'
-          : 'Already in the collection. Its data was refreshed.'
+        : ownerId === user.id
+          ? 'In the collection, added by you.'
+          : ownerId === null
+            ? 'In the collection, with no owner (only admins can edit it).'
+            : 'In the collection, added by another trainer.'
     return (
       <div className={styles.box}>
         <p role="status" className={styles.status}>
           {message}
         </p>
         <Link to={`/collection/${pokemonId}`}>View it in the collection</Link>
+      </div>
+    )
+  }
+
+  if (entry.isPending) {
+    return <p className={styles.box}>Checking the collection…</p>
+  }
+
+  if (!(entry.error instanceof ApiError && entry.error.status === 404)) {
+    return (
+      <div className={styles.box}>
+        <ErrorState error={entry.error} onRetry={() => void entry.refetch()} />
       </div>
     )
   }
