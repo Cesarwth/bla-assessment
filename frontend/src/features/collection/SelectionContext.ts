@@ -22,6 +22,8 @@ export interface SelectionValue {
   remove: (id: number) => void
   /** Adds what fits under the limit; `isFull` tells whether the limit was reached. */
   addMany: (pokemon: SelectedPokemon[]) => void
+  /** Drops these ids only: what was ticked meanwhile stays. */
+  removeMany: (ids: number[]) => void
   clear: () => void
 }
 

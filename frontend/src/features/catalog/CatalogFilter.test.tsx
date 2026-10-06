@@ -1,6 +1,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay } from 'msw'
+import { useLocation, useNavigate } from 'react-router'
 import { describe, expect, it } from 'vitest'
 import { App } from '../../app/App'
 import { expectNoA11yViolations } from '../../test/axe'
@@ -163,6 +164,26 @@ describe('filtering the catalog', () => {
     expect(requests.at(-1)).toBe('page=0&size=12')
   })
 
+  it('does not add a history entry per typed pause: Back leaves the catalog', async () => {
+    mockCatalog(filtering)
+    renderApp(
+      <>
+        <BackProbe />
+        <App />
+      </>,
+      { route: '/', previous: '/login' },
+    )
+    await screen.findByText('Bulbasaur')
+
+    await userEvent.type(field(), 'pi')
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('q=pi'))
+    await userEvent.type(field(), 'ka')
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('q=pika'))
+    await userEvent.click(screen.getByRole('button', { name: 'history back' }))
+
+    expect(screen.getByTestId('where')).toHaveTextContent('/login')
+  })
+
   it('has no accessibility violations, with a filter and with no match', async () => {
     mockCatalog(filtering)
     const { container } = renderApp(<App />, { route: '/?q=pika' })
@@ -178,4 +199,15 @@ describe('filtering the catalog', () => {
 
 function expectRequest(requests: string[], expected: string) {
   return waitFor(() => expect(requests.at(-1)).toBe(expected))
+}
+
+function BackProbe() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  return (
+    <>
+      <p data-testid="where">{location.pathname + location.search}</p>
+      <button onClick={() => void navigate(-1)}>history back</button>
+    </>
+  )
 }

@@ -219,7 +219,7 @@ frontend/src/
   test/           MSW server, fixtures, helpers, console guard
 ```
 
-- **State**: server state in TanStack Query (cache, retries only for network/5xx, previous page stays visible while the next loads); paging lives in the URL (shareable); auth in a small context; no global store. Features never import each other: `App.tsx` is the only place that composes them.
+- **State**: server state in TanStack Query (cache, retries only for network/5xx, previous page stays visible while the next loads); paging lives in the URL (shareable); auth in a small context; no global store. Features never import each other: `App.tsx` is the only place that composes them, and ESLint fails the build if one feature imports another.
 - **One API client** turns every failure into an `ApiError` (status, code, field errors) using the backend's error shape, so components never parse responses. A `401` on a request that carried a token ends the session, shows a notice and refetches the data without the dead token.
 - **Styling**: Tailwind v4 with a single stylesheet. The design tokens (semantic colors, the 18 Pokémon type colors, radius, shadow) live in an `@theme` block; the dark palette overrides the same variables under `prefers-color-scheme`, so a class like `bg-surface` is right in both schemes. Repeated patterns are small components in `shared/ui` instead of long class lists or `@apply`. The build emits one static CSS file (≈ 44 kB, 9 kB gzip), so the strict CSP (`style-src 'self'`) still holds.
 - **Background**: an original forest scene drawn as SVG (a misty morning in the light scheme, a night forest with fireflies in the dark one; 15–27 kB each, no third-party artwork). Text always sits on glass panels over it, and a test checks the contrast against the art's lightest and darkest tones. Buttons are deliberately light (thin borders, soft tints).
@@ -278,10 +278,10 @@ The core (domain, use cases, persistence and PokeAPI adapters, the first web and
 
 | Suite | Command | What it covers |
 | --- | --- | --- |
-| Backend | `cd backend && ./gradlew test` | **520 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
-| Backend gate | `./gradlew build` | JaCoCo: fails below **90 % lines / 80 % branches** (actual ≈ 98 % / 86 %) |
-| Frontend | `cd frontend && npm test` | **325 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
-| Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99 % / 93 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
+| Backend | `cd backend && ./gradlew test` | **540 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
+| Backend gate | `./gradlew build` | JaCoCo: fails below **90 % lines / 80 % branches** (actual ≈ 97 % / 88 %) |
+| Frontend | `cd frontend && npm test` | **350 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
+| Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99.6 % / 95 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
 | Static checks | `npm run typecheck && npm run lint` | strict TypeScript, ESLint with zero warnings |
 | Whole stack | `./scripts/smoke.sh` | 40 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, private collections, two trainers with the same Pokémon, versions |
 | CI | `.github/workflows/ci.yml` | on every push to `main` and every pull request: backend `build` (tests + coverage gate), frontend typecheck/lint/coverage/build/audit, and the whole stack with `start.sh` + `smoke.sh` |

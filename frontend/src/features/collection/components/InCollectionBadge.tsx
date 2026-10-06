@@ -1,5 +1,5 @@
 import { Badge } from '../../../shared/ui/Badge'
-import { useAuth } from '../../auth/useAuth'
+import { useAuth } from '../../../shared/session/useAuth'
 import { useCollectionIds } from '../queries'
 
 /** Marks a catalog card with a Pokémon the trainer already collected. Quiet on purpose: no mark if it cannot tell. */

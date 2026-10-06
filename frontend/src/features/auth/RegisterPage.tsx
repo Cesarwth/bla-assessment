@@ -9,8 +9,9 @@ import { TextField } from '../../shared/ui/TextField'
 import { toFormErrors, type FormErrors } from './formErrors'
 import { PASSWORD_HINT } from './passwordPolicy'
 import { safeReturnPath } from './redirect'
+import { useFocusFirstInvalid } from '../../shared/useFocusFirstInvalid'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
-import { useAuth } from './useAuth'
+import { useAuth } from '../../shared/session/useAuth'
 
 export function RegisterPage() {
   const { user, login } = useAuth()
@@ -21,6 +22,7 @@ export function RegisterPage() {
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<FormErrors>({ fields: {} })
   const [submitting, setSubmitting] = useState(false)
+  const formRef = useFocusFirstInvalid(errors.fields)
 
   if (user) return <Navigate to={safeReturnPath(location.state)} replace />
 
@@ -41,9 +43,9 @@ export function RegisterPage() {
   return (
     <div className="mx-auto my-4 max-w-[26rem] sm:my-8">
       <Card large raised className="p-6">
-        <form className="grid gap-4" onSubmit={submit} noValidate>
+        <form ref={formRef} className="grid gap-4" onSubmit={submit} noValidate>
           <h1 className="mb-0">Create your trainer profile</h1>
-          {errors.general && <Alert>{errors.general}</Alert>}
+          <Alert>{errors.general}</Alert>
           <TextField
             label="Username"
             name="username"

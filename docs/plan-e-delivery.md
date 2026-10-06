@@ -265,3 +265,18 @@ Requested last: trainers can recover a lost password and edit their own details.
 - **E-mail in the demo:** a Mailpit container (`axllent/mailpit`) receives the messages at http://localhost:8025; production would point `MAIL_HOST` at a real SMTP server. The mail health indicator is disabled so a missing mail server never makes the API unhealthy.
 - **Known limits:** stateless JWTs stay valid after a password change until they expire; no rate limiting (a conscious scope decision, as for login).
 - **Verified live:** register → forgot → read the e-mail in Mailpit → weak password refused → reset → the link works once → old password rejected, new one accepted → profile read and rename; the reset token appears in no log. The smoke test now covers this (40 checks).
+
+### Final review round (2026-10-06)
+
+Three read-only reviewers (security of the new auth code, architecture and correctness, frontend and documentation accuracy) found no critical issues and these real ones, all fixed:
+
+- A notes-only edit rewrote the shared catalog row, so two trainers editing their own notes of the same Pokémon could collide (`updateNotes` now touches only the trainer's entry).
+- Bulk add had no time budget (now `SYNC_MAX_DURATION_SECONDS`, default 90 s, with a partial report); a duplicate no longer fails the whole batch.
+- A profile edit could revert a concurrent password reset (targeted updates); `ResetPassword` invalidates the other links before writing the password.
+- The reset e-mail was sent synchronously, which made response time reveal which e-mails exist (now sent in the background).
+- The reset token appeared in the nginx access log (the request that opens the link is no longer logged).
+- Settings documented in the README were not passed to the API container (compose now forwards them).
+- Features imported `features/auth` (the session context moved to `shared/session` and ESLint now enforces the isolation rule); a bulk add was lost when navigating away during the request; form errors were not announced and did not take focus; the client password policy differed from the server's; fireflies stayed visible under reduced motion; typing in the filter created a history entry per pause.
+- Images scanned with Trivy: no fixable HIGH/CRITICAL findings and no secrets in the API, web and Mailpit (pinned to v1.31) images.
+
+Accepted and documented, not changed: no rate limiting, JWTs stay valid after a password change until they expire, no e-mail verification, no Unicode confusable check on usernames.

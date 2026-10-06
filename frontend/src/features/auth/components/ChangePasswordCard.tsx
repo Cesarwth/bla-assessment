@@ -2,7 +2,9 @@ import { useState, type FormEvent } from 'react'
 import { Alert } from '../../../shared/ui/Alert'
 import { Button } from '../../../shared/ui/Button'
 import { Card } from '../../../shared/ui/Card'
+import { StatusNote } from '../../../shared/ui/StatusNote'
 import { TextField } from '../../../shared/ui/TextField'
+import { useFocusFirstInvalid } from '../../../shared/useFocusFirstInvalid'
 import { toFormErrors, type FormErrors } from '../formErrors'
 import { PASSWORD_HINT, checkNewPassword } from '../passwordPolicy'
 import { useChangePassword } from '../queries'
@@ -14,6 +16,7 @@ export function ChangePasswordCard() {
   const [errors, setErrors] = useState<FormErrors>({ fields: {} })
   const [saved, setSaved] = useState(false)
   const change = useChangePassword()
+  const formRef = useFocusFirstInvalid(errors.fields)
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -41,11 +44,11 @@ export function ChangePasswordCard() {
 
   return (
     <Card as="section" large raised className="p-6" aria-labelledby="password-title">
-      <form className="grid gap-4" onSubmit={submit} noValidate>
+      <form ref={formRef} className="grid gap-4" onSubmit={submit} noValidate>
         <h2 id="password-title" className="mb-0">
           Change password
         </h2>
-        {errors.general && <Alert>{errors.general}</Alert>}
+        <Alert>{errors.general}</Alert>
         <TextField
           label="Current password"
           name="currentPassword"
@@ -74,14 +77,7 @@ export function ChangePasswordCard() {
           autoComplete="new-password"
           error={errors.fields.confirm}
         />
-        {saved && (
-          <p
-            role="status"
-            className="mb-0 rounded-sm border border-border bg-surface-muted px-4 py-3"
-          >
-            Password changed.
-          </p>
-        )}
+        <StatusNote>{saved && 'Password changed.'}</StatusNote>
         <Button type="submit" variant="primary" disabled={change.isPending}>
           {change.isPending ? 'Changing…' : 'Change password'}
         </Button>

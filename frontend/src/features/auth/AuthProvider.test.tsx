@@ -7,7 +7,7 @@ import { api } from '../../shared/api/client'
 import { server } from '../../test/server'
 import { makeToken, renderApp } from '../../test/utils'
 import { SESSION_KEY } from './storage'
-import { useAuth } from './useAuth'
+import { useAuth } from '../../shared/session/useAuth'
 
 function Probe() {
   const { user, isAdmin, sessionExpired, login, logout, adoptSession } = useAuth()

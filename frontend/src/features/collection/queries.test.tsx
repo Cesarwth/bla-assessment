@@ -54,7 +54,7 @@ describe('the ids of the collection', () => {
     ],
     [
       'adding a selection',
-      () => useSyncSelection(),
+      () => useSyncSelection(() => {}),
       (m: ReturnType<typeof useSyncSelection>) => m.mutate([1, 3]),
     ],
     [

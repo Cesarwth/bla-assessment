@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
-import { useAuth } from '../features/auth/useAuth'
+import { useAuth } from '../shared/session/useAuth'
 
 // Lives in app/ because it combines a feature's session with the routes of another: features never import each other.
 export function RequireLogin() {

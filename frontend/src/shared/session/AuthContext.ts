@@ -1,5 +1,11 @@
 import { createContext } from 'react'
-import type { SessionUser } from './token'
+import type { Role } from '../api/types'
+
+export interface SessionUser {
+  id: number
+  username: string
+  role: Role
+}
 
 export interface AuthContextValue {
   user: SessionUser | null

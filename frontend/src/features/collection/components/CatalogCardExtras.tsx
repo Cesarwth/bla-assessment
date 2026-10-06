@@ -1,6 +1,6 @@
 import type { PokemonSummary } from '../../../shared/api/types'
 import { formatName } from '../../../shared/format'
-import { useAuth } from '../../auth/useAuth'
+import { useAuth } from '../../../shared/session/useAuth'
 import { useCollectionIds } from '../queries'
 import { useSelection } from '../useSelection'
 import { InCollectionBadge } from './InCollectionBadge'

@@ -1,4 +1,11 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useMutation,
+  useMutationState,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import type { SyncReport } from '../../shared/api/types'
 import {
   deleteCollectionEntry,
   fetchCollectionEntry,
@@ -49,17 +56,39 @@ export function useSyncPokemon() {
   })
 }
 
-export function useSyncSelection() {
+const syncSelectionKey = [...collectionKeys.all, 'sync-selection'] as const
+
+/**
+ * Adding a selection can take minutes, so everything that must happen afterwards is configured here, on the
+ * mutation, and not in `mutate(..., { onSuccess })`: those callbacks are dropped when the component unmounts, and the
+ * trainer may well be on another page by then. `onAdded` receives the ids that were sent so the caller can drop
+ * exactly those (what was ticked meanwhile stays). The outcome is read from the mutation cache, so it is still there
+ * when the toolbar mounts again; the session change clears that cache.
+ */
+export function useSyncSelection(onAdded: (ids: number[]) => void) {
   const queryClient = useQueryClient()
-  return useMutation({
+  const { mutate } = useMutation({
+    mutationKey: syncSelectionKey,
     mutationFn: (ids: number[]) => syncSelection(ids),
-    // New entries must show up in the lists, and the catalog cards must flip to "In my collection", without a reload.
-    onSuccess: () =>
+    onSuccess: (_report, ids) => onAdded(ids),
+    // Settled, not success: a gateway timeout after the server saved some rows must still refresh the marks.
+    onSettled: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: collectionKeys.lists() }),
         queryClient.invalidateQueries({ queryKey: collectionKeys.ids() }),
       ]),
   })
+  const latest = useMutationState({
+    filters: { mutationKey: syncSelectionKey },
+    select: (mutation) => mutation.state,
+  }).at(-1)
+  return {
+    mutate,
+    isPending: latest?.status === 'pending',
+    isError: latest?.status === 'error',
+    error: (latest?.error as Error | null | undefined) ?? null,
+    data: latest?.data as SyncReport | undefined,
+  }
 }
 
 export function useCollectionEntry(id: number, enabled = true) {

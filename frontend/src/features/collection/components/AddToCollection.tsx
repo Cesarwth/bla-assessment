@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router'
 import { Button } from '../../../shared/ui/Button'
 import { ErrorState } from '../../../shared/ui/ErrorState'
-import { useAuth } from '../../auth/useAuth'
+import { StatusNote } from '../../../shared/ui/StatusNote'
+import { useAuth } from '../../../shared/session/useAuth'
 import { useCollectionIds, useSyncPokemon } from '../queries'
 
 /** Each trainer has their own collection: the button exists while this Pokémon is not in the logged-in trainer's. */
@@ -26,42 +27,35 @@ export function AddToCollection({ pokemonId }: { pokemonId: number }) {
     )
   }
 
-  if (ids.data?.includes(pokemonId)) {
-    const status = sync.data?.status === 201 ? 'Added to your collection.' : 'In your collection.'
-    const message = saved ? `Saved changes to ${saved}. ${status}` : status
-    return (
-      <div className={boxClass}>
-        <p role="status" className="mb-0 rounded-sm bg-success-surface px-4 py-2">
-          {message}
-        </p>
-        <Link to={`/collection/${pokemonId}`}>View it in my collection</Link>
-      </div>
-    )
-  }
+  const collected = ids.data?.includes(pokemonId) === true
+  const status = sync.data?.status === 201 ? 'Added to your collection.' : 'In your collection.'
+  // One live region for the whole life of the box: the button turns into this message, and a region inserted
+  // together with its text is easily missed by screen readers.
+  const message = collected ? (saved ? `Saved changes to ${saved}. ${status}` : status) : undefined
 
-  if (ids.isPending) {
-    return <p className={boxClass}>Checking the collection…</p>
-  }
-
-  if (ids.isError) {
+  function renderBody() {
+    if (collected) return <Link to={`/collection/${pokemonId}`}>View it in my collection</Link>
+    if (ids.isPending) return 'Checking the collection…'
+    if (ids.isError) return <ErrorState error={ids.error} onRetry={() => void ids.refetch()} />
     return (
-      <div className={boxClass}>
-        <ErrorState error={ids.error} onRetry={() => void ids.refetch()} />
-      </div>
+      <>
+        <Button
+          variant="primary"
+          size="lg"
+          disabled={sync.isPending}
+          onClick={() => sync.mutate(pokemonId)}
+        >
+          {sync.isPending ? 'Adding…' : 'Add to my collection'}
+        </Button>
+        {sync.isError && <ErrorState error={sync.error} onRetry={() => sync.mutate(pokemonId)} />}
+      </>
     )
   }
 
   return (
     <div className={boxClass}>
-      <Button
-        variant="primary"
-        size="lg"
-        disabled={sync.isPending}
-        onClick={() => sync.mutate(pokemonId)}
-      >
-        {sync.isPending ? 'Adding…' : 'Add to my collection'}
-      </Button>
-      {sync.isError && <ErrorState error={sync.error} onRetry={() => sync.mutate(pokemonId)} />}
+      <StatusNote boxClass="rounded-sm bg-success-surface px-4 py-2">{message}</StatusNote>
+      {renderBody()}
     </div>
   )
 }

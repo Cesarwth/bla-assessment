@@ -14,7 +14,7 @@ import {
   mockProfile,
 } from '../../test/handlers'
 import { server } from '../../test/server'
-import { makeToken, renderApp } from '../../test/utils'
+import { findFilledRegion, makeToken, renderApp } from '../../test/utils'
 import { SESSION_KEY } from './storage'
 
 const session = () => makeToken({ uid: 1, sub: 'ash' })
@@ -83,7 +83,7 @@ describe('ProfilePage', () => {
       await userEvent.type(screen.getByLabelText('Username'), 'misty')
       await userEvent.click(screen.getByRole('button', { name: 'Save details' }))
 
-      expect(await within(details()).findByRole('status')).toHaveTextContent(
+      expect(await findFilledRegion(within(details()), 'status')).toHaveTextContent(
         'Your details were updated.',
       )
       expect(body).toEqual({ username: 'misty' })
@@ -103,7 +103,7 @@ describe('ProfilePage', () => {
       await userEvent.clear(screen.getByLabelText('Username'))
       await userEvent.type(screen.getByLabelText('Username'), 'misty')
       await userEvent.click(screen.getByRole('button', { name: 'Save details' }))
-      await within(details()).findByRole('status')
+      await findFilledRegion(within(details()), 'status')
 
       let auth: string | null = null
       server.use(
@@ -144,7 +144,7 @@ describe('ProfilePage', () => {
       await userEvent.type(within(details()).getByLabelText('Current password'), 'Pikachu123')
       await userEvent.click(screen.getByRole('button', { name: 'Save details' }))
 
-      expect(await within(details()).findByRole('status')).toBeInTheDocument()
+      expect(await findFilledRegion(within(details()), 'status')).toBeInTheDocument()
       expect(body).toEqual({ email: 'new@example.com', currentPassword: 'Pikachu123' })
       expect(within(details()).queryByLabelText('Current password')).not.toBeInTheDocument()
       expect(within(details()).getByLabelText('Email')).toHaveValue('new@example.com')
@@ -242,7 +242,7 @@ describe('ProfilePage', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Save details' }))
 
       expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled()
-      expect(await within(details()).findByRole('status')).toBeInTheDocument()
+      expect(await findFilledRegion(within(details()), 'status')).toBeInTheDocument()
     })
 
     it('ends the session on a 401 like everywhere else', async () => {
@@ -276,7 +276,7 @@ describe('ProfilePage', () => {
 
       await fill('Pikachu123', 'Raichu4567')
 
-      expect(await within(passwordCard()).findByRole('status')).toHaveTextContent(
+      expect(await findFilledRegion(within(passwordCard()), 'status')).toHaveTextContent(
         'Password changed.',
       )
       expect(body).toEqual({ currentPassword: 'Pikachu123', newPassword: 'Raichu4567' })
@@ -359,7 +359,7 @@ describe('ProfilePage', () => {
       await fill('Pikachu123', 'Raichu4567')
 
       expect(screen.getByRole('button', { name: 'Changing…' })).toBeDisabled()
-      expect(await within(passwordCard()).findByRole('status')).toBeInTheDocument()
+      expect(await findFilledRegion(within(passwordCard()), 'status')).toBeInTheDocument()
     })
   })
 

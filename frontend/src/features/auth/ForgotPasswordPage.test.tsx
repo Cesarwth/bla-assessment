@@ -6,7 +6,7 @@ import { App } from '../../app/App'
 import { expectNoA11yViolations } from '../../test/axe'
 import { apiUrl, failWith } from '../../test/handlers'
 import { server } from '../../test/server'
-import { renderApp } from '../../test/utils'
+import { findFilledRegion, renderApp } from '../../test/utils'
 
 const NEUTRAL =
   'If an account exists for that e-mail, we sent a link to reset the password. Check your inbox (the link expires in 30 minutes).'
@@ -32,7 +32,7 @@ describe('ForgotPasswordPage', () => {
 
     await submit('ash@example.com')
 
-    expect(await screen.findByRole('status')).toHaveTextContent(NEUTRAL)
+    expect(await findFilledRegion(screen, 'status')).toHaveTextContent(NEUTRAL)
     expect(body).toEqual({ email: 'ash@example.com' })
     expect(screen.queryByLabelText('Email')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Back to log in' })).toHaveAttribute('href', '/login')
@@ -42,13 +42,13 @@ describe('ForgotPasswordPage', () => {
     accepted()
     const first = renderApp(<App />, { route: '/forgot-password' })
     await submit('known@example.com')
-    const known = (await screen.findByRole('status')).textContent
+    const known = (await findFilledRegion(screen, 'status')).textContent
     first.unmount()
 
     renderApp(<App />, { route: '/forgot-password' })
     await submit('nobody@example.com')
 
-    expect((await screen.findByRole('status')).textContent).toBe(known)
+    expect((await findFilledRegion(screen, 'status')).textContent).toBe(known)
   })
 
   it('shows the field error of a malformed e-mail and keeps the form', async () => {
@@ -66,7 +66,7 @@ describe('ForgotPasswordPage', () => {
     expect(await screen.findByLabelText('Email')).toHaveAccessibleDescription(
       'must be a well-formed email address',
     )
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 
   it('asks for the e-mail before calling the API', async () => {
@@ -98,7 +98,7 @@ describe('ForgotPasswordPage', () => {
     await submit('ash@example.com')
 
     expect(screen.getByRole('button', { name: 'Sending…' })).toBeDisabled()
-    expect(await screen.findByRole('status')).toBeInTheDocument()
+    expect(await findFilledRegion(screen, 'status')).toBeInTheDocument()
   })
 
   it('links back to the login', () => {
@@ -113,7 +113,7 @@ describe('ForgotPasswordPage', () => {
     await expectNoA11yViolations(container)
 
     await submit('ash@example.com')
-    await screen.findByRole('status')
+    await findFilledRegion(screen, 'status')
 
     await expectNoA11yViolations(container)
   })

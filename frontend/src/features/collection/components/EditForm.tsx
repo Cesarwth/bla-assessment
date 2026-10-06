@@ -112,19 +112,21 @@ export function EditForm({ entry, onReload, onSaved, onCancel }: Props) {
         onTextChange={setPendingTag}
       />
 
-      {conflict ? (
-        <Alert>
-          Someone else changed this entry while you were editing it. Your changes are still here.
-          <Button
-            className="mt-2 block border-danger sm:mt-0 sm:ml-3 sm:inline-flex"
-            onClick={loadLatest}
-          >
-            Load the latest version
-          </Button>
-        </Alert>
-      ) : (
-        update.isError && <Alert>{describeError(update.error)}</Alert>
-      )}
+      <Alert>
+        {conflict ? (
+          <>
+            Someone else changed this entry while you were editing it. Your changes are still here.
+            <Button
+              className="mt-2 block border-danger sm:mt-0 sm:ml-3 sm:inline-flex"
+              onClick={loadLatest}
+            >
+              Load the latest version
+            </Button>
+          </>
+        ) : (
+          update.isError && describeError(update.error)
+        )}
+      </Alert>
 
       <div className="flex flex-wrap items-center gap-3">
         <Button

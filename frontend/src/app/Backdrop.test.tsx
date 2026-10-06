@@ -12,10 +12,12 @@ describe('Backdrop', () => {
     expect(layer.querySelectorAll('span').length).toBeGreaterThan(0)
   })
 
-  it('only animates the fireflies where motion is welcome', () => {
+  it('only shows the fireflies, at night, where motion is welcome (none under reduced motion)', () => {
     const { container } = render(<Backdrop />)
 
-    for (const firefly of container.querySelectorAll('span'))
-      expect(firefly).toHaveClass('motion-safe:animate-firefly')
+    for (const firefly of container.querySelectorAll('span')) {
+      expect(firefly).toHaveClass('hidden', 'motion-safe:dark:block', 'motion-safe:animate-firefly')
+      expect(firefly).not.toHaveClass('dark:block')
+    }
   })
 })

@@ -1,5 +1,6 @@
-import { render } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import type { ReactElement } from 'react'
+import { expect } from 'vitest'
 import { MemoryRouter } from 'react-router'
 import { AppProviders } from '../app/AppProviders'
 import { createQueryClient } from '../app/queryClient'
@@ -33,16 +34,31 @@ export function makeToken({ uid = 1, sub = 'ash', role = 'USER', exp }: TokenOpt
 interface RenderOptions {
   /** A path, or a path with router state (e.g. the page a login should return to). */
   route?: string | { pathname: string; state?: unknown }
+  /** A page visited before `route`, so the browser's Back has somewhere to go. */
+  previous?: string
   /** Puts a session in storage before rendering, as if the user had logged in earlier in this tab. */
   token?: string
 }
 
-export function renderApp(ui: ReactElement, { route = '/', token }: RenderOptions = {}) {
+export function renderApp(ui: ReactElement, { route = '/', token, previous }: RenderOptions = {}) {
   if (token) storeToken(token)
   const queryClient = createQueryClient({ retry: false })
   return render(
-    <MemoryRouter initialEntries={[route]}>
+    <MemoryRouter
+      initialEntries={previous ? [previous, route] : [route]}
+      initialIndex={previous ? 1 : 0}
+    >
       <AppProviders queryClient={queryClient}>{ui}</AppProviders>
     </MemoryRouter>,
   )
+}
+
+/** Live regions are in the page before they have text: this waits until the region says something, then returns it. */
+export async function findFilledRegion(
+  scope: Pick<typeof screen, 'getByRole'>,
+  role: 'status' | 'alert',
+): Promise<HTMLElement> {
+  const region = scope.getByRole(role)
+  await waitFor(() => expect(region).not.toBeEmptyDOMElement())
+  return region
 }

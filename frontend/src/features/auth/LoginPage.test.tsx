@@ -126,14 +126,15 @@ describe('LoginPage', () => {
   })
 
   it.each([
-    ['username', '', 'Pikachu123'],
-    ['password', 'ash', ''],
-  ])('asks for the %s before calling the API', async (_field, username, password) => {
+    ['Username', '', 'Pikachu123', 'Enter your username.'],
+    ['Password', 'ash', '', 'Enter your password.'],
+  ])('asks for the %s before calling the API', async (label, username, password, message) => {
     renderApp(<App />, { route: '/login' })
 
     await fillAndSubmit(username, password)
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Enter your username and password')
+    expect(screen.getByLabelText(label)).toHaveAccessibleDescription(message)
+    expect(screen.getByLabelText(label)).toHaveAttribute('aria-invalid', 'true')
   })
 
   it('disables the button while the request is in flight', async () => {
@@ -184,7 +185,7 @@ describe('LoginPage', () => {
   it('shows no notice on a normal visit', () => {
     renderApp(<App />, { route: '/login' })
 
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 
   it('has no accessibility violations', async () => {

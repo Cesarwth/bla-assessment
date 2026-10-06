@@ -1,10 +1,5 @@
 import type { Role } from '../../shared/api/types'
-
-export interface SessionUser {
-  id: number
-  username: string
-  role: Role
-}
+import type { SessionUser } from '../../shared/session/AuthContext'
 
 export interface TokenInfo {
   user: SessionUser

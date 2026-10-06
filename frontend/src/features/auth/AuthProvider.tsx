@@ -2,9 +2,13 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api, configureClient, resetClient } from '../../shared/api/client'
 import type { AuthResponse } from '../../shared/api/types'
-import { AuthContext, type AuthContextValue } from './AuthContext'
+import {
+  AuthContext,
+  type AuthContextValue,
+  type SessionUser,
+} from '../../shared/session/AuthContext'
 import { clearToken, readToken, storeToken } from './storage'
-import { decodeToken, isExpired, type SessionUser } from './token'
+import { decodeToken, isExpired } from './token'
 
 interface Session {
   token: string
@@ -29,11 +33,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const tokenRef = useRef<string | null>(session?.token ?? null)
   const queryClient = useQueryClient()
 
+  // Mutation outcomes (e.g. the report of an add) are kept for screens that mount later; they belong to an identity too.
   const clearSession = useCallback(() => {
     tokenRef.current = null
     clearToken()
     setSession(null)
-  }, [])
+    queryClient.getMutationCache().clear()
+  }, [queryClient])
 
   // Cached answers belong to an identity (the collection is private to each trainer): drop what is not on screen
   // and refetch what is, so nobody sees the previous trainer's data.
@@ -67,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       storeToken(token)
       setSession({ token, user: info.user })
       setSessionExpired(false)
+      queryClient.getMutationCache().clear()
       queryClient.removeQueries({ type: 'inactive' })
       void queryClient.invalidateQueries()
     },

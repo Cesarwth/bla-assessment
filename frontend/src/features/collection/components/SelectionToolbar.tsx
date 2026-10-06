@@ -3,7 +3,7 @@ import { formatName } from '../../../shared/format'
 import { Button } from '../../../shared/ui/Button'
 import { ErrorState } from '../../../shared/ui/ErrorState'
 import { RemovableChip } from '../../../shared/ui/RemovableChip'
-import { useAuth } from '../../auth/useAuth'
+import { useAuth } from '../../../shared/session/useAuth'
 import { useCollectionIds, useSyncSelection } from '../queries'
 import { MAX_SELECTION } from '../SelectionContext'
 import { useSelection } from '../useSelection'
@@ -19,23 +19,28 @@ export function SelectionToolbar({ items }: { items: PokemonSummary[] }) {
   const selection = useSelection()
   // Nothing is asked until there are cards on screen: the page may still be loading or failed.
   const collected = useCollectionIds(user !== null && items.length > 0)
-  const sync = useSyncSelection()
+  const sync = useSyncSelection(selection.removeMany)
   if (!user) return null
 
   const selectable = items.filter((pokemon) => !collected.data?.includes(pokemon.id))
   const count = selection.items.length
   const report = sync.data
   const showSwitch = items.length > 0 || selection.active || count > 0
+  const visible = showSwitch || report !== undefined
 
   function add() {
-    sync.mutate(selection.ids, { onSuccess: selection.clear })
+    sync.mutate(selection.ids)
   }
 
   return (
     <>
       <section
-        className="mb-4 rounded-md border border-border bg-surface/80 px-4 py-3 backdrop-blur empty:hidden"
-        aria-label="Select Pokémon to add"
+        className={
+          visible
+            ? 'mb-4 rounded-md border border-border bg-surface/80 px-4 py-3 backdrop-blur'
+            : 'sr-only'
+        }
+        aria-label={visible ? 'Select Pokémon to add' : undefined}
       >
         {showSwitch && (
           <div className={rowClass}>
@@ -56,26 +61,29 @@ export function SelectionToolbar({ items }: { items: PokemonSummary[] }) {
             )}
           </div>
         )}
-        {report && (
-          <div className="mt-2" role="status">
-            <p className="mt-2 mb-0">Added {report.created} Pokémon to your collection.</p>
-            {report.updated > 0 && (
-              <p className="mt-2 mb-0">{report.updated} were already there and were refreshed.</p>
-            )}
-            {report.abortedReason && (
-              <p className="mt-2 mb-0">Adding stopped early: {report.abortedReason}</p>
-            )}
-            {report.failures.length > 0 && (
-              <ul className="mt-2 list-disc pl-6 text-sm text-muted" aria-label="Not added">
-                {report.failures.map((failure) => (
-                  <li key={failure.identifier}>
-                    {failure.identifier}: {failure.reason}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+        {/* Always in the page, so the report is announced when it arrives. */}
+        <div role="status" className={report ? 'mt-2' : undefined}>
+          {report && (
+            <>
+              <p className="mt-2 mb-0">Added {report.created} Pokémon to your collection.</p>
+              {report.updated > 0 && (
+                <p className="mt-2 mb-0">{report.updated} were already there and were refreshed.</p>
+              )}
+              {report.abortedReason && (
+                <p className="mt-2 mb-0">Adding stopped early: {report.abortedReason}</p>
+              )}
+              {report.failures.length > 0 && (
+                <ul className="mt-2 list-disc pl-6 text-sm text-muted" aria-label="Not added">
+                  {report.failures.map((failure) => (
+                    <li key={failure.identifier}>
+                      {failure.identifier}: {failure.reason}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+        </div>
       </section>
       {count > 0 && (
         <section

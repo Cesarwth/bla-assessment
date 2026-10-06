@@ -13,7 +13,8 @@ const FIREFLIES = [
 /**
  * The forest behind everything: a fixed layer under the page (never `background-attachment: fixed`, which janks on
  * phones) that ignores the pointer, so it cannot swallow a click, and is hidden from assistive technology.
- * The art itself is CSS (`backdrop-art`); the fireflies only exist at night and only where motion is welcome.
+ * The art itself is CSS (`backdrop-art`); the fireflies only exist at night and only where motion is welcome (under prefers-reduced-motion they are
+ * not rendered at all, since a static dot would just look like a stain).
  */
 export function Backdrop() {
   return (
@@ -24,7 +25,7 @@ export function Backdrop() {
       {FIREFLIES.map((position) => (
         <span
           key={position}
-          className={`absolute hidden size-1 rounded-full bg-firefly opacity-60 shadow-[0_0_8px_2px_var(--color-firefly)] motion-safe:animate-firefly dark:block ${position}`}
+          className={`absolute hidden size-1 rounded-full bg-firefly opacity-60 shadow-[0_0_8px_2px_var(--color-firefly)] motion-safe:animate-firefly motion-safe:dark:block ${position}`}
         />
       ))}
     </div>

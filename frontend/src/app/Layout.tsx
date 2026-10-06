@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Link, Outlet, useLocation } from 'react-router'
-import { useAuth } from '../features/auth/useAuth'
+import { useAuth } from '../shared/session/useAuth'
 import { IconButton } from '../shared/ui/IconButton'
 import { Backdrop } from './Backdrop'
 import { ErrorBoundary } from './ErrorBoundary'

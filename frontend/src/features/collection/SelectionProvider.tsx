@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../../shared/session/useAuth'
 import {
   MAX_SELECTION,
   SelectionContext,
@@ -30,6 +30,10 @@ function SelectionState({ children }: { children: ReactNode }) {
       return [...current, ...fresh.map(({ id, name }) => ({ id, name }))].slice(0, MAX_SELECTION)
     })
   }, [])
+  const removeMany = useCallback(
+    (ids: number[]) => setItems((current) => current.filter((other) => !ids.includes(other.id))),
+    [],
+  )
   const clear = useCallback(() => setItems([]), [])
 
   const value = useMemo<SelectionValue>(
@@ -43,9 +47,10 @@ function SelectionState({ children }: { children: ReactNode }) {
       toggle,
       remove,
       addMany,
+      removeMany,
       clear,
     }),
-    [active, items, toggle, remove, addMany, clear],
+    [active, items, toggle, remove, addMany, removeMany, clear],
   )
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>
 }

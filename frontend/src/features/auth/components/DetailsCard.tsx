@@ -3,7 +3,9 @@ import type { RegisteredUser } from '../../../shared/api/types'
 import { Alert } from '../../../shared/ui/Alert'
 import { Button } from '../../../shared/ui/Button'
 import { Card } from '../../../shared/ui/Card'
+import { StatusNote } from '../../../shared/ui/StatusNote'
 import { TextField } from '../../../shared/ui/TextField'
+import { useFocusFirstInvalid } from '../../../shared/useFocusFirstInvalid'
 import type { ProfileChanges } from '../api'
 import { toFormErrors, type FormErrors } from '../formErrors'
 import { useUpdateProfile } from '../queries'
@@ -15,6 +17,7 @@ export function DetailsCard({ profile }: { profile: RegisteredUser }) {
   const [errors, setErrors] = useState<FormErrors>({ fields: {} })
   const [saved, setSaved] = useState(false)
   const update = useUpdateProfile()
+  const formRef = useFocusFirstInvalid(errors.fields)
 
   // The server asks for the password only when the e-mail changes, so the field appears only then.
   const emailChanged = email.trim() !== profile.email
@@ -52,11 +55,11 @@ export function DetailsCard({ profile }: { profile: RegisteredUser }) {
 
   return (
     <Card as="section" large raised className="p-6" aria-labelledby="details-title">
-      <form className="grid gap-4" onSubmit={submit} noValidate>
+      <form ref={formRef} className="grid gap-4" onSubmit={submit} noValidate>
         <h2 id="details-title" className="mb-0">
           Your details
         </h2>
-        {errors.general && <Alert>{errors.general}</Alert>}
+        <Alert>{errors.general}</Alert>
         <TextField
           label="Username"
           name="username"
@@ -86,14 +89,7 @@ export function DetailsCard({ profile }: { profile: RegisteredUser }) {
             error={errors.fields.currentPassword}
           />
         )}
-        {saved && (
-          <p
-            role="status"
-            className="mb-0 rounded-sm border border-border bg-surface-muted px-4 py-3"
-          >
-            Your details were updated.
-          </p>
-        )}
+        <StatusNote>{saved && 'Your details were updated.'}</StatusNote>
         <Button type="submit" variant="primary" disabled={update.isPending}>
           {update.isPending ? 'Saving…' : 'Save details'}
         </Button>

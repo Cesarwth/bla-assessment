@@ -1,11 +1,17 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { App } from '../../app/App'
 import { expectNoA11yViolations } from '../../test/axe'
 import { bulbasaur, pageOf, summary } from '../../test/fixtures'
-import { apiUrl, failWith, mockCatalog, mockCollectionIds } from '../../test/handlers'
+import {
+  apiUrl,
+  failWith,
+  mockCatalog,
+  mockCollection,
+  mockCollectionIds,
+} from '../../test/handlers'
 import { server } from '../../test/server'
 import { makeToken, renderApp } from '../../test/utils'
 
@@ -298,6 +304,106 @@ describe('selecting Pokémon in the catalog', () => {
 
       expect(await screen.findByText('Added 1 Pokémon to your collection.')).toBeInTheDocument()
       expect(bodies).toEqual([{ ids: [2] }, { ids: [2] }])
+    })
+  })
+
+  describe('an add that outlives the page', () => {
+    /** A request the test releases when it wants, so "slow" does not depend on timers. */
+    function gate() {
+      let open: () => void = () => {}
+      const opened = new Promise<void>((resolve) => (open = resolve))
+      return { opened, open }
+    }
+
+    it('still clears what was added, shows the report and flips the marks after navigating away and back', async () => {
+      const slow = gate()
+      let collected: number[] = []
+      mockCatalog(firstPage)
+      mockCollection(() => pageOf([], { totalItems: 0 }))
+      mockCollectionIds(() => collected)
+      mockSync(async () => {
+        await slow.opened
+        collected = [2]
+        return report({ created: 1 })
+      })
+      renderApp(<App />, { token: makeToken() })
+      await startSelecting()
+      await userEvent.click(await checkbox('Ivysaur'))
+      await userEvent.click(screen.getByRole('button', { name: 'Add 1 to my collection' }))
+
+      await userEvent.click(screen.getByRole('link', { name: 'My collection' }))
+      await screen.findByRole('heading', { name: 'My collection' })
+      await act(async () => {
+        slow.open()
+        await delay(50)
+      })
+      await userEvent.click(screen.getByRole('link', { name: 'Catalog' }))
+
+      expect(await screen.findByText('Added 1 Pokémon to your collection.')).toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: 'Your selection' })).not.toBeInTheDocument()
+      const ivysaur = (await screen.findByRole('link', { name: /Ivysaur/ })).closest('article')!
+      await waitFor(() => expect(within(ivysaur).getByText('In my collection')).toBeInTheDocument())
+    })
+
+    it('shows the pending state again when you come back before it ends', async () => {
+      const slow = gate()
+      mockCatalog(firstPage)
+      mockCollection(() => pageOf([], { totalItems: 0 }))
+      mockCollectionIds([])
+      mockSync(async () => {
+        await slow.opened
+        return report({ created: 1 })
+      })
+      renderApp(<App />, { token: makeToken() })
+      await startSelecting()
+      await userEvent.click(await checkbox('Ivysaur'))
+      await userEvent.click(screen.getByRole('button', { name: 'Add 1 to my collection' }))
+      await userEvent.click(screen.getByRole('link', { name: 'My collection' }))
+      await screen.findByRole('heading', { name: 'My collection' })
+      await userEvent.click(screen.getByRole('link', { name: 'Catalog' }))
+
+      expect(await screen.findByRole('button', { name: 'Adding…' })).toBeDisabled()
+      slow.open()
+      expect(await screen.findByText('Added 1 Pokémon to your collection.')).toBeInTheDocument()
+    })
+
+    it('keeps what was ticked while the add was pending, and removes only what was sent', async () => {
+      const slow = gate()
+      const bodies: unknown[] = []
+      mockCatalog(firstPage)
+      mockCollectionIds([])
+      mockSync(async () => {
+        await slow.opened
+        return report({ created: 1 })
+      }, bodies)
+      renderApp(<App />, { token: makeToken() })
+      await startSelecting()
+      await userEvent.click(await checkbox('Ivysaur'))
+      await userEvent.click(screen.getByRole('button', { name: 'Add 1 to my collection' }))
+
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Select Venusaur' }))
+      slow.open()
+
+      expect(await screen.findByText('Added 1 Pokémon to your collection.')).toBeInTheDocument()
+      await waitFor(() => expect(within(tray()).queryByText('Ivysaur')).not.toBeInTheDocument())
+      expect(within(tray()).getByText('Venusaur')).toBeInTheDocument()
+      expect(bodies).toEqual([{ ids: [2] }])
+    })
+
+    it('refreshes the marks even when the answer is an error, because the server may have saved rows', async () => {
+      const requests: string[] = []
+      mockCatalog(firstPage)
+      mockCollectionIds([], requests)
+      mockSync(() => failWith(502, 'CATALOG_UNAVAILABLE', 'x'))
+      renderApp(<App />, { token: makeToken() })
+      await startSelecting()
+      await userEvent.click(await checkbox('Ivysaur'))
+      await waitFor(() => expect(requests).toHaveLength(1))
+
+      await userEvent.click(screen.getByRole('button', { name: 'Add 1 to my collection' }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('not answering right now')
+      await waitFor(() => expect(requests.length).toBeGreaterThan(1))
     })
   })
 

@@ -15,7 +15,7 @@ import {
   mockEntry,
 } from '../../test/handlers'
 import { server } from '../../test/server'
-import { makeToken, renderApp } from '../../test/utils'
+import { findFilledRegion, makeToken, renderApp } from '../../test/utils'
 
 const entry = (over = {}) =>
   stored(25, 'pikachu', {
@@ -184,7 +184,7 @@ describe('CollectionEntryPage', () => {
 
       await userEvent.type(await screen.findByLabelText('Add a tag'), 'eleventh{Enter}')
 
-      expect(screen.getByRole('alert')).toHaveTextContent('You can have up to 10 tags.')
+      expect(screen.getByText('You can have up to 10 tags.')).toHaveAttribute('role', 'alert')
       expect(screen.queryByText('eleventh')).not.toBeInTheDocument()
     })
 
@@ -235,11 +235,13 @@ describe('CollectionEntryPage', () => {
       await userEvent.type(nickname, 'Sparky')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('Someone else changed this entry')
+      expect(await findFilledRegion(screen, 'alert')).toHaveTextContent(
+        'Someone else changed this entry',
+      )
       await userEvent.click(screen.getByRole('button', { name: 'Load the latest version' }))
 
       expect(await screen.findByLabelText('Region')).toHaveValue('Johto') // what the user did not touch follows the latest version...
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(screen.getByRole('alert')).toBeEmptyDOMElement()
       expect(nickname).toHaveValue('Sparky') // ...while what the user typed is kept
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
       await screen.findByText(/Saved changes to Pikachu\./)
@@ -321,7 +323,10 @@ describe('CollectionEntryPage', () => {
 
       await userEvent.type(await screen.findByLabelText('Add a tag'), 'x'.repeat(31))
 
-      expect(screen.getByRole('alert')).toHaveTextContent('Tags can have at most 30 characters.')
+      expect(screen.getByText('Tags can have at most 30 characters.')).toHaveAttribute(
+        'role',
+        'alert',
+      )
       expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled()
     })
 

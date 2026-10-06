@@ -5,6 +5,7 @@ import { Alert } from '../../shared/ui/Alert'
 import { Button } from '../../shared/ui/Button'
 import { Card } from '../../shared/ui/Card'
 import { TextField } from '../../shared/ui/TextField'
+import { useFocusFirstInvalid } from '../../shared/useFocusFirstInvalid'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { resetPassword } from './api'
 import { toFormErrors, type FormErrors } from './formErrors'
@@ -34,6 +35,7 @@ export function ResetPasswordPage() {
   const [errors, setErrors] = useState<FormErrors>({ fields: {} })
   const [submitting, setSubmitting] = useState(false)
   const [rejected, setRejected] = useState<string>()
+  const formRef = useFocusFirstInvalid(errors.fields)
 
   useEffect(() => {
     if (token) void navigate({ search: '' }, { replace: true })
@@ -70,9 +72,9 @@ export function ResetPasswordPage() {
   return (
     <div className="mx-auto my-4 max-w-[26rem] sm:my-8">
       <Card large raised className="p-6">
-        <form className="grid gap-4" onSubmit={submit} noValidate>
+        <form ref={formRef} className="grid gap-4" onSubmit={submit} noValidate>
           <h1 className="mb-0">Choose a new password</h1>
-          {errors.general && <Alert>{errors.general}</Alert>}
+          <Alert>{errors.general}</Alert>
           <TextField
             label="New password"
             name="newPassword"

@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router'
-import { useAuth } from '../features/auth/useAuth'
+import { useAuth } from '../shared/session/useAuth'
 import { Badge } from '../shared/ui/Badge'
 import { Button } from '../shared/ui/Button'
 import { buttonClass } from '../shared/ui/buttonClass'

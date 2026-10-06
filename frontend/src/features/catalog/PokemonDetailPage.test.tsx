@@ -7,7 +7,7 @@ import { expectNoA11yViolations } from '../../test/axe'
 import { ditto, eevee, mew, pikachu, stored } from '../../test/fixtures'
 import { apiUrl, failWith, mockCollectionIds, mockDetail } from '../../test/handlers'
 import { server } from '../../test/server'
-import { makeToken, renderApp } from '../../test/utils'
+import { findFilledRegion, makeToken, renderApp } from '../../test/utils'
 
 describe('PokemonDetailPage', () => {
   it('shows a loading state first', async () => {
@@ -322,7 +322,7 @@ describe('PokemonDetailPage', () => {
 
       await userEvent.click(await screen.findByRole('button', { name: 'Add to my collection' }))
 
-      expect(await screen.findByRole('status')).toHaveTextContent('In your collection.')
+      expect(await findFilledRegion(screen, 'status')).toHaveTextContent('In your collection.')
       expect(screen.getByRole('link', { name: 'View it in my collection' })).toBeInTheDocument()
     })
 
@@ -335,7 +335,9 @@ describe('PokemonDetailPage', () => {
 
       await userEvent.click(await screen.findByRole('button', { name: 'Add to my collection' }))
 
-      expect(await screen.findByRole('status')).toHaveTextContent('Added to your collection.')
+      expect(await findFilledRegion(screen, 'status')).toHaveTextContent(
+        'Added to your collection.',
+      )
       expect(screen.getByRole('link', { name: 'View it in my collection' })).toHaveAttribute(
         'href',
         '/collection/25',
@@ -349,7 +351,7 @@ describe('PokemonDetailPage', () => {
       renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
       await screen.findByRole('heading', { name: 'Pikachu' })
 
-      expect(await screen.findByRole('status')).toHaveTextContent('In your collection.')
+      expect(await findFilledRegion(screen, 'status')).toHaveTextContent('In your collection.')
       expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
       expect(screen.getByRole('link', { name: 'View it in my collection' })).toHaveAttribute(
         'href',
@@ -373,7 +375,7 @@ describe('PokemonDetailPage', () => {
       await userEvent.click(await screen.findByRole('button', { name: 'Add to my collection' }))
 
       expect(screen.getByRole('button', { name: 'Adding…' })).toBeDisabled()
-      await screen.findByRole('status')
+      await findFilledRegion(screen, 'status')
     })
 
     it('reports an outage while adding without losing the page', async () => {

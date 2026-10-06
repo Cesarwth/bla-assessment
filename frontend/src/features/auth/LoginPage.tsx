@@ -6,8 +6,10 @@ import { Card } from '../../shared/ui/Card'
 import { TextField } from '../../shared/ui/TextField'
 import { toFormErrors, type FormErrors } from './formErrors'
 import { hasPasswordUpdatedNotice, safeReturnPath } from './redirect'
+import { StatusNote } from '../../shared/ui/StatusNote'
+import { useFocusFirstInvalid } from '../../shared/useFocusFirstInvalid'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
-import { useAuth } from './useAuth'
+import { useAuth } from '../../shared/session/useAuth'
 
 export function LoginPage() {
   const { user, login } = useAuth()
@@ -17,14 +19,18 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<FormErrors>({ fields: {} })
   const [submitting, setSubmitting] = useState(false)
+  const formRef = useFocusFirstInvalid(errors.fields)
 
   // Logging in (or already being logged in) leaves this page: back to where the user came from.
   if (user) return <Navigate to={safeReturnPath(location.state)} replace />
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (!username.trim() || !password) {
-      setErrors({ fields: {}, general: 'Enter your username and password.' })
+    const missing: Record<string, string> = {}
+    if (!username.trim()) missing.username = 'Enter your username.'
+    if (!password) missing.password = 'Enter your password.'
+    if (Object.keys(missing).length > 0) {
+      setErrors({ fields: missing })
       return
     }
     setSubmitting(true)
@@ -40,17 +46,12 @@ export function LoginPage() {
   return (
     <div className="mx-auto my-4 max-w-[26rem] sm:my-8">
       <Card large raised className="p-6">
-        <form className="grid gap-4" onSubmit={submit} noValidate>
+        <form ref={formRef} className="grid gap-4" onSubmit={submit} noValidate>
           <h1 className="mb-0">Log in</h1>
-          {hasPasswordUpdatedNotice(location.state) && (
-            <p
-              role="status"
-              className="mb-0 rounded-sm border border-border bg-surface-muted px-4 py-3"
-            >
-              Password updated, you can log in.
-            </p>
-          )}
-          {errors.general && <Alert>{errors.general}</Alert>}
+          <StatusNote>
+            {hasPasswordUpdatedNotice(location.state) && 'Password updated, you can log in.'}
+          </StatusNote>
+          <Alert>{errors.general}</Alert>
           <TextField
             label="Username"
             name="username"

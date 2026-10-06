@@ -44,7 +44,10 @@ export function usePaging() {
     hrefWithoutFilter: `?${search(1, size, '')}`,
     /** Changing the page size always goes back to the first page; the filter stays. */
     setSize: (next: number) => setParams(search(1, next, filter)),
-    /** Changing the filter always goes back to the first page; the size stays. */
-    setFilter: (next: string) => setParams(search(1, size, parseFilter(next))),
+    /**
+     * Changing the filter always goes back to the first page; the size stays. It replaces the history entry: a filter
+     * is typed, and Back should leave the catalog rather than walk through every text that paused long enough.
+     */
+    setFilter: (next: string) => setParams(search(1, size, parseFilter(next)), { replace: true }),
   }
 }
