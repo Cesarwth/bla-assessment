@@ -97,6 +97,12 @@ describe('api client', () => {
     expect(await api.delete('/things/1')).toBeNull()
   })
 
+  it('returns null for a 202 Accepted without a body', async () => {
+    server.use(http.post('*/api/v1/things', () => new HttpResponse(null, { status: 202 })))
+
+    expect(await api.post('/things', {})).toBeNull()
+  })
+
   it('reports a 401 that follows a request made with a token', async () => {
     const onUnauthorized = vi.fn()
     configureClient({ getToken: () => 'expired', onUnauthorized })

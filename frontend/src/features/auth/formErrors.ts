@@ -12,16 +12,18 @@ const FIELD_OF_CODE: Record<string, string> = {
   USERNAME_TAKEN: 'username',
   EMAIL_TAKEN: 'email',
   WEAK_PASSWORD: 'password',
+  INVALID_CURRENT_PASSWORD: 'currentPassword',
 }
 
-export function toFormErrors(error: unknown): FormErrors {
+/** `codeFields` re-routes a code to another input, e.g. WEAK_PASSWORD to "newPassword" in the reset and change forms. */
+export function toFormErrors(error: unknown, codeFields: Record<string, string> = {}): FormErrors {
   if (isApiError(error)) {
     if (error.fieldErrors.length > 0) {
       const fields: Record<string, string> = {}
       for (const { field, message } of error.fieldErrors) fields[field] ??= message
       return { fields }
     }
-    const field = FIELD_OF_CODE[error.code]
+    const field = codeFields[error.code] ?? FIELD_OF_CODE[error.code]
     if (field) return { fields: { [field]: error.message } }
   }
   return { fields: {}, general: describeError(error) }

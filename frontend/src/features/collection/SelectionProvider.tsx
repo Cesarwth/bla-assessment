@@ -57,5 +57,5 @@ function SelectionState({ children }: { children: ReactNode }) {
  */
 export function SelectionProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  return <SelectionState key={user?.username ?? 'anonymous'}>{children}</SelectionState>
+  return <SelectionState key={user?.id ?? 'anonymous'}>{children}</SelectionState>
 }

@@ -81,7 +81,9 @@ async function exchange<T>(
     if (response.status === 401 && token) config.onUnauthorized()
     throw await toApiError(response)
   }
-  return { status: response.status, data: (await response.json()) as T }
+  // 202 Accepted (forgot-password) has no body either: only parse what is there.
+  const text = await response.text()
+  return { status: response.status, data: (text ? JSON.parse(text) : null) as T }
 }
 
 async function request<T>(

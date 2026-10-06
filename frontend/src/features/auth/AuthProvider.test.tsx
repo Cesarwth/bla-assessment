@@ -10,7 +10,7 @@ import { SESSION_KEY } from './storage'
 import { useAuth } from './useAuth'
 
 function Probe() {
-  const { user, isAdmin, sessionExpired, login, logout } = useAuth()
+  const { user, isAdmin, sessionExpired, login, logout, adoptSession } = useAuth()
   const [error, setError] = useState('')
   return (
     <div>
@@ -22,6 +22,20 @@ function Probe() {
         login
       </button>
       <button onClick={logout}>logout</button>
+      <button onClick={() => adoptSession(makeToken({ uid: 5, sub: 'misty', role: 'ADMIN' }))}>
+        adopt
+      </button>
+      <button
+        onClick={() => {
+          try {
+            adoptSession('garbage')
+          } catch (e) {
+            setError((e as Error).message)
+          }
+        }}
+      >
+        adopt garbage
+      </button>
       <button onClick={() => api.get('/anything').catch(() => undefined)}>call api</button>
     </div>
   )
@@ -114,5 +128,39 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(screen.getByText('user: anonymous')).toBeInTheDocument())
     expect(screen.getByText('expired: true')).toBeInTheDocument()
     expect(sessionStorage.getItem(SESSION_KEY)).toBeNull()
+  })
+
+  it('adopts a new token as the session: same identity, new claims, stored for reloads', async () => {
+    renderApp(<Probe />, { token: makeToken({ uid: 5, sub: 'ash' }) })
+
+    await userEvent.click(screen.getByText('adopt'))
+
+    expect(screen.getByText('user: misty #5 ADMIN')).toBeInTheDocument()
+    expect(JSON.parse(atob(sessionStorage.getItem(SESSION_KEY)!.split('.')[1]!)).sub).toBe('misty')
+  })
+
+  it('sends the adopted token with the next request', async () => {
+    let auth: string | null = null
+    server.use(
+      http.get('*/api/v1/anything', ({ request }) => {
+        auth = request.headers.get('authorization')
+        return HttpResponse.json({})
+      }),
+    )
+    renderApp(<Probe />, { token: makeToken({ sub: 'ash' }) })
+
+    await userEvent.click(screen.getByText('adopt'))
+    await userEvent.click(screen.getByText('call api'))
+
+    await waitFor(() => expect(auth).toBe(`Bearer ${sessionStorage.getItem(SESSION_KEY)}`))
+  })
+
+  it('refuses a token it cannot read and keeps the current session', async () => {
+    renderApp(<Probe />, { token: makeToken({ sub: 'ash' }) })
+
+    await userEvent.click(screen.getByText('adopt garbage'))
+
+    expect(screen.getByText(/cannot read/)).toBeInTheDocument()
+    expect(screen.getByText('user: ash #1 USER')).toBeInTheDocument()
   })
 })

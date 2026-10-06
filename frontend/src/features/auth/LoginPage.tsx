@@ -5,7 +5,7 @@ import { Button } from '../../shared/ui/Button'
 import { Card } from '../../shared/ui/Card'
 import { TextField } from '../../shared/ui/TextField'
 import { toFormErrors, type FormErrors } from './formErrors'
-import { safeReturnPath } from './redirect'
+import { hasPasswordUpdatedNotice, safeReturnPath } from './redirect'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useAuth } from './useAuth'
 
@@ -42,6 +42,14 @@ export function LoginPage() {
       <Card large raised className="p-6">
         <form className="grid gap-4" onSubmit={submit} noValidate>
           <h1 className="mb-0">Log in</h1>
+          {hasPasswordUpdatedNotice(location.state) && (
+            <p
+              role="status"
+              className="mb-0 rounded-sm border border-border bg-surface-muted px-4 py-3"
+            >
+              Password updated, you can log in.
+            </p>
+          )}
           {errors.general && <Alert>{errors.general}</Alert>}
           <TextField
             label="Username"
@@ -63,6 +71,9 @@ export function LoginPage() {
           <Button type="submit" variant="primary" size="lg" disabled={submitting}>
             {submitting ? 'Logging in…' : 'Log in'}
           </Button>
+          <p className="mb-0 text-center text-sm">
+            <Link to="/forgot-password">Forgot your password?</Link>
+          </p>
           <p className="mb-0 text-center text-sm">
             New trainer? <Link to="/register">Create your profile</Link>
           </p>

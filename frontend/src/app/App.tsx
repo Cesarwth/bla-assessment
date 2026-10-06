@@ -1,6 +1,9 @@
 import { Route, Routes } from 'react-router'
+import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage'
 import { LoginPage } from '../features/auth/LoginPage'
+import { ProfilePage } from '../features/auth/ProfilePage'
 import { RegisterPage } from '../features/auth/RegisterPage'
+import { ResetPasswordPage } from '../features/auth/ResetPasswordPage'
 import { CatalogPage } from '../features/catalog/CatalogPage'
 import { PokemonDetailPage } from '../features/catalog/PokemonDetailPage'
 import { CatalogCardExtras } from '../features/collection/components/CatalogCardExtras'
@@ -39,9 +42,12 @@ export function App() {
           <Route element={<RequireLogin />}>
             <Route path="collection" element={<CollectionPage />} />
             <Route path="collection/:id" element={<CollectionEntryPage />} />
+            <Route path="profile" element={<ProfilePage />} />
           </Route>
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
+          <Route path="forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="reset-password" element={<ResetPasswordPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

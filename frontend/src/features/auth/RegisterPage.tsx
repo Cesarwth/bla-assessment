@@ -7,6 +7,7 @@ import { Button } from '../../shared/ui/Button'
 import { Card } from '../../shared/ui/Card'
 import { TextField } from '../../shared/ui/TextField'
 import { toFormErrors, type FormErrors } from './formErrors'
+import { PASSWORD_HINT } from './passwordPolicy'
 import { safeReturnPath } from './redirect'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useAuth } from './useAuth'
@@ -67,7 +68,7 @@ export function RegisterPage() {
             value={password}
             onChange={setPassword}
             autoComplete="new-password"
-            hint="Use at least 8 characters, with letters and digits."
+            hint={PASSWORD_HINT}
             error={errors.fields.password}
           />
           <Button type="submit" variant="primary" size="lg" disabled={submitting}>

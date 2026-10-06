@@ -167,6 +167,26 @@ describe('LoginPage', () => {
     )
   })
 
+  it('links to the password recovery', async () => {
+    renderApp(<App />, { route: '/login' })
+
+    await userEvent.click(screen.getByRole('link', { name: 'Forgot your password?' }))
+
+    expect(await screen.findByRole('heading', { name: 'Reset your password' })).toBeInTheDocument()
+  })
+
+  it('shows the notice that follows a password reset', () => {
+    renderApp(<App />, { route: { pathname: '/login', state: { notice: 'password-updated' } } })
+
+    expect(screen.getByRole('status')).toHaveTextContent('Password updated, you can log in.')
+  })
+
+  it('shows no notice on a normal visit', () => {
+    renderApp(<App />, { route: '/login' })
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
   it('has no accessibility violations', async () => {
     const { container } = renderApp(<App />, { route: '/login' })
 

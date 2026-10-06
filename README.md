@@ -212,7 +212,7 @@ frontend/src/
   index.css       the only stylesheet: Tailwind import, @theme tokens, dark palette
   app/            App (routes), Layout, Header, RequireLogin, ErrorBoundary
   features/
-    auth/         login, register, session (JWT in sessionStorage), AuthProvider
+    auth/         login, register, forgot/reset password, profile, session (JWT in sessionStorage), AuthProvider
     catalog/      catalog list with filter, detail page, queries
     collection/   collection list, entry page, edit form, tags, delete; the catalog's multi-select
   shared/         API client (the only code that calls fetch), ui/ primitives (Button, Card, Badge, Alert, BackLink…), formatting, paging
@@ -223,6 +223,7 @@ frontend/src/
 - **One API client** turns every failure into an `ApiError` (status, code, field errors) using the backend's error shape, so components never parse responses. A `401` on a request that carried a token ends the session, shows a notice and refetches the data without the dead token.
 - **Styling**: Tailwind v4 with a single stylesheet. The design tokens (semantic colors, the 18 Pokémon type colors, radius, shadow) live in an `@theme` block; the dark palette overrides the same variables under `prefers-color-scheme`, so a class like `bg-surface` is right in both schemes. Repeated patterns are small components in `shared/ui` instead of long class lists or `@apply`. The build emits one static CSS file (≈ 28 kB, 6.5 kB gzip), so the strict CSP (`style-src 'self'`) still holds.
 - **Background**: an original forest scene drawn as SVG (a misty morning in the light scheme, a night forest with fireflies in the dark one; 15–27 kB each, no third-party artwork). Text always sits on glass panels over it, and a test checks the contrast against the art's lightest and darkest tones. Buttons are deliberately light (thin borders, soft tints).
+- **Accounts**: "Create profile" (register), "Forgot your password?" on the login page (the e-mail link opens `/reset-password`; the token is removed from the address bar as soon as the page reads it) and a **profile page** (`/profile`, reached by clicking your username) to change username, e-mail (asks for the current password) and password. After a username change the app adopts the new token the API returns, so the header updates at once. A wrong current password is a form error and never logs you out.
 - **Cards**: each Pokémon card has a gradient taken from its primary type, a glass number pill (`#0025`), the official artwork with a soft glow, and an inset panel with solid type pills; stat bars change colour with the value. The list endpoints carry `imageUrl` (official artwork, falling back to the sprite). Every type palette is checked for WCAG AA contrast by a unit test.
 - **UX**: mobile-first and responsive (1 column on a phone up to 4 on a wide screen, tap targets ≥ 44 px, no horizontal scroll from 320 px), a **Back** arrow on every detail page (returns to the list with its page, filter and selection), light/dark through `prefers-color-scheme`, skeleton loaders, friendly empty/error states with retry, route titles, focus moved to the content on navigation, skip link, keyboard-friendly forms with per-field errors.
 - **Safety**: text from the API (descriptions, nicknames, tags) is rendered as text, never as HTML; nginx sends a strict CSP (`script-src 'self'`, images only from this origin and the PokeAPI sprites host).
@@ -278,7 +279,7 @@ Tests were written **first** (red → green → refactor); the git history and t
 | --- | --- | --- |
 | Backend | `cd backend && ./gradlew test` | **520 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
 | Backend gate | `./gradlew build` | JaCoCo: fails below **90 % lines / 80 % branches** (actual ≈ 98 % / 86 %) |
-| Frontend | `cd frontend && npm test` | **270 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
+| Frontend | `cd frontend && npm test` | **325 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
 | Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99 % / 93 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
 | Static checks | `npm run typecheck && npm run lint` | strict TypeScript, ESLint with zero warnings |
 | Whole stack | `./scripts/smoke.sh` | 39 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, private collections, two trainers with the same Pokémon, versions |

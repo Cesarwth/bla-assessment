@@ -9,6 +9,8 @@ export interface AuthContextValue {
   sessionExpired: boolean
   login: (username: string, password: string) => Promise<void>
   logout: () => void
+  /** Replaces the session with a fresh token of the same trainer (the username is a claim, so renaming needs one). */
+  adoptSession: (token: string) => void
   dismissSessionExpired: () => void
 }
 

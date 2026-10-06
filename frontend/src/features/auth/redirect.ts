@@ -6,3 +6,10 @@ export function safeReturnPath(state: unknown): string {
   const from = (state as { from?: unknown } | null)?.from
   return typeof from === 'string' && from.startsWith('/') && !from.startsWith('//') ? from : '/'
 }
+
+/** Router state that makes the login page say the password was just reset. */
+export const PASSWORD_UPDATED_STATE = { notice: 'password-updated' } as const
+
+export function hasPasswordUpdatedNotice(state: unknown): boolean {
+  return (state as { notice?: unknown } | null)?.notice === PASSWORD_UPDATED_STATE.notice
+}

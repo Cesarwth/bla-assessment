@@ -96,3 +96,14 @@ export function mockCollectionIds(
     }),
   )
 }
+
+export const me = { id: 1, username: 'ash', email: 'ash@example.com', role: 'USER' as const }
+
+/** Answers GET /users/me. */
+export function mockProfile(profile: typeof me | Response = me): void {
+  server.use(
+    http.get(apiUrl('/users/me'), () =>
+      profile instanceof Response ? profile : HttpResponse.json(profile),
+    ),
+  )
+}

@@ -19,6 +19,7 @@ describe('toFormErrors', () => {
     ['USERNAME_TAKEN', 'username'],
     ['EMAIL_TAKEN', 'email'],
     ['WEAK_PASSWORD', 'password'],
+    ['INVALID_CURRENT_PASSWORD', 'currentPassword'],
   ])('puts %s under the %s field', (code, field) => {
     expect(toFormErrors(new ApiError(409, code, 'message from the API'))).toEqual({
       fields: { [field]: 'message from the API' },
@@ -36,5 +37,13 @@ describe('toFormErrors', () => {
       fields: {},
       general: 'Something unexpected happened. Please try again.',
     })
+  })
+
+  it('lets a form send a code to another field', () => {
+    expect(
+      toFormErrors(new ApiError(400, 'WEAK_PASSWORD', 'too weak'), {
+        WEAK_PASSWORD: 'newPassword',
+      }),
+    ).toEqual({ fields: { newPassword: 'too weak' } })
   })
 })

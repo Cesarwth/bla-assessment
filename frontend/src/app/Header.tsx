@@ -47,7 +47,13 @@ export function Header() {
         <div className="order-2 ml-auto flex min-w-0 items-center gap-3 sm:order-3 sm:ml-0">
           {user ? (
             <>
-              <span className="max-w-32 truncate font-semibold sm:max-w-48">{user.username}</span>
+              <NavLink
+                to="/profile"
+                aria-label={`${user.username} (your profile)`}
+                className="inline-flex min-h-11 min-w-0 items-center rounded-full px-2 font-semibold text-fg no-underline transition-colors hover:bg-surface-muted aria-[current=page]:bg-surface-muted sm:min-h-0"
+              >
+                <span className="max-w-28 truncate sm:max-w-48">{user.username}</span>
+              </NavLink>
               {isAdmin && <Badge tone="primary">Admin</Badge>}
               <Button onClick={logout}>Log out</Button>
             </>

@@ -73,6 +73,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [queryClient],
   )
 
+  // Same trainer, new claims: unlike login, cached data stays valid, so the query cache is left alone.
+  const adoptSession = useCallback((token: string) => {
+    const info = decodeToken(token)
+    if (!info) throw new Error('The server returned a session this app cannot read.')
+    tokenRef.current = token
+    storeToken(token)
+    setSession({ token, user: info.user })
+  }, [])
+
   const dismissSessionExpired = useCallback(() => setSessionExpired(false), [])
 
   const value = useMemo<AuthContextValue>(
@@ -83,9 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionExpired,
       login,
       logout,
+      adoptSession,
       dismissSessionExpired,
     }),
-    [session, sessionExpired, login, logout, dismissSessionExpired],
+    [session, sessionExpired, login, logout, adoptSession, dismissSessionExpired],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
