@@ -51,12 +51,10 @@ export interface StoredPokemonSummary extends PokemonSummary {
   nickname: string | null
   region: string | null
   tags: string[]
-  ownerId: number | null
 }
 
 export interface StoredPokemon extends PokemonDetail {
   version: number
-  ownerId: number | null
   nickname: string | null
   region: string | null
   tags: string[]

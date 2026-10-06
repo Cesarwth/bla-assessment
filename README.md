@@ -1,10 +1,10 @@
 # Pokédex — Spring Boot API + React app
 
-A full-stack take on the Ballast Lane Java exercise. A **REST API** (Java 21, Spring Boot, PostgreSQL) wraps the public [PokeAPI](https://pokeapi.co/docs/v2), lets signed-in users **replicate Pokémon into a local database** and **edit their own fields** on them (nickname, region, tags), and a **React app** (TypeScript) lets you browse, save and edit. It is built with **Clean Architecture** and **TDD**, and everything starts with one command.
+A full-stack take on the Ballast Lane Java exercise. A **REST API** (Java 21, Spring Boot, PostgreSQL) wraps the public [PokeAPI](https://pokeapi.co/docs/v2), lets every trainer **build their own collection** by replicating Pokémon into a local database and **keep personal notes** on them (nickname, region, tags), and a **React app** (TypeScript) lets you browse the catalog, collect and edit. It is built with **Clean Architecture** and **TDD**, and everything starts with one command.
 
 ![Catalog](docs/screenshots/catalog.png)
 
-| Collection (logged in as `demo`) | Editing an entry you own |
+| My collection (logged in as `demo`) | Editing your notes |
 | --- | --- |
 | ![Collection](docs/screenshots/collection.png) | ![Entry](docs/screenshots/entry-edit.png) |
 
@@ -15,7 +15,7 @@ A full-stack take on the Ballast Lane Java exercise. A **REST API** (Java 21, Sp
 3. [What it does (user stories)](#what-it-does-user-stories)
 4. [Architecture](#architecture)
 5. [API reference](#api-reference)
-6. [Roles, ownership and concurrency](#roles-ownership-and-concurrency)
+6. [Trainers, privacy and concurrency](#trainers-privacy-and-concurrency)
 7. [The web app](#the-web-app)
 8. [Configuration](#configuration)
 9. [Development without Docker for everything](#development-without-docker-for-everything)
@@ -48,7 +48,7 @@ Prefer to do it by hand? `cp .env.example .env`, put a random value in `JWT_SECR
 Check that everything works, the way a browser reaches it (through nginx):
 
 ```bash
-./scripts/smoke.sh        # 18 checks, exit code 0 when all pass (the same script runs in CI)
+./scripts/smoke.sh        # 26 checks, exit code 0 when all pass (the same script runs in CI)
 ```
 
 Stop it with `docker compose down` (add `-v` to also erase the database).
@@ -59,12 +59,12 @@ The project does not start empty. With the defaults in `.env.example` (`SEED_DEM
 
 | Account | Password | Role | Can |
 | --- | --- | --- | --- |
-| `demo-admin` | `Admin12345` | `ADMIN` | edit any entry and **delete** entries |
-| `demo` | `Demo12345` | `USER` | edit what it added; sync Pokémon; import ranges |
+| `demo-admin` | `Admin12345` | `ADMIN` | a trainer with their own collection (the role travels in the token, reserved for future admin features) |
+| `demo` | `Demo12345` | `USER` | a trainer with their own collection |
 
-You can also **register your own account** in the app (or `POST /api/v1/auth/register`).
+You can also **create your own trainer profile**: the "Create profile" link in the app (or `POST /api/v1/auth/register`). A new trainer starts with an empty collection.
 
-The collection starts with **16 Pokémon** (a snapshot of real PokeAPI responses bundled in `backend/src/main/resources/demo/pokemon.json`, so the demo needs no network at startup): 6 added by `demo` and 10 by `demo-admin`, each with a nickname, a region and tags. That makes the ownership rules easy to try: as `demo`, editing Charmander works, editing Raichu (the admin's) is refused with `403`.
+The demo trainers start with **18 collection entries over 16 Pokémon** (a snapshot of real PokeAPI responses bundled in `backend/src/main/resources/demo/pokemon.json`, so the demo needs no network at startup): `demo` has 6 and `demo-admin` has 12, each with a nickname, a region and tags. Both have Bulbasaur and Pikachu **with different notes**, which shows that the Pokémon is shared but the notes are personal.
 
 > These credentials are **demo-only placeholders** documented on purpose. A real deployment sets `SEED_DEMO_USER=false` and `SEED_DEMO_DATA=false` (the code defaults) and starts empty. Seeding only ever **adds**: restarting never duplicates rows or undoes edits.
 
@@ -74,11 +74,11 @@ The collection starts with **16 Pokémon** (a snapshot of real PokeAPI responses
 | --- | --- | --- | --- | --- |
 | **US-01 Browse** | Paginated list showing sprite, category (types), mass and abilities; responses cached | `GET /api/v1/pokemon` | Catalog page: cards, paging in the URL, page-size selector, "find by name or number" | `ListPokemon`, `PokeApiGatewayAdapter`, `PokeApiClient` (`@Cacheable`) |
 | **US-02 Detail** | Image, base stats, narrative description, evolution line (branching supported, e.g. Eevee) | `GET /api/v1/pokemon/{idOrName}` | Detail page: artwork, stat bars, evolution tree | `GetPokemonDetail`, `PokeApiMapper` |
-| **US-03 Sync** | Persist PokeAPI data in a relational store; local fields (nickname, region, tags) live next to it | `POST /api/v1/collection/{idOrName}/sync`, `POST /api/v1/collection/sync` | "Add to my collection", "Import Pokémon" by number range | `SyncPokemon`, `SyncPokemonRange`, `JpaPokemonRepositoryAdapter`, Flyway `V2`/`V3` |
-| **US-04 Update** | Edit stored Pokémon; `404` missing, `400` malformed, plus `401/403/409` | `PATCH /api/v1/collection/{id}`, `DELETE …/{id}` (admin) | Entry page: edit form, tags editor, conflict handling, admin delete | `UpdateStoredPokemon`, `LocalAttributes`, `GlobalExceptionHandler` |
+| **US-03 Sync** | Persist PokeAPI data in a relational store; each trainer's own fields (nickname, region, tags) live next to it | `POST /api/v1/collection/{idOrName}/sync`, `POST /api/v1/collection/sync` | "Add to my collection", "Import Pokémon" by number range | `SyncPokemon`, `SyncPokemonRange`, `JpaPokemonRepositoryAdapter`, Flyway `V2`/`V4` |
+| **US-04 Update** | Edit stored Pokémon; `404` missing, `400` malformed, plus `401/409` | `PATCH /api/v1/collection/{id}`, `DELETE …/{id}` | Entry page: notes view, edit form, tags editor, conflict handling, remove from my collection | `UpdateStoredPokemon`, `LocalAttributes`, `GlobalExceptionHandler` |
 | **Auth** | Register, login, public vs protected routes | `POST /api/v1/auth/register`, `/login` | Login and register pages | `RegisterUser`, `AuthenticateUser`, `SecurityConfig`, `JwtTokenIssuer` |
 
-Technical requirements from the brief: public repository ✔ · tests ✔ · proper error handling (one error shape, see below) ✔ · caching layer for PokeAPI responses ✔ · front-end that consumes the API ✔ · relational database with a primary entity and a secondary collection for users, with unique keys and descriptive attributes (`pokemon` + its child tables, `users`) ✔ · CRUD API with standard verbs and consistent responses ✔ · auxiliary API for registration/authentication/route protection ✔ · dedicated data-access layer (persistence adapters) ✔ · business-logic layer independent from API and data access (`domain` + `application`) ✔ · unit tests for every core component ✔ · README + seeded data + Dockerfiles ✔ · GenAI exercise → [`docs/genai.md`](docs/genai.md) ✔.
+Technical requirements from the brief: public repository ✔ · tests ✔ · proper error handling (one error shape, see below) ✔ · caching layer for PokeAPI responses ✔ · front-end that consumes the API ✔ · relational database with a primary entity and a secondary collection for users, with unique keys and descriptive attributes (`pokemon` catalog, `trainer_pokemon` per-trainer entries, `users`) ✔ · CRUD API with standard verbs and consistent responses ✔ · auxiliary API for registration/authentication/route protection ✔ · dedicated data-access layer (persistence adapters) ✔ · business-logic layer independent from API and data access (`domain` + `application`) ✔ · unit tests for every core component ✔ · README + seeded data + Dockerfiles ✔ · GenAI exercise → [`docs/genai.md`](docs/genai.md) ✔.
 
 ## Architecture
 
@@ -148,16 +148,17 @@ Send the token as `Authorization: Bearer <token>` (JWT HS256, 60 minutes by defa
 | `GET` | `/pokemon?page&size` | `{items[{id,name,spriteUrl,types,weightKg,abilities}], page,size,totalItems,totalPages}` |
 | `GET` | `/pokemon/{idOrName}` | detail: `imageUrl, types, weightKg, heightM, abilities, stats[{name,baseValue}], genus, description, evolutionChain{…evolvesTo[…]}` |
 
-### Collection (the local, editable copy)
+### Collection (each trainer's own copy; every call needs a token)
 
-| Method | Path | Who | Success |
-| --- | --- | --- | --- |
-| `GET` | `/collection?page&size` | public | page of entries (+ `nickname, region, tags, ownerId`) |
-| `GET` | `/collection/{pokeApiId}` | public | full entry (+ `version`, `syncedAt`) |
-| `POST` | `/collection/{idOrName}/sync` | signed in | `201` added (you become the owner) · `200` refreshed (owner unchanged) |
-| `POST` | `/collection/sync` `{from,to}` | signed in | `200 {created, updated, failures[], abortedReason}`; at most 20 numbers per call |
-| `PATCH` | `/collection/{pokeApiId}` `{version, nickname?, region?, tags?}` | owner **or** admin | `200` updated entry. Missing field = unchanged; `""` / `[]` = clear |
-| `DELETE` | `/collection/{pokeApiId}` | admin | `204` |
+| Method | Path | Success |
+| --- | --- | --- |
+| `GET` | `/collection?page&size` | page of **your** entries (+ `nickname, region, tags`) |
+| `GET` | `/collection/ids` | the PokeAPI ids you already have, e.g. `[1,4,25]` (the app uses it to offer "Add" only when needed) |
+| `GET` | `/collection/{pokeApiId}` | your full entry (+ `version`, `syncedAt`); `404` if it is not in **your** collection |
+| `POST` | `/collection/{idOrName}/sync` | `201` added to your collection · `200` already there, PokeAPI data refreshed, your notes untouched |
+| `POST` | `/collection/sync` `{from,to}` | `200 {created, updated, failures[], abortedReason}`; at most 20 numbers per call |
+| `PATCH` | `/collection/{pokeApiId}` `{version, nickname?, region?, tags?}` | `200` updated entry. Missing field = unchanged; `""` / `[]` = clear |
+| `DELETE` | `/collection/{pokeApiId}` | `204`, removes it from **your** collection only |
 
 Try it:
 
@@ -166,7 +167,7 @@ TOKEN=$(curl -s -X POST localhost:8080/api/v1/auth/login -H 'Content-Type: appli
   -d '{"username":"demo","password":"Demo12345"}' | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 
 curl -s "localhost:8080/api/v1/pokemon?size=2"
-curl -s localhost:8080/api/v1/collection/25
+curl -s localhost:8080/api/v1/collection/25 -H "Authorization: Bearer $TOKEN"
 curl -s -X PATCH localhost:8080/api/v1/collection/25 -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' -d '{"version":0,"nickname":"Sparky II"}'   # use the entry's current version
 ```
@@ -182,18 +183,19 @@ curl -s -X PATCH localhost:8080/api/v1/collection/25 -H "Authorization: Bearer $
 | --- | --- |
 | `400` | `VALIDATION_FAILED` (with `fieldErrors`), `MALFORMED_REQUEST`, `INVALID_PARAMETER`, `INVALID_PAGINATION`, `INVALID_POKEMON_IDENTIFIER`, `INVALID_LOCAL_ATTRIBUTES`, `INVALID_UPDATE`, `INVALID_SYNC_RANGE`, `WEAK_PASSWORD`, `INVALID_REQUEST` |
 | `401` | `UNAUTHORIZED` (no/invalid/expired token), `INVALID_CREDENTIALS` |
-| `403` | `FORBIDDEN` (wrong role), `FORBIDDEN_NOT_OWNER` |
+| `403` | `FORBIDDEN` (access denied by the route rules) |
 | `404` | `POKEMON_NOT_FOUND`, `STORED_POKEMON_NOT_FOUND` |
 | `409` | `USERNAME_TAKEN`, `EMAIL_TAKEN`, `CONCURRENT_MODIFICATION`, `CONFLICT` |
 | `502` / `504` | `CATALOG_UNAVAILABLE` / `CATALOG_TIMEOUT` (PokeAPI down or slow) |
 | `500` | `INTERNAL_ERROR` (a fixed message; details only in the server log) |
 
-## Roles, ownership and concurrency
+## Trainers, privacy and concurrency
 
-- **Public**: auth endpoints, catalog reads, collection reads. **Everything else needs a token.** Route rules live in one place, `SecurityConfig`, and are checked by a table-driven test (`SecurityRulesMatrixTest`: every verb × path × caller).
-- **Ownership**: the user who first syncs a Pokémon owns that entry. **Owner or admin** can edit it; only an **admin** can delete (enforced both by the route rules and inside the delete use case itself). Syncing someone else's entry refreshes its PokeAPI data but never changes the owner or the local fields. The check lives in the use case (defense in depth), and a stranger gets `403` *before* the version is looked at, so nothing leaks.
+- **Public**: auth endpoints and the catalog (`/pokemon`, backed by PokeAPI). **Everything else needs a token**, including every `/collection` call. Route rules live in one place, `SecurityConfig`, and are checked by a table-driven test (`SecurityRulesMatrixTest`: every verb × path × caller).
+- **Personal collections**: the Pokémon data is a shared catalog table; what a trainer collects is a row in `trainer_pokemon` (trainer + Pokémon, unique together) that holds **that trainer's nickname, region and tags**. Two trainers can have the same Pokémon with different notes; one trainer cannot have it twice. Every collection operation is scoped to the authenticated trainer, so another trainer's entry simply does not exist for you: `404`, never `403` (nothing leaks, not even that it exists). Removing an entry removes your row only.
+- **Admin**: `demo-admin` is an account with the `ADMIN` role in its token and database row, but no collection operation depends on it: the brief does not ask for admin features. A "see every trainer's collection" view would be a small extension.
 - **Versioned updates**: every entry has a `version`; `PATCH` must send the version it read. A stale one is refused with `409 CONCURRENT_MODIFICATION` (checked in the use case and again by the database through optimistic locking). The web app keeps what you typed, loads the latest version, and sends **only the fields you changed** — so after a conflict it can never overwrite what somebody else saved in a field you did not touch.
-- **Idempotent sync**: sync is an upsert keyed by the **PokeAPI id** (`"25"` and `"pikachu"` are the same row). It refreshes PokeAPI-owned fields and keeps the local ones; if two syncs race, the loser re-reads and retries (up to 3 attempts).
+- **Idempotent sync**: sync is an upsert keyed by the **PokeAPI id** (`"25"` and `"pikachu"` are the same Pokémon). It refreshes the shared PokeAPI data (never erasing a complete earlier answer with a partial one) and keeps the trainer's notes; if two syncs race, the loser re-reads and retries (up to 3 attempts).
 
 ## The web app
 
@@ -261,12 +263,12 @@ Tests were written **first** (red → green → refactor); the git history and t
 
 | Suite | Command | What it covers |
 | --- | --- | --- |
-| Backend | `cd backend && ./gradlew test` | **356 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
-| Backend gate | `./gradlew build` | JaCoCo: fails below **90 % lines / 80 % branches** (actual ≈ 98 % / 88 %) |
-| Frontend | `cd frontend && npm test` | **172 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
-| Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99 % / 94 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
+| Backend | `cd backend && ./gradlew test` | **371 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
+| Backend gate | `./gradlew build` | JaCoCo: fails below **90 % lines / 80 % branches** (actual ≈ 98 % / 86 %) |
+| Frontend | `cd frontend && npm test` | **181 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
+| Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99 % / 93 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
 | Static checks | `npm run typecheck && npm run lint` | strict TypeScript, ESLint with zero warnings |
-| Whole stack | `./scripts/smoke.sh` | 18 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, ownership, versions, roles |
+| Whole stack | `./scripts/smoke.sh` | 26 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, private collections, two trainers with the same Pokémon, versions |
 | CI | `.github/workflows/ci.yml` | on every push to `main` and every pull request: backend `build` (tests + coverage gate), frontend typecheck/lint/coverage/build/audit, and the whole stack with `start.sh` + `smoke.sh` |
 
 Beyond what jsdom can see (real CORS, CSP, nginx, layout) the delivered stack was also checked in Chrome through the DevTools protocol on desktop, mobile and dark mode, logged in and out: **no console warnings or errors, no CSP violations, no failed requests**. That pass found and fixed a real bug (nginx dropped the port from `Host`, so the API treated the browser's `Origin` as foreign and refused every `POST`/`PATCH`/`DELETE`); the smoke script now guards it.
@@ -276,7 +278,8 @@ Beyond what jsdom can see (real CORS, CSP, nginx, layout) the delivered stack wa
 | Decision | Why | Trade-off / limit |
 | --- | --- | --- |
 | Use cases are plain Java wired in one config class | the business layer is independent of Spring, as the brief asks | a little wiring code |
-| Local copy = separate collection, not a cache of the catalog | US-03/04 need data we own and edit; the catalog stays a pure read-through of PokeAPI | two read models for the same Pokémon |
+| Shared Pokémon table + one row per trainer and Pokémon (`trainer_pokemon`) | the data is the same for everybody, the personalisation is individual; no duplicated PokeAPI data | one join when reading a collection |
+| Local copy = separate store, not a cache of the catalog | US-03/04 need data we own and edit; the catalog stays a pure read-through of PokeAPI | two read models for the same Pokémon |
 | Sync merges instead of overwriting | re-syncing must refresh PokeAPI data without erasing local edits | the local fields are the only editable ones |
 | Optimistic locking with a version the client must send | prevents silent lost updates, visible to users as a conflict they can resolve | with 4+ simultaneous writers on one entry a retryable `409` can still happen |
 | Evolution chain stored as a JSON column (`SHORTCUT:` in the code) | the tree is read as a whole and never queried | cannot query by evolution; move to a table if that is ever needed |

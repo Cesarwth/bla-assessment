@@ -1,10 +1,11 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { deleteCollectionEntry, fetchCollectionEntry, fetchCollectionPage, syncPokemon, syncRange, updateCollectionEntry, type EntryChanges } from './api'
+import { deleteCollectionEntry, fetchCollectionEntry, fetchCollectionIds, fetchCollectionPage, syncPokemon, syncRange, updateCollectionEntry, type EntryChanges } from './api'
 
 export const collectionKeys = {
   all: ['collection'] as const,
   lists: () => [...collectionKeys.all, 'list'] as const,
   list: (page: number, size: number) => [...collectionKeys.lists(), page, size] as const,
+  ids: () => [...collectionKeys.all, 'ids'] as const,
   entry: (id: number) => [...collectionKeys.all, 'entry', id] as const,
 }
 
@@ -16,13 +17,25 @@ export function useCollectionPage(page: number, size: number) {
   })
 }
 
+/** Which Pokémon are in the trainer's collection: one cheap request that lets the detail page decide without a 404. */
+export function useCollectionIds(enabled: boolean) {
+  return useQuery({
+    queryKey: collectionKeys.ids(),
+    queryFn: ({ signal }) => fetchCollectionIds(signal),
+    enabled,
+  })
+}
+
 export function useSyncPokemon() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: syncPokemon,
     onSuccess: ({ data }) => {
       queryClient.setQueryData(collectionKeys.entry(data.id), data)
-      return queryClient.invalidateQueries({ queryKey: collectionKeys.lists() })
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: collectionKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: collectionKeys.ids() }),
+      ])
     },
   })
 }
@@ -32,7 +45,11 @@ export function useImportRange() {
   return useMutation({
     mutationFn: ({ from, to }: { from: number; to: number }) => syncRange(from, to),
     // New entries must show up in the list without a manual reload.
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: collectionKeys.lists() }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: collectionKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: collectionKeys.ids() }),
+      ]),
   })
 }
 
@@ -63,7 +80,10 @@ export function useDeleteEntry(id: number) {
     onSuccess: () => {
       // Only mark the entry stale: removing it would make this still-mounted page fetch it again (and get a 404).
       void queryClient.invalidateQueries({ queryKey: collectionKeys.entry(id), refetchType: 'none' })
-      return queryClient.invalidateQueries({ queryKey: collectionKeys.lists() })
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: collectionKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: collectionKeys.ids() }),
+      ])
     },
   })
 }

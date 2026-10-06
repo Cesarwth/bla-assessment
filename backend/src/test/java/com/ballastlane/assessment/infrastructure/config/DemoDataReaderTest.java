@@ -21,17 +21,28 @@ class DemoDataReaderTest {
 
     @Test
     void readsTheBundledSnapshot() {
-        assertThat(entries).hasSize(16);
+        assertThat(entries).hasSize(18);
     }
 
     @Test
-    void everyPokemonAppearsOnceAndBelongsToAKnownDemoAccount() {
-        Set<Integer> ids = entries.stream().map(e -> e.detail().id()).collect(Collectors.toSet());
+    void noTrainerHasThePokemonTwiceAndEveryEntryBelongsToAKnownDemoAccount() {
+        Set<String> perTrainer = entries.stream().map(e -> e.owner() + "/" + e.detail().id()).collect(Collectors.toSet());
 
-        assertThat(ids).hasSize(entries.size());
+        assertThat(perTrainer).hasSize(entries.size());
         assertThat(entries).extracting(DemoEntry::owner).containsOnly("demo", "demo-admin");
         assertThat(entries.stream().filter(e -> e.owner().equals("demo"))).hasSizeGreaterThanOrEqualTo(3);
         assertThat(entries.stream().filter(e -> e.owner().equals("demo-admin"))).hasSizeGreaterThanOrEqualTo(3);
+    }
+
+    @Test
+    void bothTrainersOwnSomeOfTheSamePokemonWithDifferentNotes() {
+        List<DemoEntry> bulbasaurs = entries.stream().filter(e -> e.detail().id() == 1).toList();
+        List<DemoEntry> pikachus = entries.stream().filter(e -> e.detail().id() == 25).toList();
+
+        assertThat(bulbasaurs).extracting(DemoEntry::owner).containsExactlyInAnyOrder("demo", "demo-admin");
+        assertThat(pikachus).extracting(DemoEntry::owner).containsExactlyInAnyOrder("demo", "demo-admin");
+        assertThat(bulbasaurs).extracting(DemoEntry::nickname).doesNotHaveDuplicates();
+        assertThat(pikachus).extracting(DemoEntry::tags).doesNotHaveDuplicates();
     }
 
     @Test

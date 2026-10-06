@@ -11,14 +11,40 @@ import { makeToken, renderApp } from '../../test/utils'
 
 const entries = () =>
   pageOf([
-    storedSummary(25, 'pikachu', { nickname: 'Pika', region: 'Kanto', tags: ['starter', 'electric'], ownerId: 5 }),
-    storedSummary(26, 'raichu', { ownerId: 6 }),
+    storedSummary(25, 'pikachu', { nickname: 'Pika', region: 'Kanto', tags: ['starter', 'electric'] }),
+    storedSummary(26, 'raichu'),
   ], { totalItems: 2 })
 
 describe('CollectionPage', () => {
+  it('is the trainer’s own list, with the way to import more', async () => {
+    mockCollection(entries)
+    renderApp(<App />, { route: '/collection', token: makeToken() })
+
+    expect(await screen.findByRole('heading', { name: 'My collection' })).toBeInTheDocument()
+    expect(screen.getByText(/Your Pokémon\./)).toBeInTheDocument()
+    expect(screen.getByRole('form', { name: 'Import Pokémon by number' })).toBeInTheDocument()
+    expect(screen.queryByText('Yours')).not.toBeInTheDocument()
+  })
+
+  it('sends anonymous visitors to the login page and brings them back after logging in', async () => {
+    mockCollection(entries)
+    server.use(
+      http.post(apiUrl('/auth/login'), () => HttpResponse.json({ token: makeToken(), tokenType: 'Bearer', expiresAt: 'x' })),
+    )
+    renderApp(<App />, { route: '/collection?page=1&size=12' })
+
+    expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('Username'), 'ash')
+    await userEvent.type(screen.getByLabelText('Password'), 'Pikachu123')
+    await userEvent.click(screen.getByRole('button', { name: 'Log in' }))
+
+    expect(await screen.findByRole('heading', { name: 'My collection' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: /Pikachu/ })).toBeInTheDocument()
+  })
+
   it('shows a loading state and then the entries', async () => {
     mockCollection(entries)
-    renderApp(<App />, { route: '/collection' })
+    renderApp(<App />, { route: '/collection', token: makeToken() })
 
     expect(screen.getByRole('status')).toHaveTextContent('Loading')
     expect(await screen.findByRole('link', { name: /Pikachu/ })).toBeInTheDocument()
@@ -26,7 +52,7 @@ describe('CollectionPage', () => {
 
   it('shows what makes an entry ours: nickname, region and tags', async () => {
     mockCollection(entries)
-    renderApp(<App />, { route: '/collection' })
+    renderApp(<App />, { route: '/collection', token: makeToken() })
 
     const card = (await screen.findByRole('link', { name: /Pikachu/ })).closest('article')!
     expect(within(card).getByText('“Pika”')).toBeInTheDocument()
@@ -38,35 +64,16 @@ describe('CollectionPage', () => {
 
   it('an entry without local data just shows the Pokémon', async () => {
     mockCollection(entries)
-    renderApp(<App />, { route: '/collection' })
+    renderApp(<App />, { route: '/collection', token: makeToken() })
 
     const card = (await screen.findByRole('link', { name: /Raichu/ })).closest('article')!
     expect(within(card).queryByText(/“/)).not.toBeInTheDocument()
   })
 
-  it('marks the entries the logged-in user added', async () => {
-    mockCollection(entries)
-    renderApp(<App />, { route: '/collection', token: makeToken({ uid: 5 }) })
-
-    const mine = (await screen.findByRole('link', { name: /Pikachu/ })).closest('article')!
-    const theirs = screen.getByRole('link', { name: /Raichu/ }).closest('article')!
-    expect(within(mine).getByText('Yours')).toBeInTheDocument()
-    expect(within(theirs).queryByText('Yours')).not.toBeInTheDocument()
-  })
-
-  it('marks nothing as yours for anonymous visitors', async () => {
-    mockCollection(entries)
-    renderApp(<App />, { route: '/collection' })
-
-    await screen.findByRole('link', { name: /Pikachu/ })
-
-    expect(screen.queryByText('Yours')).not.toBeInTheDocument()
-  })
-
   it('pages through the collection like the catalog does', async () => {
     const requests: string[] = []
     mockCollection(() => pageOf([storedSummary(25, 'pikachu')], { totalItems: 30 }), requests)
-    renderApp(<App />, { route: '/collection' })
+    renderApp(<App />, { route: '/collection', token: makeToken() })
 
     expect(await screen.findByText('Page 1 of 3')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Next page' })).toHaveAttribute('href', '/collection?page=2&size=12')
@@ -75,15 +82,15 @@ describe('CollectionPage', () => {
 
   it('invites people to fill an empty collection', async () => {
     mockCollection(() => pageOf([], { totalItems: 0 }))
-    renderApp(<App />, { route: '/collection' })
+    renderApp(<App />, { route: '/collection', token: makeToken() })
 
-    expect(await screen.findByText('The collection is empty')).toBeInTheDocument()
+    expect(await screen.findByText('Your collection is empty')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Browse the catalog' })).toHaveAttribute('href', '/')
   })
 
   it('explains a page beyond the end and offers a way back, like the catalog does', async () => {
     mockCollection(() => pageOf([], { page: 99, totalItems: 30 }))
-    renderApp(<App />, { route: '/collection?page=100' })
+    renderApp(<App />, { route: '/collection?page=100', token: makeToken() })
 
     expect(await screen.findByText('No entries on this page')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Go to the first page' })).toHaveAttribute('href', '/collection?page=1&size=12')
@@ -95,7 +102,7 @@ describe('CollectionPage', () => {
       calls += 1
       return calls === 1 ? failWith(500, 'INTERNAL_ERROR', 'Unexpected error') : entries()
     })
-    renderApp(<App />, { route: '/collection' })
+    renderApp(<App />, { route: '/collection', token: makeToken() })
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Unexpected error')
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
@@ -114,15 +121,6 @@ describe('CollectionPage', () => {
       }
       await userEvent.click(within(form).getByRole('button', { name: 'Import' }))
     }
-
-    it('is offered to logged-in users only', async () => {
-      mockCollection(entries)
-      renderApp(<App />, { route: '/collection' })
-      await screen.findByRole('link', { name: /Pikachu/ })
-
-      expect(screen.queryByRole('form', { name: 'Import Pokémon by number' })).not.toBeInTheDocument()
-      expect(screen.getByText(/Log in to import Pokémon/)).toBeInTheDocument()
-    })
 
     it('sends the range, shows the report with the ids that could not be imported and refreshes the list', async () => {
       const requests: string[] = []
@@ -190,7 +188,7 @@ describe('CollectionPage', () => {
 
   it('has no accessibility violations', async () => {
     mockCollection(entries)
-    const { container } = renderApp(<App />, { route: '/collection', token: makeToken({ uid: 5 }) })
+    const { container } = renderApp(<App />, { route: '/collection', token: makeToken() })
     await screen.findByRole('link', { name: /Pikachu/ })
 
     await expectNoA11yViolations(container)

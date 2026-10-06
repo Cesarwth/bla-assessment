@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { isApiError } from '../../shared/api/errors'
 import { formatId, formatName } from '../../shared/format'
 import { EvolutionTree } from '../../shared/ui/EvolutionTree'
@@ -8,7 +8,6 @@ import { LoadingStatus } from '../../shared/ui/LoadingStatus'
 import { PokemonImage } from '../../shared/ui/PokemonImage'
 import { StatBars } from '../../shared/ui/StatBars'
 import { TypeChip } from '../../shared/ui/TypeChip'
-import { useAuth } from '../auth/useAuth'
 import { DeleteEntry } from './components/DeleteEntry'
 import { EditForm } from './components/EditForm'
 import styles from './CollectionEntryPage.module.css'
@@ -44,8 +43,8 @@ function NotesList({ entry }: { entry: StoredPokemon }) {
 function NotInCollection() {
   return (
     <section className={styles.missing}>
-      <h1>This Pokémon isn’t in the collection</h1>
-      <p>It may have been removed, or it was never added.</p>
+      <h1>This Pokémon isn’t in your collection</h1>
+      <p>You may have removed it, or never added it.</p>
       <Link to="/collection">Back to the collection</Link>
     </section>
   )
@@ -55,8 +54,6 @@ export function CollectionEntryPage() {
   const { id } = useParams()
   const entryId = Number(id)
   const validId = Number.isInteger(entryId) && entryId >= 1
-  const { user, isAdmin } = useAuth()
-  const location = useLocation()
   const navigate = useNavigate()
   const [editing, setEditing] = useState(false)
   const query = useCollectionEntry(entryId, validId)
@@ -71,10 +68,7 @@ export function CollectionEntryPage() {
 
   const entry = query.data
   const name = formatName(entry.name)
-  const isOwner = user !== null && entry.ownerId === user.id
-  const canEdit = isOwner || isAdmin
   const chain = entry.evolutionChain
-  const ownerLine = isOwner ? 'Added by you' : entry.ownerId === null ? 'No owner (only admins can edit it)' : 'Added by another trainer'
 
   return (
     <article>
@@ -92,11 +86,10 @@ export function CollectionEntryPage() {
               <TypeChip key={type} type={type} />
             ))}
           </div>
-          <p className={styles.owner}>{ownerLine}</p>
 
           <section className={`${styles.notes} ${styles.section}`} aria-labelledby="notes-heading">
             <h2 id="notes-heading">Trainer notes</h2>
-            {canEdit && editing ? (
+            {editing ? (
               <EditForm
                 entry={entry}
                 onReload={() => void query.refetch()}
@@ -106,24 +99,14 @@ export function CollectionEntryPage() {
             ) : (
               <>
                 <NotesList entry={entry} />
-                {canEdit ? (
-                  <button type="button" className={styles.editButton} onClick={() => setEditing(true)}>
-                    Edit notes
-                  </button>
-                ) : user ? (
-                  entry.ownerId === null ? null : (
-                    <p className={styles.muted}>You can’t edit this entry because another trainer added it.</p>
-                  )
-                ) : (
-                  <Link to="/login" state={{ from: location.pathname }}>
-                    Log in to edit your entries
-                  </Link>
-                )}
+                <button type="button" className={styles.editButton} onClick={() => setEditing(true)}>
+                  Edit notes
+                </button>
               </>
             )}
           </section>
 
-          {isAdmin && <DeleteEntry entry={entry} />}
+          <DeleteEntry entry={entry} />
         </div>
       </div>
 

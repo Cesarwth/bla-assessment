@@ -17,7 +17,7 @@ export function DeleteEntry({ entry }: { entry: StoredPokemon }) {
     return (
       <div className={styles.delete}>
         <button type="button" className={styles.trigger} onClick={() => setConfirming(true)}>
-          Delete from the collection
+          Remove from my collection
         </button>
       </div>
     )
@@ -25,8 +25,8 @@ export function DeleteEntry({ entry }: { entry: StoredPokemon }) {
 
   return (
     <div className={styles.delete}>
-      <div role="group" aria-label="Confirm deletion" className={styles.box}>
-        <p>Delete {formatName(entry.name)} from the collection? This can’t be undone.</p>
+      <div role="group" aria-label="Confirm removal" className={styles.box}>
+        <p>Remove {formatName(entry.name)} from your collection? This can’t be undone.</p>
         <div className={styles.buttons}>
           <button
             type="button"
@@ -34,7 +34,7 @@ export function DeleteEntry({ entry }: { entry: StoredPokemon }) {
             disabled={remove.isPending}
             onClick={() => remove.mutate(undefined, { onSuccess: () => navigate('/collection') })}
           >
-            {remove.isPending ? 'Deleting…' : 'Yes, delete it'}
+            {remove.isPending ? 'Removing…' : 'Yes, remove it'}
           </button>
           <button type="button" className={styles.cancel} onClick={() => setConfirming(false)}>
             Cancel

@@ -63,3 +63,14 @@ export function mockEntry(id: number, entry: StoredPokemon | Response): void {
     http.get(apiUrl(`/collection/${id}`), () => (entry instanceof Response ? entry : HttpResponse.json(entry))),
   )
 }
+
+/** Answers GET /collection/ids with whatever `ids()` returns at that moment, so a test can change it between requests. */
+export function mockCollectionIds(ids: number[] | Response | (() => number[] | Response), requests: string[] = []): void {
+  server.use(
+    http.get(apiUrl('/collection/ids'), () => {
+      requests.push('ids')
+      const result = typeof ids === 'function' ? ids() : ids
+      return result instanceof Response ? result : HttpResponse.json(result)
+    }),
+  )
+}

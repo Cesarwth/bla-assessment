@@ -16,7 +16,6 @@ import com.ballastlane.assessment.domain.StoredPokemon;
 import com.ballastlane.assessment.domain.exception.InvalidLocalAttributesException;
 import com.ballastlane.assessment.domain.exception.InvalidPokemonIdentifierException;
 import com.ballastlane.assessment.domain.exception.InvalidStoredPokemonUpdateException;
-import com.ballastlane.assessment.domain.exception.NotOwnerException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
 import com.ballastlane.assessment.support.TestData;
@@ -50,7 +49,7 @@ class UpdateStoredPokemonTest {
     }
 
     private StoredPokemon update(String nickname, String region, List<String> tags) {
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.of(EXISTING));
+        when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.of(EXISTING));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         return updateStoredPokemon.update(command(VERSION, OWNER, nickname, region, tags));
     }
@@ -76,7 +75,7 @@ class UpdateStoredPokemonTest {
     }
 
     @Test
-    void keepsEverythingOwnedByPokeApiUntouchedAndPreservesVersionAndOwner() {
+    void keepsEverythingOwnedByPokeApiUntouchedAndPreservesVersionAndTrainer() {
         update("Sparky", null, null);
 
         ArgumentCaptor<StoredPokemon> saved = ArgumentCaptor.forClass(StoredPokemon.class);
@@ -88,36 +87,17 @@ class UpdateStoredPokemonTest {
     }
 
     @Test
-    void anAdminCanUpdateARecordOwnedBySomeoneElse() {
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.of(EXISTING));
-        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        StoredPokemon updated = updateStoredPokemon.update(command(VERSION, TestData.admin(99), "By admin", null, null));
-
-        assertThat(updated.localAttributes().nickname()).isEqualTo("By admin");
-        assertThat(updated.ownerId()).isEqualTo(5L);
-    }
-
-    @Test
-    void anotherUserGetsNotOwnerAndNothingIsSaved() {
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.of(EXISTING));
+    void anEntryOfAnotherTrainerIsNotFoundAndNothingIsSaved() {
+        when(repository.findByTrainerAndPokeApiId(6L, 25)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION, TestData.user(6), "Mine now", null, null)))
-                .isInstanceOf(NotOwnerException.class);
+                .isInstanceOf(StoredPokemonNotFoundException.class);
         verify(repository, never()).save(any());
     }
 
     @Test
-    void ownershipIsCheckedBeforeTheVersionSoAStrangerLearnsNothingAboutIt() {
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.of(EXISTING));
-
-        assertThatThrownBy(() -> updateStoredPokemon.update(command(1L, TestData.user(6), "x", null, null)))
-                .isInstanceOf(NotOwnerException.class);
-    }
-
-    @Test
     void aStaleVersionIsRejectedBeforeSaving() {
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.of(EXISTING));
+        when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.of(EXISTING));
 
         assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION - 1, OWNER, "x", null, null)))
                 .isInstanceOf(StaleStoredPokemonException.class);
@@ -132,18 +112,6 @@ class UpdateStoredPokemonTest {
     }
 
     @Test
-    void aRecordWithoutOwnerNeedsAnAdmin() {
-        StoredPokemon ownerless = TestData.storedOwnedBy(null, 7, VERSION, 25, "pikachu", LOCAL);
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.of(ownerless));
-        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION, OWNER, "x", null, null)))
-                .isInstanceOf(NotOwnerException.class);
-        assertThat(updateStoredPokemon.update(command(VERSION, TestData.admin(1), "x", null, null)).localAttributes().nickname())
-                .isEqualTo("x");
-    }
-
-    @Test
     void rejectsAnUpdateWithNothingToChangeBeforeTouchingTheRepository() {
         assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION, OWNER, null, null, null)))
                 .isInstanceOf(InvalidStoredPokemonUpdateException.class);
@@ -152,7 +120,7 @@ class UpdateStoredPokemonTest {
 
     @Test
     void throwsNotFoundWhenTheRecordDoesNotExist() {
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.empty());
+        when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION, OWNER, "x", null, null)))
                 .isInstanceOf(StoredPokemonNotFoundException.class);
@@ -161,7 +129,7 @@ class UpdateStoredPokemonTest {
 
     @Test
     void rejectsInvalidAttributesWithoutSaving() {
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.of(EXISTING));
+        when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.of(EXISTING));
 
         assertThatThrownBy(() -> updateStoredPokemon.update(command(VERSION, OWNER, "x".repeat(51), null, null)))
                 .isInstanceOf(InvalidLocalAttributesException.class);

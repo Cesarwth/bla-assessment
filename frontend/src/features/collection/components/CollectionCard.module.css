@@ -55,17 +55,6 @@
   font-style: italic;
 }
 
-.badge {
-  margin-left: auto;
-  align-self: flex-start;
-  padding: 0.1rem var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--color-primary);
-  color: var(--color-primary-contrast);
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
 .region {
   margin: 0;
   font-size: 0.875rem;

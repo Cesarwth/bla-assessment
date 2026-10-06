@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.ballastlane.assessment.application.port.out.PokemonRepository;
-import com.ballastlane.assessment.domain.exception.AdminRequiredException;
 import com.ballastlane.assessment.domain.exception.InvalidPokemonIdentifierException;
 import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
 import com.ballastlane.assessment.support.TestData;
@@ -29,29 +28,23 @@ class DeleteStoredPokemonTest {
     }
 
     @Test
-    void anAdminDeletesWhenPresent() {
-        when(repository.deleteByPokeApiId(25)).thenReturn(true);
+    void aTrainerDeletesTheirOwnEntryWhenPresent() {
+        when(repository.deleteByTrainerAndPokeApiId(5L, 25)).thenReturn(true);
 
-        assertThatCode(() -> deleteStoredPokemon.delete(25, TestData.admin(1))).doesNotThrowAnyException();
-        verify(repository).deleteByPokeApiId(25);
+        assertThatCode(() -> deleteStoredPokemon.delete(25, TestData.user(5))).doesNotThrowAnyException();
+        verify(repository).deleteByTrainerAndPokeApiId(5L, 25);
     }
 
     @Test
-    void aRegularUserCannotDeleteNotEvenTheirOwnEntry() {
-        assertThatThrownBy(() -> deleteStoredPokemon.delete(25, TestData.user(5))).isInstanceOf(AdminRequiredException.class);
-        verifyNoInteractions(repository);
-    }
+    void throwsNotFoundWhenTheTrainerDoesNotHaveIt() {
+        when(repository.deleteByTrainerAndPokeApiId(5L, 25)).thenReturn(false);
 
-    @Test
-    void throwsNotFoundWhenThereWasNothingToDelete() {
-        when(repository.deleteByPokeApiId(25)).thenReturn(false);
-
-        assertThatThrownBy(() -> deleteStoredPokemon.delete(25, TestData.admin(1))).isInstanceOf(StoredPokemonNotFoundException.class);
+        assertThatThrownBy(() -> deleteStoredPokemon.delete(25, TestData.user(5))).isInstanceOf(StoredPokemonNotFoundException.class);
     }
 
     @Test
     void rejectsNonPositiveIds() {
-        assertThatThrownBy(() -> deleteStoredPokemon.delete(-1, TestData.admin(1))).isInstanceOf(InvalidPokemonIdentifierException.class);
+        assertThatThrownBy(() -> deleteStoredPokemon.delete(-1, TestData.user(5))).isInstanceOf(InvalidPokemonIdentifierException.class);
         verifyNoInteractions(repository);
     }
 }

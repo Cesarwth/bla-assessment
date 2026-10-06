@@ -6,6 +6,7 @@ import com.ballastlane.assessment.domain.StoredPokemon;
 import com.ballastlane.assessment.domain.exception.DuplicateStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -19,51 +20,90 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class JpaPokemonRepositoryAdapter implements PokemonRepository {
 
-    private final SpringDataPokemonRepository repository;
+    private final SpringDataPokemonRepository catalog;
+    private final SpringDataTrainerPokemonRepository entries;
     private final PokemonPersistenceMapper mapper;
 
-    JpaPokemonRepositoryAdapter(SpringDataPokemonRepository repository, PokemonPersistenceMapper mapper) {
-        this.repository = repository;
+    JpaPokemonRepositoryAdapter(
+            SpringDataPokemonRepository catalog, SpringDataTrainerPokemonRepository entries, PokemonPersistenceMapper mapper) {
+        this.catalog = catalog;
+        this.entries = entries;
         this.mapper = mapper;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<StoredPokemon> findByPokeApiId(int pokeApiId) {
-        return repository.findByPokeApiId(pokeApiId).map(mapper::toDomain);
+    public Optional<StoredPokemon> findByTrainerAndPokeApiId(long trainerId, int pokeApiId) {
+        return entries.findByUserIdAndPokemonPokeApiId(trainerId, pokeApiId).map(mapper::toDomain);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PageResult<StoredPokemon> findPage(int page, int size) {
+    public PageResult<StoredPokemon> findPage(long trainerId, int page, int size) {
         // Spring Data casts the offset to int; a huge page number would overflow, and is beyond the end anyway.
         if ((long) page * size > Integer.MAX_VALUE) {
-            return new PageResult<>(List.of(), page, size, repository.count());
+            return new PageResult<>(List.of(), page, size, entries.countByUserId(trainerId));
         }
-        Page<PokemonEntity> result = repository.findAll(PageRequest.of(page, size, Sort.by("pokeApiId")));
+        Page<TrainerPokemonEntity> result =
+                entries.findByUserId(trainerId, PageRequest.of(page, size, Sort.by("pokemon.pokeApiId")));
         return new PageResult<>(result.getContent().stream().map(mapper::toDomain).toList(), page, size,
                 result.getTotalElements());
     }
 
-    // The aggregate's version travels in the entity: merging a stale copy makes Hibernate reject the write.
     @Override
-    @Transactional
-    public StoredPokemon save(StoredPokemon pokemon) {
-        try {
-            return mapper.toDomain(repository.saveAndFlush(mapper.toEntity(pokemon)));
-        } catch (OptimisticLockingFailureException e) {
-            throw new StaleStoredPokemonException(pokemon.pokeApiId());
-        } catch (DataIntegrityViolationException e) {
-            if (UniqueViolations.isUnique(e)) {
-                throw new DuplicateStoredPokemonException(pokemon.pokeApiId());
-            }
-            throw e;
-        }
+    @Transactional(readOnly = true)
+    public List<Integer> findPokeApiIds(long trainerId) {
+        return entries.findPokeApiIdsByUserId(trainerId);
     }
 
     @Override
     @Transactional
-    public boolean deleteByPokeApiId(int pokeApiId) {
-        return repository.deleteByPokeApiId(pokeApiId) > 0;
+    public StoredPokemon save(StoredPokemon entry) {
+        try {
+            PokemonEntity shared = upsertCatalog(entry);
+            return mapper.toDomain(entry.id() == null ? createEntry(entry, shared) : updateEntry(entry));
+        } catch (DataIntegrityViolationException e) {
+            if (UniqueViolations.isUnique(e)) {
+                throw new DuplicateStoredPokemonException(entry.pokeApiId());
+            }
+            throw e;
+        } catch (OptimisticLockingFailureException e) {
+            throw new StaleStoredPokemonException(entry.pokeApiId());
+        }
+    }
+
+    // A copy older than the stored one (e.g. an entry read before another trainer synced) must not roll the shared
+    // data back, so saving a trainer's notes never regresses the catalog.
+    private PokemonEntity upsertCatalog(StoredPokemon entry) {
+        PokemonEntity shared = catalog.findByPokeApiId(entry.pokeApiId()).orElse(null);
+        if (shared == null) {
+            return catalog.saveAndFlush(mapper.toCatalogEntity(entry));
+        }
+        if (!entry.syncedAt().isBefore(shared.syncedAt)) {
+            mapper.refreshCatalog(shared, entry);
+            return catalog.saveAndFlush(shared);
+        }
+        return shared;
+    }
+
+    private TrainerPokemonEntity createEntry(StoredPokemon entry, PokemonEntity shared) {
+        return entries.saveAndFlush(mapper.toNewEntry(entry, shared));
+    }
+
+    // The aggregate's version is compared with the stored one: a stale copy (or an entry removed meanwhile) is rejected.
+    private TrainerPokemonEntity updateEntry(StoredPokemon entry) {
+        TrainerPokemonEntity stored = entries.findById(entry.id()).orElseThrow(
+                () -> new StaleStoredPokemonException(entry.pokeApiId()));
+        if (!Objects.equals(stored.version, entry.version())) {
+            throw new StaleStoredPokemonException(entry.pokeApiId());
+        }
+        mapper.applyNotes(stored, entry.localAttributes());
+        return entries.saveAndFlush(stored);
+    }
+
+    @Override
+    @Transactional
+    public boolean deleteByTrainerAndPokeApiId(long trainerId, int pokeApiId) {
+        return entries.deleteByUserIdAndPokemonPokeApiId(trainerId, pokeApiId) > 0;
     }
 }

@@ -40,10 +40,10 @@ public class SyncPokemon implements SyncPokemonUseCase {
 
         // Upsert keyed by the PokeAPI id (not the name): the same Pokemon can be requested as "25" or "pikachu".
         // Sync is idempotent (it only rewrites PokeAPI-owned data), so losing a race against another sync of the same
-        // Pokemon is not an error: re-read the winner's row and apply the refresh on top of it.
+        // Pokemon (or of the same trainer's entry) is not an error: re-read the winner's row and apply the refresh.
         for (int attempt = 1; ; attempt++) {
             try {
-                return save(repository.findByPokeApiId(detail.id()), detail, now, actor);
+                return save(repository.findByTrainerAndPokeApiId(actor.userId(), detail.id()), detail, now, actor);
             } catch (DuplicateStoredPokemonException | StaleStoredPokemonException raced) {
                 if (attempt == MAX_ATTEMPTS) {
                     throw raced;

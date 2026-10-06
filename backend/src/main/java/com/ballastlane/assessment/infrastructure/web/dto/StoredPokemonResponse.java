@@ -4,11 +4,10 @@ import com.ballastlane.assessment.domain.StoredPokemon;
 import java.time.Instant;
 import java.util.List;
 
-/** {@code id} is the PokeAPI id (the identifier used in URLs); our internal row id is not exposed. */
+/** The caller's collection entry; {@code version} is the entry's. {@code id} is the PokeAPI id (the identifier used in URLs); our internal row id is not exposed. */
 public record StoredPokemonResponse(
         int id,
         Long version,
-        Long ownerId,
         String name,
         String imageUrl,
         String spriteUrl,
@@ -26,7 +25,7 @@ public record StoredPokemonResponse(
         Instant syncedAt) {
 
     public static StoredPokemonResponse from(StoredPokemon pokemon) {
-        return new StoredPokemonResponse(pokemon.pokeApiId(), pokemon.version(), pokemon.ownerId(), pokemon.name(), pokemon.imageUrl(),
+        return new StoredPokemonResponse(pokemon.pokeApiId(), pokemon.version(), pokemon.name(), pokemon.imageUrl(),
                 pokemon.spriteUrl(), pokemon.types(), pokemon.weightKg(), pokemon.heightM(), pokemon.abilities(),
                 pokemon.stats().stream().map(StatResponse::from).toList(), pokemon.genus(), pokemon.description(),
                 pokemon.evolutionChain() == null ? null : EvolutionNodeResponse.from(pokemon.evolutionChain()),

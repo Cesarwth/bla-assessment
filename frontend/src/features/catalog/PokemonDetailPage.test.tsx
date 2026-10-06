@@ -1,11 +1,11 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { App } from '../../app/App'
 import { expectNoA11yViolations } from '../../test/axe'
 import { ditto, eevee, mew, pikachu, stored } from '../../test/fixtures'
-import { apiUrl, failWith, mockDetail } from '../../test/handlers'
+import { apiUrl, failWith, mockCollectionIds, mockDetail } from '../../test/handlers'
 import { server } from '../../test/server'
 import { makeToken, renderApp } from '../../test/utils'
 
@@ -174,12 +174,77 @@ describe('PokemonDetailPage', () => {
   })
 
   describe('adding to the collection', () => {
+    // The collection as the backend would report it: a successful sync puts 25 in it.
+    let ids: number[] = []
+    beforeEach(() => {
+      ids = []
+    })
     const syncReturns = (status: number, body: object) =>
-      server.use(http.post(apiUrl('/collection/25/sync'), () => HttpResponse.json(body, { status })))
-    const notInCollection = () =>
-      server.use(http.get(apiUrl('/collection/25'), () => failWith(404, 'POKEMON_NOT_STORED', 'Not in the collection')))
-    const inCollection = (ownerId: number | null) =>
-      server.use(http.get(apiUrl('/collection/25'), () => HttpResponse.json(stored(25, 'pikachu', { ownerId }))))
+      server.use(http.post(apiUrl('/collection/25/sync'), () => {
+        ids = [...ids, 25]
+        return HttpResponse.json(body, { status })
+      }))
+    const notInCollection = () => mockCollectionIds(() => ids)
+    const inCollection = () => {
+      ids = [4, 25]
+      mockCollectionIds(() => ids)
+    }
+
+    it('never asks for the single entry: the list of ids is enough to know', async () => {
+      mockDetail('25', pikachu)
+      notInCollection()
+      const entryRequests: string[] = []
+      server.use(http.get(apiUrl('/collection/25'), () => {
+        entryRequests.push('entry')
+        return failWith(404, 'POKEMON_NOT_STORED', 'x')
+      }))
+      renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
+
+      await screen.findByRole('button', { name: 'Add to my collection' })
+
+      expect(entryRequests).toEqual([])
+    })
+
+    it('shows a placeholder while it checks the collection', async () => {
+      mockDetail('25', pikachu)
+      mockCollectionIds([])
+      server.use(http.get(apiUrl('/collection/ids'), async () => {
+        await delay(60)
+        return HttpResponse.json([])
+      }))
+      renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
+      await screen.findByRole('heading', { name: 'Pikachu' })
+
+      expect(screen.getByText('Checking the collection…')).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: 'Add to my collection' })).toBeInTheDocument()
+    })
+
+    it('shows the button for an empty collection', async () => {
+      mockDetail('25', pikachu)
+      mockCollectionIds([])
+      renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
+
+      expect(await screen.findByRole('button', { name: 'Add to my collection' })).toBeInTheDocument()
+    })
+
+    it('makes no request about the collection for anonymous visitors', async () => {
+      mockDetail('25', pikachu)
+      const requests: string[] = []
+      mockCollectionIds([], requests)
+      renderApp(<App />, { route: '/pokemon/25' })
+      await screen.findByRole('link', { name: 'Log in to add this Pokémon to the collection' })
+
+      expect(requests).toEqual([])
+    })
+
+    it('mentions the saved changes when sent here by the edit form', async () => {
+      mockDetail('25', pikachu)
+      inCollection()
+      renderApp(<App />, { route: { pathname: '/pokemon/25', state: { saved: 'Pikachu' } }, token: makeToken() })
+
+      await screen.findByRole('heading', { name: 'Pikachu' })
+      expect(await screen.findByText('Saved changes to Pikachu. In your collection.')).toBeInTheDocument()
+    })
 
     it('asks anonymous visitors to log in and remembers where they were', async () => {
       mockDetail('25', pikachu)
@@ -188,6 +253,19 @@ describe('PokemonDetailPage', () => {
 
       expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
       expect(screen.getByRole('link', { name: 'Log in to add this Pokémon to the collection' })).toHaveAttribute('href', '/login')
+    })
+
+    it('says so, and still links to the entry, when it was already there and was only refreshed (200)', async () => {
+      mockDetail('25', pikachu)
+      notInCollection()
+      syncReturns(200, stored(25, 'pikachu'))
+      renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
+      await screen.findByRole('heading', { name: 'Pikachu' })
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Add to my collection' }))
+
+      expect(await screen.findByRole('status')).toHaveTextContent('In your collection.')
+      expect(screen.getByRole('link', { name: 'View it in my collection' })).toBeInTheDocument()
     })
 
     it('adds it and links to the new entry', async () => {
@@ -199,40 +277,20 @@ describe('PokemonDetailPage', () => {
 
       await userEvent.click(await screen.findByRole('button', { name: 'Add to my collection' }))
 
-      expect(await screen.findByRole('status')).toHaveTextContent('Added to the collection.')
-      expect(screen.getByRole('link', { name: 'View it in the collection' })).toHaveAttribute('href', '/collection/25')
+      expect(await screen.findByRole('status')).toHaveTextContent('Added to your collection.')
+      expect(screen.getByRole('link', { name: 'View it in my collection' })).toHaveAttribute('href', '/collection/25')
       expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
     })
 
-    it('offers no button when you already added it', async () => {
+    it('offers no button when it is already in your collection', async () => {
       mockDetail('25', pikachu)
-      inCollection(1)
-      renderApp(<App />, { route: '/pokemon/25', token: makeToken({ uid: 1 }) })
+      inCollection()
+      renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
       await screen.findByRole('heading', { name: 'Pikachu' })
 
-      expect(await screen.findByText(/^In the collection/)).toHaveTextContent('In the collection, added by you.')
+      expect(await screen.findByRole('status')).toHaveTextContent('In your collection.')
       expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
-      expect(screen.getByRole('link', { name: 'View it in the collection' })).toHaveAttribute('href', '/collection/25')
-    })
-
-    it('offers no button when another trainer already has it', async () => {
-      mockDetail('25', pikachu)
-      inCollection(2)
-      renderApp(<App />, { route: '/pokemon/25', token: makeToken({ uid: 1 }) })
-      await screen.findByRole('heading', { name: 'Pikachu' })
-
-      expect(await screen.findByText(/^In the collection/)).toHaveTextContent('In the collection, added by another trainer.')
-      expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
-    })
-
-    it('says so when the entry has no owner', async () => {
-      mockDetail('25', pikachu)
-      inCollection(null)
-      renderApp(<App />, { route: '/pokemon/25', token: makeToken({ uid: 1 }) })
-      await screen.findByRole('heading', { name: 'Pikachu' })
-
-      expect(await screen.findByText(/^In the collection/)).toHaveTextContent('In the collection, with no owner (only admins can edit it).')
-      expect(screen.queryByRole('button', { name: 'Add to my collection' })).not.toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'View it in my collection' })).toHaveAttribute('href', '/collection/25')
     })
 
     it('disables the button while adding', async () => {
@@ -241,6 +299,7 @@ describe('PokemonDetailPage', () => {
       server.use(
         http.post(apiUrl('/collection/25/sync'), async () => {
           await delay(60)
+          ids = [25]
           return HttpResponse.json(stored(25, 'pikachu'), { status: 201 })
         }),
       )
@@ -268,7 +327,7 @@ describe('PokemonDetailPage', () => {
 
     it('does not offer to add when it cannot tell whether it is already there, and lets you retry', async () => {
       mockDetail('25', pikachu)
-      server.use(http.get(apiUrl('/collection/25'), () => failWith(500, 'INTERNAL_ERROR', 'x')))
+      mockCollectionIds(failWith(500, 'INTERNAL_ERROR', 'x'))
       renderApp(<App />, { route: '/pokemon/25', token: makeToken() })
 
       expect(await screen.findByRole('alert')).toBeInTheDocument()

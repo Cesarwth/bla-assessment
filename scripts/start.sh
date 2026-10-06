@@ -63,8 +63,8 @@ Ready.
   Both ports are bound to this machine only (127.0.0.1); put a TLS-terminating proxy in front to expose them.
 
   Demo accounts (from .env):
-    admin : demo-admin / ${DEMO_ADMIN_PASSWORD:-<not set>}   can edit everything and delete
-    user  : demo       / ${DEMO_USER_PASSWORD:-<not set>}   can edit what it added
+    admin : demo-admin / ${DEMO_ADMIN_PASSWORD:-<not set>}   a trainer with their own collection
+    user  : demo       / ${DEMO_USER_PASSWORD:-<not set>}   a trainer with their own collection
 
   Check the running stack : ./scripts/smoke.sh
   Stop it                 : docker compose down        (add -v to also erase the database)

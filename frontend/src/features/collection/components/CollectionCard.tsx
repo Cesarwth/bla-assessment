@@ -5,7 +5,7 @@ import { PokemonImage } from '../../../shared/ui/PokemonImage'
 import { TypeChip } from '../../../shared/ui/TypeChip'
 import styles from './CollectionCard.module.css'
 
-export function CollectionCard({ entry, mine }: { entry: StoredPokemonSummary; mine: boolean }) {
+export function CollectionCard({ entry }: { entry: StoredPokemonSummary }) {
   const name = formatName(entry.name)
   return (
     <article className={styles.card}>
@@ -21,7 +21,6 @@ export function CollectionCard({ entry, mine }: { entry: StoredPokemonSummary; m
           </h2>
           {entry.nickname && <p className={styles.nickname}>“{entry.nickname}”</p>}
         </div>
-        {mine && <span className={styles.badge}>Yours</span>}
       </div>
       <div>
         {entry.types.map((type) => (

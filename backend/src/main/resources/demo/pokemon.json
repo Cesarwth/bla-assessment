@@ -1247,5 +1247,163 @@
     "evolvesTo": []
    }
   }
+ },
+ {
+  "owner": "demo-admin",
+  "nickname": "Bulba Boss",
+  "region": "Kanto",
+  "tags": [
+   "starter",
+   "team-grass"
+  ],
+  "detail": {
+   "id": 1,
+   "name": "bulbasaur",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
+   "types": [
+    "grass",
+    "poison"
+   ],
+   "weightKg": 6.9,
+   "heightM": 0.7,
+   "abilities": [
+    "overgrow",
+    "chlorophyll"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 45
+    },
+    {
+     "name": "attack",
+     "baseValue": 49
+    },
+    {
+     "name": "defense",
+     "baseValue": 49
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 65
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 65
+    },
+    {
+     "name": "speed",
+     "baseValue": 45
+    }
+   ],
+   "genus": "Seed Pokémon",
+   "description": "A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.",
+   "evolutionChain": {
+    "id": 1,
+    "name": "bulbasaur",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 2,
+      "name": "ivysaur",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/2.png",
+      "requirements": [
+       "Level up (level 16)"
+      ],
+      "evolvesTo": [
+       {
+        "id": 3,
+        "name": "venusaur",
+        "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/3.png",
+        "requirements": [
+         "Level up (level 32)"
+        ],
+        "evolvesTo": []
+       }
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "owner": "demo-admin",
+  "nickname": null,
+  "region": "Kanto",
+  "tags": [
+   "mascot"
+  ],
+  "detail": {
+   "id": 25,
+   "name": "pikachu",
+   "imageUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
+   "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
+   "types": [
+    "electric"
+   ],
+   "weightKg": 6.0,
+   "heightM": 0.4,
+   "abilities": [
+    "static",
+    "lightning-rod"
+   ],
+   "stats": [
+    {
+     "name": "hp",
+     "baseValue": 35
+    },
+    {
+     "name": "attack",
+     "baseValue": 55
+    },
+    {
+     "name": "defense",
+     "baseValue": 40
+    },
+    {
+     "name": "special-attack",
+     "baseValue": 50
+    },
+    {
+     "name": "special-defense",
+     "baseValue": 50
+    },
+    {
+     "name": "speed",
+     "baseValue": 90
+    }
+   ],
+   "genus": "Mouse Pokémon",
+   "description": "When several of these POKéMON gather, their electricity could build and cause lightning storms.",
+   "evolutionChain": {
+    "id": 172,
+    "name": "pichu",
+    "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/172.png",
+    "requirements": [],
+    "evolvesTo": [
+     {
+      "id": 25,
+      "name": "pikachu",
+      "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
+      "requirements": [
+       "Level up (happiness 220)"
+      ],
+      "evolvesTo": [
+       {
+        "id": 26,
+        "name": "raichu",
+        "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/26.png",
+        "requirements": [
+         "Use thunder-stone"
+        ],
+        "evolvesTo": []
+       }
+      ]
+     }
+    ]
+   }
+  }
  }
 ]

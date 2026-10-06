@@ -4,7 +4,6 @@ import com.ballastlane.assessment.domain.EvolutionNode;
 import com.ballastlane.assessment.domain.LocalAttributes;
 import com.ballastlane.assessment.domain.PokemonStat;
 import com.ballastlane.assessment.domain.StoredPokemon;
-import java.util.ArrayList;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
@@ -16,35 +15,65 @@ class PokemonPersistenceMapper {
     // SHORTCUT: the evolution chain is one JSON column; upgrade to a table when we need to query by evolution.
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
-    PokemonEntity toEntity(StoredPokemon pokemon) {
+    /** A new catalog row from the PokeAPI-owned part of an entry. */
+    PokemonEntity toCatalogEntity(StoredPokemon source) {
         PokemonEntity entity = new PokemonEntity();
-        entity.id = pokemon.id();
-        entity.version = pokemon.version();
-        entity.ownerId = pokemon.ownerId();
-        entity.pokeApiId = pokemon.pokeApiId();
-        entity.name = pokemon.name();
-        entity.spriteUrl = pokemon.spriteUrl();
-        entity.imageUrl = pokemon.imageUrl();
-        entity.types = new ArrayList<>(pokemon.types());
-        entity.abilities = new ArrayList<>(pokemon.abilities());
-        entity.stats = new ArrayList<>(pokemon.stats().stream().map(s -> new StatEmbeddable(s.name(), s.baseValue())).toList());
-        entity.weightKg = pokemon.weightKg();
-        entity.heightM = pokemon.heightM();
-        entity.genus = pokemon.genus();
-        entity.description = pokemon.description();
-        entity.evolutionChainJson = toJson(pokemon.evolutionChain());
-        entity.nickname = pokemon.localAttributes().nickname();
-        entity.region = pokemon.localAttributes().region();
-        entity.tags = new ArrayList<>(pokemon.localAttributes().tags());
-        entity.syncedAt = pokemon.syncedAt();
+        entity.pokeApiId = source.pokeApiId();
+        refreshCatalog(entity, source);
         return entity;
     }
 
-    StoredPokemon toDomain(PokemonEntity entity) {
+    /**
+     * Copies the PokeAPI-owned fields onto the shared row. Genus, description and evolution chain come from separate
+     * upstream calls that can come back empty: a partial answer must not erase what an earlier sync (maybe by another
+     * trainer) already stored.
+     */
+    void refreshCatalog(PokemonEntity entity, StoredPokemon source) {
+        entity.name = source.name();
+        entity.spriteUrl = source.spriteUrl();
+        entity.imageUrl = source.imageUrl();
+        entity.types.clear();
+        entity.types.addAll(source.types());
+        entity.abilities.clear();
+        entity.abilities.addAll(source.abilities());
+        entity.stats.clear();
+        entity.stats.addAll(source.stats().stream().map(s -> new StatEmbeddable(s.name(), s.baseValue())).toList());
+        entity.weightKg = source.weightKg();
+        entity.heightM = source.heightM();
+        if (source.genus() != null) {
+            entity.genus = source.genus();
+        }
+        if (source.description() != null) {
+            entity.description = source.description();
+        }
+        if (source.evolutionChain() != null) {
+            entity.evolutionChainJson = toJson(source.evolutionChain());
+        }
+        entity.syncedAt = source.syncedAt();
+    }
+
+    TrainerPokemonEntity toNewEntry(StoredPokemon source, PokemonEntity catalog) {
+        TrainerPokemonEntity entry = new TrainerPokemonEntity();
+        entry.userId = source.ownerId();
+        entry.pokemon = catalog;
+        entry.addedAt = source.syncedAt();
+        applyNotes(entry, source.localAttributes());
+        return entry;
+    }
+
+    void applyNotes(TrainerPokemonEntity entry, LocalAttributes notes) {
+        entry.nickname = notes.nickname();
+        entry.region = notes.region();
+        entry.tags.clear();
+        entry.tags.addAll(notes.tags());
+    }
+
+    StoredPokemon toDomain(TrainerPokemonEntity entry) {
+        PokemonEntity entity = entry.pokemon;
         return new StoredPokemon(
-                entity.id,
-                entity.version,
-                entity.ownerId,
+                entry.id,
+                entry.version,
+                entry.userId,
                 entity.pokeApiId,
                 entity.name,
                 entity.spriteUrl,
@@ -57,7 +86,7 @@ class PokemonPersistenceMapper {
                 entity.genus,
                 entity.description,
                 fromJson(entity.evolutionChainJson),
-                new LocalAttributes(entity.nickname, entity.region, entity.tags),
+                new LocalAttributes(entry.nickname, entry.region, entry.tags),
                 entity.syncedAt);
     }
 

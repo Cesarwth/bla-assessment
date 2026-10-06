@@ -15,9 +15,9 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 
 /**
- * Fills an empty system with a small collection so there is something to try right away. It only ever adds: anything
- * already stored is left alone, so restarting never duplicates rows or undoes what users edited. Runs after the user
- * seeder, because owners are resolved by username.
+ * Fills an empty system with a small collection per demo trainer so there is something to try right away. It only ever
+ * adds: an entry a trainer already has is left alone, so restarting never duplicates rows or undoes what users edited.
+ * Runs after the user seeder, because owners are resolved by username.
  */
 public class DemoDataSeeder implements ApplicationRunner {
 
@@ -39,9 +39,6 @@ public class DemoDataSeeder implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         int added = 0;
         for (DemoEntry entry : entries) {
-            if (repository.findByPokeApiId(entry.detail().id()).isPresent()) {
-                continue;
-            }
             Optional<User> owner = users.findByUsername(entry.owner());
             if (owner.isEmpty()) {
                 log.warn("Skipping demo Pokemon {}: its owner '{}' does not exist (are the demo passwords set?)",
@@ -49,13 +46,17 @@ public class DemoDataSeeder implements ApplicationRunner {
                 continue;
             }
             User user = owner.get();
+            if (repository.findByTrainerAndPokeApiId(user.id(), entry.detail().id()).isPresent()) {
+                continue;
+            }
             LocalAttributes local = new LocalAttributes(entry.nickname(), entry.region(), entry.tags());
+            // The shared Pokemon row is created by the first trainer that has it; later ones only add their entry.
             repository.save(StoredPokemon.fromDetail(entry.detail(), clock.instant(), new Actor(user.id(), user.username(), user.role()))
                     .withLocalAttributes(local));
             added++;
         }
         if (added > 0) {
-            log.info("Seeded {} demo Pokemon", added);
+            log.info("Seeded {} demo collection entries", added);
         }
     }
 }

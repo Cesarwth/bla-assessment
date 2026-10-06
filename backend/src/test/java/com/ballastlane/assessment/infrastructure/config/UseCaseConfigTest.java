@@ -8,6 +8,7 @@ import com.ballastlane.assessment.application.port.in.DeleteStoredPokemonUseCase
 import com.ballastlane.assessment.application.port.in.GetPokemonDetailUseCase;
 import com.ballastlane.assessment.application.port.in.GetStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.ListPokemonUseCase;
+import com.ballastlane.assessment.application.port.in.ListStoredPokemonIdsUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.RegisterUserUseCase;
 import com.ballastlane.assessment.application.port.in.SyncPokemonRangeUseCase;
@@ -39,7 +40,7 @@ class UseCaseConfigTest {
             for (Class<?> port : new Class<?>[] {
                     RegisterUserUseCase.class, AuthenticateUserUseCase.class, ListPokemonUseCase.class,
                     GetPokemonDetailUseCase.class, SyncPokemonUseCase.class, SyncPokemonRangeUseCase.class,
-                    ListStoredPokemonUseCase.class, GetStoredPokemonUseCase.class, UpdateStoredPokemonUseCase.class,
+                    ListStoredPokemonUseCase.class, ListStoredPokemonIdsUseCase.class, GetStoredPokemonUseCase.class, UpdateStoredPokemonUseCase.class,
                     DeleteStoredPokemonUseCase.class}) {
                 assertThat(context).hasSingleBean(port);
             }

@@ -34,7 +34,6 @@
 }
 
 .number,
-.owner,
 .muted {
   color: var(--color-muted);
 }

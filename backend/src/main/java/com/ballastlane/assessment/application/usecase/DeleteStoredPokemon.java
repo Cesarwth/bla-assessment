@@ -4,7 +4,6 @@ import com.ballastlane.assessment.application.port.in.DeleteStoredPokemonUseCase
 import com.ballastlane.assessment.application.port.out.PokemonRepository;
 import com.ballastlane.assessment.domain.Actor;
 import com.ballastlane.assessment.domain.PokemonIdentifier;
-import com.ballastlane.assessment.domain.exception.AdminRequiredException;
 import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
 
 public class DeleteStoredPokemon implements DeleteStoredPokemonUseCase {
@@ -18,10 +17,7 @@ public class DeleteStoredPokemon implements DeleteStoredPokemonUseCase {
     @Override
     public void delete(int pokeApiId, Actor actor) {
         int id = PokemonIdentifier.requirePositive(pokeApiId);
-        if (!actor.isAdmin()) {
-            throw new AdminRequiredException();
-        }
-        if (!repository.deleteByPokeApiId(id)) {
+        if (!repository.deleteByTrainerAndPokeApiId(actor.userId(), id)) {
             throw new StoredPokemonNotFoundException(id);
         }
     }

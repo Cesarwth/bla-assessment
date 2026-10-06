@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.ballastlane.assessment.application.port.in.DeleteStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.GetStoredPokemonUseCase;
+import com.ballastlane.assessment.application.port.in.ListStoredPokemonIdsUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.SyncPokemonRangeUseCase;
 import com.ballastlane.assessment.application.port.in.SyncPokemonUseCase;
@@ -33,7 +34,6 @@ import com.ballastlane.assessment.domain.User;
 import com.ballastlane.assessment.domain.exception.InvalidLocalAttributesException;
 import com.ballastlane.assessment.domain.exception.InvalidStoredPokemonUpdateException;
 import com.ballastlane.assessment.domain.exception.InvalidSyncRangeException;
-import com.ballastlane.assessment.domain.exception.NotOwnerException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
 import com.ballastlane.assessment.infrastructure.security.JwtConfig;
@@ -61,6 +61,7 @@ class CollectionControllerTest {
     @Autowired MockMvc mvc;
     @Autowired TokenIssuer tokens;
     @MockitoBean ListStoredPokemonUseCase listStored;
+    @MockitoBean ListStoredPokemonIdsUseCase listIds;
     @MockitoBean GetStoredPokemonUseCase getStored;
     @MockitoBean SyncPokemonUseCase syncOne;
     @MockitoBean SyncPokemonRangeUseCase syncRange;
@@ -73,31 +74,58 @@ class CollectionControllerTest {
         return "Bearer " + tokens.issue(new User(1L, "someone", "someone@pallet.town", "hash", role)).value();
     }
 
-    // ---- reads are public ----
+    // ---- reads: the caller's own collection ----
 
     @Test
-    void listIsPublicAndReturnsLocalAttributesToo() throws Exception {
-        when(listStored.list(null, null)).thenReturn(new PageResult<>(List.of(STORED), 0, 12, 1));
+    void idsReturnsAPlainArrayOfTheCallersPokeApiIdsAndIsNotParsedAsAnId() throws Exception {
+        when(listIds.list(USER_ACTOR)).thenReturn(List.of(1, 4, 25));
 
-        mvc.perform(get("/api/v1/collection"))
+        mvc.perform(get("/api/v1/collection/ids").header("Authorization", bearer(Role.USER)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0]").value(1))
+                .andExpect(jsonPath("$[2]").value(25));
+        verifyNoInteractions(getStored);
+    }
+
+    @Test
+    void idsOfAnEmptyCollectionIsAnEmptyArray() throws Exception {
+        when(listIds.list(USER_ACTOR)).thenReturn(List.of());
+
+        mvc.perform(get("/api/v1/collection/ids").header("Authorization", bearer(Role.USER)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void idsNeedsAToken() throws Exception {
+        mvc.perform(get("/api/v1/collection/ids")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(listIds);
+    }
+
+    @Test
+    void listReturnsTheCallersEntriesWithTheirNotesAndNoOwnerId() throws Exception {
+        when(listStored.list(null, null, USER_ACTOR)).thenReturn(new PageResult<>(List.of(STORED), 0, 12, 1));
+
+        mvc.perform(get("/api/v1/collection").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(25))
                 .andExpect(jsonPath("$.items[0].name").value("pikachu"))
                 .andExpect(jsonPath("$.items[0].nickname").value("Pika"))
                 .andExpect(jsonPath("$.items[0].tags[0]").value("starter"))
-                .andExpect(jsonPath("$.items[0].ownerId").value(1))
+                .andExpect(jsonPath("$.items[0].ownerId").doesNotExist())
                 .andExpect(jsonPath("$.totalItems").value(1));
     }
 
     @Test
-    void getIsPublicAndReturnsTheFullRecord() throws Exception {
-        when(getStored.get(25)).thenReturn(STORED);
+    void getReturnsTheFullEntryOfTheCaller() throws Exception {
+        when(getStored.get(25, USER_ACTOR)).thenReturn(STORED);
 
-        mvc.perform(get("/api/v1/collection/25"))
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(25))
                 .andExpect(jsonPath("$.version").value(2))
-                .andExpect(jsonPath("$.ownerId").value(1))
+                .andExpect(jsonPath("$.ownerId").doesNotExist())
                 .andExpect(jsonPath("$.region").value("Kanto"))
                 .andExpect(jsonPath("$.stats[0].name").value("hp"))
                 .andExpect(jsonPath("$.evolutionChain.name").value("pikachu"))
@@ -105,19 +133,27 @@ class CollectionControllerTest {
     }
 
     @Test
-    void get404WhenMissing() throws Exception {
-        when(getStored.get(99)).thenThrow(new StoredPokemonNotFoundException(99));
+    void get404WhenTheCallerDoesNotHaveIt() throws Exception {
+        when(getStored.get(99, USER_ACTOR)).thenThrow(new StoredPokemonNotFoundException(99));
 
-        mvc.perform(get("/api/v1/collection/99"))
+        mvc.perform(get("/api/v1/collection/99").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
     }
 
     @Test
     void get400WhenTheIdIsNotANumber() throws Exception {
-        mvc.perform(get("/api/v1/collection/abc"))
+        mvc.perform(get("/api/v1/collection/abc").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
+    }
+
+    @Test
+    void readsRequireAToken() throws Exception {
+        mvc.perform(get("/api/v1/collection")).andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+        mvc.perform(get("/api/v1/collection/25")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(listStored, getStored);
     }
 
     // ---- sync ----
@@ -185,7 +221,7 @@ class CollectionControllerTest {
     // ---- patch ----
 
     @Test
-    void patchUpdatesLocalFieldsForAnyAuthenticatedUser() throws Exception {
+    void patchUpdatesTheCallersNotes() throws Exception {
         when(updateStored.update(any())).thenReturn(STORED);
 
         mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
@@ -264,23 +300,14 @@ class CollectionControllerTest {
         verifyNoInteractions(updateStored);
     }
 
-    // ---- delete: ADMIN only ----
+    // ---- delete: any authenticated trainer, their own entry ----
 
     @Test
-    void deleteReturns204ForAnAdmin() throws Exception {
-        mvc.perform(delete("/api/v1/collection/25").header("Authorization", bearer(Role.ADMIN)))
+    void deleteReturns204ForAnyAuthenticatedTrainerAndUsesTheActorFromTheToken() throws Exception {
+        mvc.perform(delete("/api/v1/collection/25").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isNoContent());
 
-        verify(deleteStored).delete(25, new Actor(1L, "someone", Role.ADMIN)); // the actor comes from the token
-    }
-
-    @Test
-    void deleteReturns403ForARegularUserWithoutTouchingTheUseCase() throws Exception {
-        mvc.perform(delete("/api/v1/collection/25").header("Authorization", bearer(Role.USER)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
-
-        verifyNoInteractions(deleteStored);
+        verify(deleteStored).delete(25, USER_ACTOR);
     }
 
     @Test
@@ -290,10 +317,10 @@ class CollectionControllerTest {
     }
 
     @Test
-    void delete404WhenMissing() throws Exception {
+    void delete404WhenTheCallerDoesNotHaveIt() throws Exception {
         doThrow(new StoredPokemonNotFoundException(99)).when(deleteStored).delete(org.mockito.ArgumentMatchers.eq(99), any());
 
-        mvc.perform(delete("/api/v1/collection/99").header("Authorization", bearer(Role.ADMIN)))
+        mvc.perform(delete("/api/v1/collection/99").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
     }
@@ -326,24 +353,14 @@ class CollectionControllerTest {
     }
 
     @Test
-    void patch403WhenTheUserDoesNotOwnTheRecord() throws Exception {
-        when(updateStored.update(any())).thenThrow(new NotOwnerException(25));
-
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
-                        .contentType(JSON).content("{\"version\":2,\"nickname\":\"x\"}"))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("FORBIDDEN_NOT_OWNER"));
-    }
-
-    @Test
-    void syncAndPatchResponsesExposeTheOwnerId() throws Exception {
+    void syncAndPatchResponsesDoNotExposeAnOwnerId() throws Exception {
         when(syncOne.sync(eq("pikachu"), any())).thenReturn(new SyncResult(SyncOutcome.CREATED, STORED));
         when(updateStored.update(any())).thenReturn(STORED);
 
         mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", bearer(Role.USER)))
-                .andExpect(jsonPath("$.ownerId").value(1));
+                .andExpect(jsonPath("$.ownerId").doesNotExist());
         mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"version\":2,\"nickname\":\"x\"}"))
-                .andExpect(jsonPath("$.ownerId").value(1));
+                .andExpect(jsonPath("$.ownerId").doesNotExist());
     }
 }

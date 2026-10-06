@@ -13,7 +13,7 @@ async function fill(username: string, email: string, password: string) {
   await userEvent.type(screen.getByLabelText('Username'), username)
   await userEvent.type(screen.getByLabelText('Email'), email)
   await userEvent.type(screen.getByLabelText('Password'), password)
-  await userEvent.click(screen.getByRole('button', { name: 'Create account' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Create profile' }))
 }
 
 const registerFails = (status: number, code: string, message: string, fieldErrors: { field: string; message: string }[] = []) =>
@@ -107,7 +107,8 @@ describe('RegisterPage', () => {
   it('links to the login page', () => {
     renderApp(<App />, { route: '/register' })
 
-    expect(screen.getByRole('link', { name: 'I already have an account' })).toHaveAttribute('href', '/login')
+    expect(screen.getByRole('heading', { name: 'Create your trainer profile' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'I already have a profile' })).toHaveAttribute('href', '/login')
   })
 
   it('has no accessibility violations', async () => {

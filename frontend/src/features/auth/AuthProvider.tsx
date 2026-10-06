@@ -35,9 +35,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null)
   }, [])
 
-  // Cached answers belong to an identity ("Yours" badges, edit rights): refetch them when it changes.
+  // Cached answers belong to an identity (the collection is private to each trainer): drop what is not on screen
+  // and refetch what is, so nobody sees the previous trainer's data.
   const logout = useCallback(() => {
     clearSession()
+    queryClient.removeQueries({ type: 'inactive' })
     void queryClient.invalidateQueries()
   }, [clearSession, queryClient])
 
@@ -64,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     storeToken(token)
     setSession({ token, user: info.user })
     setSessionExpired(false)
+    queryClient.removeQueries({ type: 'inactive' })
     void queryClient.invalidateQueries()
   }, [queryClient])
 

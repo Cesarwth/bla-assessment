@@ -6,13 +6,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.ballastlane.assessment.support.FakePokeApi;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -33,9 +32,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Whole stack, no mocks: login (demo USER, a second USER and the ADMIN) -> sync from a local PokeAPI stand-in -> read
- * -> patch with versions -> ownership rules -> delete, on the real schema built by the same Flyway migrations as
- * production.
+ * Whole stack, no mocks: login (demo USER, a second USER and the ADMIN) -> sync from a local PokeAPI stand-in into the
+ * trainer's own collection -> read -> patch with versions -> isolation between trainers -> delete, on the real schema
+ * built by the same Flyway migrations as production.
  */
 @SpringBootTest(properties = {
         "app.seed.demo-user.enabled=true",
@@ -92,12 +91,6 @@ class CollectionFlowIT {
         return login("other", "Other12345");
     }
 
-    /** The uid claim of a token: what the frontend will compare with {@code ownerId}. */
-    private long uidOf(String bearer) {
-        String payload = bearer.substring("Bearer ".length()).split("\\.")[1];
-        return json.readTree(new String(Base64.getUrlDecoder().decode(payload), StandardCharsets.UTF_8)).get("uid").asLong();
-    }
-
     private long syncAs(String token, String idOrName) throws Exception {
         String body = mvc.perform(post("/api/v1/collection/" + idOrName + "/sync").header("Authorization", token))
                 .andReturn().getResponse().getContentAsString();
@@ -111,13 +104,13 @@ class CollectionFlowIT {
     // ---- flows ----
 
     @Test
-    void syncPatchResyncKeepsLocalEditsRefreshesTheRestAndTracksTheOwner() throws Exception {
+    void syncPatchResyncKeepsLocalEditsAndRefreshesTheRest() throws Exception {
         String token = user();
 
         mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", token))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(25))
-                .andExpect(jsonPath("$.ownerId").value(uidOf(token)))
+                .andExpect(jsonPath("$.ownerId").doesNotExist())
                 .andExpect(jsonPath("$.version").value(0))
                 .andExpect(jsonPath("$.nickname").isEmpty())
                 .andExpect(jsonPath("$.evolutionChain.name").value("pichu"));
@@ -126,13 +119,12 @@ class CollectionFlowIT {
                         .content(patchBody(0, "\"nickname\":\"Pika\",\"region\":\"Kanto\",\"tags\":[\"Starter\",\"ELECTRIC\",\"starter\"]")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.version").value(1))
-                .andExpect(jsonPath("$.ownerId").value(uidOf(token)))
                 .andExpect(jsonPath("$.nickname").value("Pika"))
                 .andExpect(jsonPath("$.tags", hasSize(2)))
                 .andExpect(jsonPath("$.tags[0]").value("starter"))
                 .andExpect(jsonPath("$.tags[1]").value("electric"));
 
-        // Same Pokemon requested by id this time: still an update of the same row, local edits intact.
+        // Same Pokemon requested by id this time: still the same entry, local edits intact.
         mvc.perform(post("/api/v1/collection/25/sync").header("Authorization", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nickname").value("Pika"))
@@ -141,45 +133,65 @@ class CollectionFlowIT {
                 .andExpect(jsonPath("$.weightKg").value(6.0));
 
         assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(1);
     }
 
     @Test
-    void anotherUserCannotEditButTheOwnerAndAnAdminCan() throws Exception {
+    void anotherTrainerCannotSeeEditOrRemoveAnEntryNotEvenAnAdmin() throws Exception {
         String owner = user();
         String stranger = otherUser();
         long version = syncAs(owner, "pikachu");
 
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", stranger).contentType(JSON)
-                        .content(patchBody(version, "\"nickname\":\"Stolen\"")))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("FORBIDDEN_NOT_OWNER"));
-        // ownership is checked before the version: a stranger learns nothing about whether a version is current
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", stranger).contentType(JSON)
-                        .content(patchBody(version + 99, "\"nickname\":\"Stolen\"")))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("FORBIDDEN_NOT_OWNER"));
-        mvc.perform(get("/api/v1/collection/25")).andExpect(jsonPath("$.nickname").isEmpty());
-
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", admin()).contentType(JSON)
-                        .content(patchBody(version, "\"nickname\":\"By admin\"")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nickname").value("By admin"))
-                .andExpect(jsonPath("$.ownerId").value(uidOf(owner)));
+        for (String outsider : List.of(stranger, admin())) {
+            mvc.perform(get("/api/v1/collection/25").header("Authorization", outsider))
+                    .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
+            mvc.perform(patch("/api/v1/collection/25").header("Authorization", outsider).contentType(JSON)
+                            .content(patchBody(version, "\"nickname\":\"Stolen\"")))
+                    .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
+            mvc.perform(delete("/api/v1/collection/25").header("Authorization", outsider)).andExpect(status().isNotFound());
+            mvc.perform(get("/api/v1/collection").header("Authorization", outsider))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.totalItems").value(0));
+        }
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", owner))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.nickname").isEmpty());
     }
 
     @Test
-    void aResyncByAnotherUserKeepsTheOriginalOwnerAndGrantsNothing() throws Exception {
-        String owner = user();
-        String stranger = otherUser();
-        syncAs(owner, "pikachu");
+    void twoTrainersShareTheCatalogRowButKeepTheirOwnNotes() throws Exception {
+        String mine = user();
+        String theirs = otherUser();
 
-        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", stranger))
+        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", mine)).andExpect(status().isCreated());
+        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", theirs)).andExpect(status().isCreated());
+        mvc.perform(patch("/api/v1/collection/25").header("Authorization", mine).contentType(JSON)
+                        .content(patchBody(0, "\"nickname\":\"Sparky\",\"tags\":[\"mine\"]")))
+                .andExpect(status().isOk());
+        mvc.perform(patch("/api/v1/collection/25").header("Authorization", theirs).contentType(JSON)
+                        .content(patchBody(0, "\"nickname\":\"Zap\",\"region\":\"Johto\"")))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", mine))
+                .andExpect(jsonPath("$.nickname").value("Sparky")).andExpect(jsonPath("$.region").isEmpty())
+                .andExpect(jsonPath("$.tags[0]").value("mine"));
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", theirs))
+                .andExpect(jsonPath("$.nickname").value("Zap")).andExpect(jsonPath("$.region").value("Johto"))
+                .andExpect(jsonPath("$.tags", hasSize(0)));
+        assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(2);
+    }
+
+    @Test
+    void addingAPokemonTwiceRefreshesItWithoutTouchingTheNotesOrCreatingADuplicate() throws Exception {
+        String token = user();
+        long version = syncAs(token, "pikachu");
+        mvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
+                .content(patchBody(version, "\"nickname\":\"Pika\"")));
+
+        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.ownerId").value(uidOf(owner)));
-
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", stranger).contentType(JSON)
-                        .content(patchBody(1, "\"nickname\":\"x\"")))
-                .andExpect(status().isForbidden());
+                .andExpect(jsonPath("$.nickname").value("Pika"))
+                .andExpect(jsonPath("$.version").value(version + 1));
+        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(1);
     }
 
     @Test
@@ -230,40 +242,57 @@ class CollectionFlowIT {
     }
 
     @Test
-    void publicReadsNeedNoTokenAndShowTheOwner() throws Exception {
+    void theCollectionRoutesNeedATokenButTheCatalogDoesNot() throws Exception {
         String owner = user();
         mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", owner)).andExpect(status().isCreated());
 
-        mvc.perform(get("/api/v1/collection"))
+        mvc.perform(get("/api/v1/collection")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/collection/25")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/pokemon/25")).andExpect(status().isOk());
+
+        mvc.perform(get("/api/v1/collection").header("Authorization", owner))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalItems").value(1))
                 .andExpect(jsonPath("$.items[0].id").value(25))
-                .andExpect(jsonPath("$.items[0].ownerId").value(uidOf(owner)));
-        mvc.perform(get("/api/v1/collection/25"))
+                .andExpect(jsonPath("$.items[0].ownerId").doesNotExist());
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", owner))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.stats[0].name").value("hp"))
                 .andExpect(jsonPath("$.evolutionChain.evolvesTo[0].evolvesTo[0].name").value("raichu"));
-        mvc.perform(get("/api/v1/collection/404")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/collection/404").header("Authorization", owner)).andExpect(status().isNotFound());
     }
 
     @Test
-    void onlyAnAdminCanDelete() throws Exception {
+    void idsListsOnlyTheCallersPokemonSortedAndIsEmptyForAnotherTrainer() throws Exception {
         String owner = user();
-        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", owner)).andExpect(status().isCreated());
+        syncAs(owner, "pikachu");
+        syncAs(owner, "1");
+
+        mvc.perform(get("/api/v1/collection/ids")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/collection/ids").header("Authorization", owner))
+                .andExpect(status().isOk()).andExpect(content().json("[1,25]", true));
+        mvc.perform(get("/api/v1/collection/ids").header("Authorization", otherUser()))
+                .andExpect(status().isOk()).andExpect(content().json("[]", true));
+    }
+
+    @Test
+    void anyTrainerRemovesTheirOwnEntryAndTheSharedPokemonStaysForTheOthers() throws Exception {
+        String owner = user();
+        String other = otherUser();
+        syncAs(owner, "pikachu");
+        syncAs(other, "pikachu");
 
         mvc.perform(delete("/api/v1/collection/25")).andExpect(status().isUnauthorized());
-        mvc.perform(delete("/api/v1/collection/25").header("Authorization", owner)).andExpect(status().isForbidden());
-        mvc.perform(get("/api/v1/collection/25")).andExpect(status().isOk());
-
-        String admin = admin();
-        mvc.perform(delete("/api/v1/collection/25").header("Authorization", admin)).andExpect(status().isNoContent());
-        mvc.perform(get("/api/v1/collection/25")).andExpect(status().isNotFound());
-        mvc.perform(delete("/api/v1/collection/25").header("Authorization", admin)).andExpect(status().isNotFound());
-        assertThat(jdbc.queryForObject("select count(*) from pokemon_types", Integer.class)).isZero();
+        mvc.perform(delete("/api/v1/collection/25").header("Authorization", owner)).andExpect(status().isNoContent());
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", owner)).andExpect(status().isNotFound());
+        mvc.perform(delete("/api/v1/collection/25").header("Authorization", owner)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", other)).andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(1);
     }
 
     @Test
-    void rangeSyncReportsTheIdsMissingUpstreamAsFailuresAndOwnsWhatItCreates() throws Exception {
+    void rangeSyncReportsTheIdsMissingUpstreamAsFailuresAndAddsWhatItCreatesToTheCallersCollection() throws Exception {
         String token = user();
         mvc.perform(post("/api/v1/collection/sync").header("Authorization", token).contentType(JSON)
                         .content("{\"from\":1025,\"to\":1027}"))
@@ -274,7 +303,7 @@ class CollectionFlowIT {
                 .andExpect(jsonPath("$.failures[0].identifier").value("1026"))
                 .andExpect(jsonPath("$.failures[0].reason").value("Not found upstream"))
                 .andExpect(jsonPath("$.abortedReason").isEmpty());
-        mvc.perform(get("/api/v1/collection/1025")).andExpect(jsonPath("$.ownerId").value(uidOf(token)));
+        mvc.perform(get("/api/v1/collection/1025").header("Authorization", token)).andExpect(status().isOk());
 
         mvc.perform(post("/api/v1/collection/sync").header("Authorization", token).contentType(JSON)
                         .content("{\"from\":1,\"to\":21}"))
@@ -316,7 +345,7 @@ class CollectionFlowIT {
             // Every edit started from the same version, so optimistic locking lets exactly one through: no 500, no lost update.
             assertThat(statuses).allMatch(s -> s == 200 || s == 409);
             assertThat(statuses.stream().filter(s -> s == 200).count()).isEqualTo(1);
-            assertThat(jdbc.queryForObject("select version from pokemon where pokeapi_id = 25", Long.class))
+            assertThat(jdbc.queryForObject("select version from trainer_pokemon", Long.class))
                     .isEqualTo(version + 1);
         } finally {
             pool.shutdownNow();

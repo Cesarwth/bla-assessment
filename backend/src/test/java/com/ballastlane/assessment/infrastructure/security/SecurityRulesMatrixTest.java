@@ -8,6 +8,7 @@ import com.ballastlane.assessment.application.port.in.DeleteStoredPokemonUseCase
 import com.ballastlane.assessment.application.port.in.GetPokemonDetailUseCase;
 import com.ballastlane.assessment.application.port.in.GetStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.ListPokemonUseCase;
+import com.ballastlane.assessment.application.port.in.ListStoredPokemonIdsUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.RegisterUserUseCase;
 import com.ballastlane.assessment.application.port.in.SyncPokemonRangeUseCase;
@@ -57,6 +58,7 @@ class SecurityRulesMatrixTest {
     @MockitoBean ListStoredPokemonUseCase listStored;
     @MockitoBean GetStoredPokemonUseCase getStored;
     @MockitoBean SyncPokemonUseCase syncOne;
+    @MockitoBean ListStoredPokemonIdsUseCase listIds;
     @MockitoBean SyncPokemonRangeUseCase syncRange;
     @MockitoBean UpdateStoredPokemonUseCase updateStored;
     @MockitoBean DeleteStoredPokemonUseCase deleteStored;
@@ -78,19 +80,20 @@ class SecurityRulesMatrixTest {
 
     static Stream<Arguments> matrix() {
         List<Arguments> rows = new java.util.ArrayList<>();
-        // public: auth, catalog reads, collection reads
+        // public: auth and catalog reads
         open(rows, HttpMethod.POST, "/api/v1/auth/login");
         open(rows, HttpMethod.POST, "/api/v1/auth/register");
         open(rows, HttpMethod.GET, "/api/v1/pokemon");
         open(rows, HttpMethod.GET, "/api/v1/pokemon/25");
-        open(rows, HttpMethod.GET, "/api/v1/collection");
-        open(rows, HttpMethod.GET, "/api/v1/collection/25");
-        // collection writes need a token; delete needs ADMIN
+        // the collection is personal: every verb on it needs a token, for any role
+        needsLogin(rows, HttpMethod.GET, "/api/v1/collection");
+        needsLogin(rows, HttpMethod.GET, "/api/v1/collection/ids");
+        needsLogin(rows, HttpMethod.GET, "/api/v1/collection/25");
         needsLogin(rows, HttpMethod.POST, "/api/v1/collection/pikachu/sync");
         needsLogin(rows, HttpMethod.POST, "/api/v1/collection/sync");
         needsLogin(rows, HttpMethod.PATCH, "/api/v1/collection/25");
         for (String deletePath : List.of("/api/v1/collection/25", "/api/v1/collection/25/")) {
-            everyone(rows, HttpMethod.DELETE, deletePath, Outcome.UNAUTHORIZED_401, Outcome.FORBIDDEN_403, Outcome.REACHES_APP);
+            needsLogin(rows, HttpMethod.DELETE, deletePath);
         }
         // the public catalog is read-only: any write verb on it needs a token (and then simply is not supported)
         for (HttpMethod method : List.of(HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH, HttpMethod.DELETE)) {

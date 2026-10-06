@@ -99,7 +99,6 @@ export function stored(id: number, name: string, over: Partial<StoredPokemon> = 
     id,
     name,
     version: 0,
-    ownerId: 1,
     nickname: null,
     region: null,
     tags: [],
@@ -119,7 +118,6 @@ export function storedSummary(id: number, name: string, over: Partial<StoredPoke
     nickname: null,
     region: null,
     tags: [],
-    ownerId: 1,
     ...over,
   }
 }

@@ -3,6 +3,8 @@ package com.ballastlane.assessment.infrastructure.config;
 import static com.ballastlane.assessment.support.TestData.NOW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -47,7 +49,7 @@ class DemoDataSeederTest {
 
     @BeforeEach
     void noStoredPokemonYet() {
-        org.mockito.Mockito.lenient().when(repository.findByPokeApiId(any(Integer.class))).thenReturn(Optional.empty());
+        org.mockito.Mockito.lenient().when(repository.findByTrainerAndPokeApiId(anyLong(), anyInt())).thenReturn(Optional.empty());
         org.mockito.Mockito.lenient().when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
     }
 
@@ -80,13 +82,29 @@ class DemoDataSeederTest {
     }
 
     @Test
-    void skipsWhatIsAlreadyStoredSoRestartsNeverUndoUsersEdits() {
-        when(repository.findByPokeApiId(25))
+    void skipsWhatTheTrainerAlreadyHasSoRestartsNeverUndoUsersEdits() {
+        when(users.findByUsername("demo")).thenReturn(Optional.of(DEMO));
+        when(repository.findByTrainerAndPokeApiId(1L, 25))
                 .thenReturn(Optional.of(TestData.stored(7, 3, 25, "pikachu", new LocalAttributes("Edited", null, List.of()))));
 
         seeder(entry("demo", 25, "pikachu", "Sparky", "Kanto", List.of())).run(null);
 
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void twoTrainersCanBothHaveTheSamePokemonWithDifferentNotes() {
+        when(users.findByUsername("demo")).thenReturn(Optional.of(DEMO));
+        when(users.findByUsername("demo-admin")).thenReturn(Optional.of(ADMIN));
+        when(repository.findByTrainerAndPokeApiId(2L, 25)).thenReturn(Optional.empty());
+
+        seeder(entry("demo", 25, "pikachu", "Sparky", "Kanto", List.of()), entry("demo-admin", 25, "pikachu", null, "Johto", List.of("mascot")))
+                .run(null);
+
+        ArgumentCaptor<StoredPokemon> saved = ArgumentCaptor.forClass(StoredPokemon.class);
+        verify(repository, times(2)).save(saved.capture());
+        assertThat(saved.getAllValues()).extracting(StoredPokemon::ownerId).containsExactly(1L, 2L);
+        assertThat(saved.getAllValues()).extracting(e -> e.localAttributes().nickname()).containsExactly("Sparky", null);
     }
 
     @Test

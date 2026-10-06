@@ -7,7 +7,6 @@ import com.ballastlane.assessment.domain.LocalAttributes;
 import com.ballastlane.assessment.domain.PokemonIdentifier;
 import com.ballastlane.assessment.domain.StoredPokemon;
 import com.ballastlane.assessment.domain.exception.InvalidStoredPokemonUpdateException;
-import com.ballastlane.assessment.domain.exception.NotOwnerException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
 import java.util.Objects;
@@ -29,11 +28,8 @@ public class UpdateStoredPokemon implements UpdateStoredPokemonUseCase {
         if (command.version() == null) {
             throw new InvalidStoredPokemonUpdateException("The version of the record you are editing is required");
         }
-        StoredPokemon current = repository.findByPokeApiId(id).orElseThrow(() -> new StoredPokemonNotFoundException(id));
-        // Ownership first: a stranger must not be able to probe whether a given version is current.
-        if (!current.canBeEditedBy(command.actor())) {
-            throw new NotOwnerException(id);
-        }
+        StoredPokemon current = repository.findByTrainerAndPokeApiId(command.actor().userId(), id).orElseThrow(() -> new StoredPokemonNotFoundException(id));
+        // Another trainer's entry is simply "not found" above: its existence is never revealed.
         if (!Objects.equals(command.version(), current.version())) {
             throw new StaleStoredPokemonException(id);
         }

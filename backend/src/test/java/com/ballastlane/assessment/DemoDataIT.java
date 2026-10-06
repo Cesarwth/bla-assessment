@@ -43,72 +43,85 @@ class DemoDataIT {
         return "Bearer " + json.readTree(body).get("token").asString();
     }
 
-    private long versionOf(int pokeApiId) throws Exception {
-        String body = mvc.perform(get("/api/v1/collection/" + pokeApiId)).andReturn().getResponse().getContentAsString();
+    private long versionOf(String token, int pokeApiId) throws Exception {
+        String body = mvc.perform(get("/api/v1/collection/" + pokeApiId).header("Authorization", token))
+                .andReturn().getResponse().getContentAsString();
         return json.readTree(body).get("version").asLong();
     }
 
-    private long idOfUser(String username) {
-        return jdbc.queryForObject("select id from users where username = ?", Long.class, username);
+    @Test
+    void eachTrainerStartsWithTheirOwnCollectionOverOneSharedCatalog() throws Exception {
+        String demo = login("demo", "Demo12345");
+        String admin = login("demo-admin", "AdminPass123");
+
+        mvc.perform(get("/api/v1/collection").param("size", "48").header("Authorization", demo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalItems").value(6))
+                .andExpect(jsonPath("$.items[*].name").value(hasItems("pikachu", "eevee", "bulbasaur")));
+        mvc.perform(get("/api/v1/collection").param("size", "48").header("Authorization", admin))
+                .andExpect(jsonPath("$.totalItems").value(12))
+                .andExpect(jsonPath("$.items[*].name").value(hasItems("pikachu", "mewtwo", "bulbasaur")));
+        assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(16);
+        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(18);
     }
 
     @Test
-    void theSystemStartsWithBothAccountsAndTheDemoCollection() throws Exception {
-        login("demo", "Demo12345");
-        login("demo-admin", "AdminPass123");
+    void bothDemoTrainersHaveBulbasaurAndPikachuWithDifferentNotes() throws Exception {
+        String demo = login("demo", "Demo12345");
+        String admin = login("demo-admin", "AdminPass123");
 
-        mvc.perform(get("/api/v1/collection").param("size", "48"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalItems").value(16))
-                .andExpect(jsonPath("$.items[*].name").value(hasItems("pikachu", "eevee", "mewtwo", "bulbasaur")));
-    }
-
-    @Test
-    void entriesCarryTheirNicknamesAndTheirOwners() throws Exception {
-        mvc.perform(get("/api/v1/collection/25"))
-                .andExpect(status().isOk())
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", demo))
                 .andExpect(jsonPath("$.nickname").value("Sparky"))
                 .andExpect(jsonPath("$.tags[0]").value("favorite"))
-                .andExpect(jsonPath("$.ownerId").value(idOfUser("demo")))
                 .andExpect(jsonPath("$.evolutionChain.name").value("pichu"));
-        mvc.perform(get("/api/v1/collection/26"))
-                .andExpect(jsonPath("$.ownerId").value(idOfUser("demo-admin")));
+        mvc.perform(get("/api/v1/collection/25").header("Authorization", admin))
+                .andExpect(jsonPath("$.nickname").isEmpty())
+                .andExpect(jsonPath("$.tags[0]").value("mascot"));
+        mvc.perform(get("/api/v1/collection/1").header("Authorization", demo))
+                .andExpect(jsonPath("$.nickname").value("Bulby"));
+        mvc.perform(get("/api/v1/collection/1").header("Authorization", admin))
+                .andExpect(jsonPath("$.nickname").value("Bulba Boss"));
     }
 
     @Test
-    void theDemoUserEditsItsOwnPokemonButIsRefusedOnTheAdminOnes() throws Exception {
+    void aTrainerCannotSeeOrEditThePokemonOnlyTheOtherOneHas() throws Exception {
         String demo = login("demo", "Demo12345");
 
         mvc.perform(patch("/api/v1/collection/4").header("Authorization", demo).contentType(JSON)
-                        .content("{\"version\":" + versionOf(4) + ",\"nickname\":\"Charmy\"}"))
+                        .content("{\"version\":" + versionOf(demo, 4) + ",\"nickname\":\"Charmy\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nickname").value("Charmy"));
+        mvc.perform(get("/api/v1/collection/26").header("Authorization", demo)).andExpect(status().isNotFound());
         mvc.perform(patch("/api/v1/collection/26").header("Authorization", demo).contentType(JSON)
-                        .content("{\"version\":" + versionOf(26) + ",\"nickname\":\"Mine\"}"))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("FORBIDDEN_NOT_OWNER"));
+                        .content("{\"version\":0,\"nickname\":\"Mine\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
     }
 
     @Test
-    void theAdminEditsAnything() throws Exception {
+    void editingASharedPokemonOnlyChangesTheEditorsNotes() throws Exception {
         String admin = login("demo-admin", "AdminPass123");
 
-        mvc.perform(patch("/api/v1/collection/7").header("Authorization", admin).contentType(JSON)
-                        .content("{\"version\":" + versionOf(7) + ",\"region\":\"Cerulean City\"}"))
+        mvc.perform(patch("/api/v1/collection/1").header("Authorization", admin).contentType(JSON)
+                        .content("{\"version\":" + versionOf(admin, 1) + ",\"region\":\"Cerulean City\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.region").value("Cerulean City"));
+        mvc.perform(get("/api/v1/collection/1").header("Authorization", login("demo", "Demo12345")))
+                .andExpect(jsonPath("$.region").value("Pallet Town"));
     }
 
     @Test
     void runningTheSeederAgainNeitherDuplicatesNorUndoesEdits() throws Exception {
         String demo = login("demo", "Demo12345");
         mvc.perform(patch("/api/v1/collection/133").header("Authorization", demo).contentType(JSON)
-                        .content("{\"version\":" + versionOf(133) + ",\"nickname\":\"Edited by a user\"}"))
+                        .content("{\"version\":" + versionOf(demo, 133) + ",\"nickname\":\"Edited by a user\"}"))
                 .andExpect(status().isOk());
 
         seeder.run(null);
 
         assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(16);
-        mvc.perform(get("/api/v1/collection/133")).andExpect(jsonPath("$.nickname").value("Edited by a user"));
+        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(18);
+        mvc.perform(get("/api/v1/collection/133").header("Authorization", demo))
+                .andExpect(jsonPath("$.nickname").value("Edited by a user"));
     }
 }

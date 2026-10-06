@@ -57,7 +57,7 @@ describe('LoginPage', () => {
 
     await fillAndSubmit('ash', 'Pikachu123')
 
-    expect(await screen.findByRole('heading', { name: 'Collection' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'My collection' })).toBeInTheDocument()
   })
 
   it('never follows a return address that leaves the site', async () => {
@@ -152,7 +152,8 @@ describe('LoginPage', () => {
   it('links to the registration page', () => {
     renderApp(<App />, { route: '/login' })
 
-    expect(screen.getByRole('link', { name: 'Create an account' })).toHaveAttribute('href', '/register')
+    expect(screen.getByText('New trainer?')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Create your profile' })).toHaveAttribute('href', '/register')
   })
 
   it('has no accessibility violations', async () => {

@@ -48,9 +48,9 @@ class SyncPokemonTest {
     }
 
     @Test
-    void createsWhenNotStoredYetOwnedByTheActorAndStampsSyncedAtFromTheClock() {
+    void addsToTheActorsCollectionWhenNotThereYetAndStampsSyncedAtFromTheClock() {
         when(gateway.findDetail("pikachu")).thenReturn(Optional.of(TestData.detail(25, "pikachu")));
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.empty());
+        when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.empty());
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         SyncResult result = syncPokemon.sync("  Pikachu ", ACTOR);
@@ -67,10 +67,10 @@ class SyncPokemonTest {
     @Test
     void refreshesWhenStoredKeepingLocalEdits() {
         LocalAttributes local = new LocalAttributes("Pika", "Kanto", List.of("starter"));
-        StoredPokemon existing = TestData.storedOwnedBy(5L, 7, 3, 25, "pikachu", local);
+        StoredPokemon existing = TestData.stored(7, 3, 25, "pikachu", local);
         PokemonDetail changed = TestData.detail(25, "pikachu-v2");
         when(gateway.findDetail("25")).thenReturn(Optional.of(changed));
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.of(existing));
+        when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.of(existing));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         SyncResult result = syncPokemon.sync("25", ACTOR);
@@ -83,24 +83,11 @@ class SyncPokemonTest {
     }
 
     @Test
-    void refreshByAnotherUserNeverChangesTheOriginalOwner() {
-        StoredPokemon existing = TestData.storedOwnedBy(5L, 7, 3, 25, "pikachu", LocalAttributes.empty());
-        when(gateway.findDetail("25")).thenReturn(Optional.of(TestData.detail(25, "pikachu")));
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.of(existing));
-        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        SyncResult result = syncPokemon.sync("25", TestData.user(6));
-
-        assertThat(result.outcome()).isEqualTo(SyncOutcome.UPDATED);
-        assertThat(result.pokemon().ownerId()).isEqualTo(5L);
-    }
-
-    @Test
-    void retriesAsAnUpdateWhenAConcurrentFirstSyncWonTheRaceKeepingTheWinnersOwner() {
+    void retriesAsAnUpdateWhenTheSameEntryWasCreatedConcurrently() {
         LocalAttributes local = new LocalAttributes("Pika", null, List.of());
-        StoredPokemon winner = TestData.storedOwnedBy(6L, 7, 0, 25, "pikachu", local);
+        StoredPokemon winner = TestData.stored(7, 0, 25, "pikachu", local);
         when(gateway.findDetail("25")).thenReturn(Optional.of(TestData.detail(25, "pikachu")));
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.empty(), Optional.of(winner));
+        when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.empty(), Optional.of(winner));
         when(repository.save(any()))
                 .thenThrow(new DuplicateStoredPokemonException(25))
                 .thenAnswer(inv -> inv.getArgument(0));
@@ -109,7 +96,6 @@ class SyncPokemonTest {
 
         assertThat(result.outcome()).isEqualTo(SyncOutcome.UPDATED);
         assertThat(result.pokemon().id()).isEqualTo(7L);
-        assertThat(result.pokemon().ownerId()).isEqualTo(6L);
         assertThat(result.pokemon().localAttributes()).isEqualTo(local);
     }
 
@@ -119,7 +105,7 @@ class SyncPokemonTest {
         StoredPokemon v0 = TestData.stored(7, 0, 25, "pikachu", local);
         StoredPokemon v1 = TestData.stored(7, 1, 25, "pikachu", local);
         when(gateway.findDetail("25")).thenReturn(Optional.of(TestData.detail(25, "pikachu")));
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.of(v0), Optional.of(v1));
+        when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.of(v0), Optional.of(v1));
         when(repository.save(any()))
                 .thenThrow(new StaleStoredPokemonException(25))
                 .thenAnswer(inv -> inv.getArgument(0));
@@ -134,7 +120,7 @@ class SyncPokemonTest {
     @Test
     void givesUpAfterABoundedNumberOfAttemptsInsteadOfLoopingForever() {
         when(gateway.findDetail("25")).thenReturn(Optional.of(TestData.detail(25, "pikachu")));
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.empty());
+        when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.empty());
         when(repository.save(any())).thenThrow(new DuplicateStoredPokemonException(25));
 
         assertThatThrownBy(() -> syncPokemon.sync("25", ACTOR)).isInstanceOf(DuplicateStoredPokemonException.class);

@@ -32,21 +32,21 @@ class GetStoredPokemonTest {
     @Test
     void returnsTheStoredPokemon() {
         StoredPokemon stored = TestData.stored(7, 0, 25, "pikachu", LocalAttributes.empty());
-        when(repository.findByPokeApiId(25)).thenReturn(Optional.of(stored));
+        when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.of(stored));
 
-        assertThat(getStoredPokemon.get(25)).isSameAs(stored);
+        assertThat(getStoredPokemon.get(25, TestData.user(5))).isSameAs(stored);
     }
 
     @Test
     void throwsNotFoundWhenMissing() {
-        when(repository.findByPokeApiId(99)).thenReturn(Optional.empty());
+        when(repository.findByTrainerAndPokeApiId(5L, 99)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> getStoredPokemon.get(99)).isInstanceOf(StoredPokemonNotFoundException.class);
+        assertThatThrownBy(() -> getStoredPokemon.get(99, TestData.user(5))).isInstanceOf(StoredPokemonNotFoundException.class);
     }
 
     @Test
     void rejectsNonPositiveIds() {
-        assertThatThrownBy(() -> getStoredPokemon.get(0)).isInstanceOf(InvalidPokemonIdentifierException.class);
+        assertThatThrownBy(() -> getStoredPokemon.get(0, TestData.user(5))).isInstanceOf(InvalidPokemonIdentifierException.class);
         verifyNoInteractions(repository);
     }
 }

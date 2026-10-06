@@ -1,17 +1,16 @@
 import { Link, useLocation } from 'react-router'
-import { ApiError } from '../../../shared/api/errors'
 import { ErrorState } from '../../../shared/ui/ErrorState'
 import { useAuth } from '../../auth/useAuth'
-import { useCollectionEntry, useSyncPokemon } from '../queries'
+import { useCollectionIds, useSyncPokemon } from '../queries'
 import styles from './AddToCollection.module.css'
 
-/** Whoever adds a Pokémon first owns it, so the button only exists while nobody has claimed it. */
+/** Each trainer has their own collection: the button exists while this Pokémon is not in the logged-in trainer's. */
 export function AddToCollection({ pokemonId }: { pokemonId: number }) {
   const { user } = useAuth()
   const location = useLocation()
   // Set by the edit form when it sends you here after saving.
   const saved = (location.state as { saved?: string } | null)?.saved
-  const entry = useCollectionEntry(pokemonId, user !== null)
+  const ids = useCollectionIds(user !== null)
   const sync = useSyncPokemon()
 
   if (!user) {
@@ -24,35 +23,27 @@ export function AddToCollection({ pokemonId }: { pokemonId: number }) {
     )
   }
 
-  if (entry.data) {
-    const { ownerId } = entry.data
-    const ownership =
-      sync.data?.status === 201
-        ? 'Added to the collection.'
-        : ownerId === user.id
-          ? 'In the collection, added by you.'
-          : ownerId === null
-            ? 'In the collection, with no owner (only admins can edit it).'
-            : 'In the collection, added by another trainer.'
-    const message = saved ? `Saved changes to ${saved}. ${ownership}` : ownership
+  if (ids.data?.includes(pokemonId)) {
+    const status = sync.data?.status === 201 ? 'Added to your collection.' : 'In your collection.'
+    const message = saved ? `Saved changes to ${saved}. ${status}` : status
     return (
       <div className={styles.box}>
         <p role="status" className={styles.status}>
           {message}
         </p>
-        <Link to={`/collection/${pokemonId}`}>View it in the collection</Link>
+        <Link to={`/collection/${pokemonId}`}>View it in my collection</Link>
       </div>
     )
   }
 
-  if (entry.isPending) {
+  if (ids.isPending) {
     return <p className={styles.box}>Checking the collection…</p>
   }
 
-  if (!(entry.error instanceof ApiError && entry.error.status === 404)) {
+  if (ids.isError) {
     return (
       <div className={styles.box}>
-        <ErrorState error={entry.error} onRetry={() => void entry.refetch()} />
+        <ErrorState error={ids.error} onRetry={() => void ids.refetch()} />
       </div>
     )
   }

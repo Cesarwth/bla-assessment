@@ -2,15 +2,28 @@ package com.ballastlane.assessment.application.port.out;
 
 import com.ballastlane.assessment.domain.PageResult;
 import com.ballastlane.assessment.domain.StoredPokemon;
+import java.util.List;
 import java.util.Optional;
 
+/** Every operation is scoped to one trainer's collection; the Pokemon data itself is a catalog shared by all. */
 public interface PokemonRepository {
-    Optional<StoredPokemon> findByPokeApiId(int pokeApiId);
+    Optional<StoredPokemon> findByTrainerAndPokeApiId(long trainerId, int pokeApiId);
 
-    PageResult<StoredPokemon> findPage(int page, int size);
+    PageResult<StoredPokemon> findPage(long trainerId, int page, int size);
 
-    StoredPokemon save(StoredPokemon pokemon);
+    /** Only the PokeAPI ids of the trainer's entries, ascending. */
+    List<Integer> findPokeApiIds(long trainerId);
 
-    /** @return true when a row was removed, false when there was nothing to delete */
-    boolean deleteByPokeApiId(int pokeApiId);
+    /**
+     * Refreshes the shared Pokemon data (unless the stored copy is newer) and creates or updates the trainer's entry.
+     * Notes are only written together with a matching entry version.
+     */
+    StoredPokemon save(StoredPokemon entry);
+
+    /**
+     * Removes the trainer's entry only; the shared Pokemon stays for everybody else.
+     *
+     * @return true when an entry was removed, false when the trainer did not have it
+     */
+    boolean deleteByTrainerAndPokeApiId(long trainerId, int pokeApiId);
 }

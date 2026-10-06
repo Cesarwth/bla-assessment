@@ -5,9 +5,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Local replica of a Pokemon. PokeAPI-owned fields are refreshed by sync; {@link LocalAttributes} are ours.
- * {@code id} and {@code version} are null until first saved; the version travels with the aggregate so a stale
- * write can be detected. {@code ownerId} is the user who first synced the record (null for ownerless legacy rows).
+ * One entry of a trainer's collection: the shared Pokemon data (PokeAPI-owned, refreshed by sync) plus that trainer's
+ * own {@link LocalAttributes}. {@code id} and {@code version} belong to the entry, not to the shared Pokemon, and are
+ * null until first saved; the version guards the trainer's notes against stale writes. {@code ownerId} is the trainer
+ * whose collection this entry is in.
  */
 public record StoredPokemon(
         Long id,
@@ -35,13 +36,8 @@ public record StoredPokemon(
         Objects.requireNonNull(localAttributes, "localAttributes");
     }
 
-    public static StoredPokemon fromDetail(PokemonDetail detail, Instant now, Actor owner) {
-        return copyOf(detail, null, null, owner.userId(), LocalAttributes.empty(), now);
-    }
-
-    /** The owner or any admin; a record nobody owns can only be edited by an admin. */
-    public boolean canBeEditedBy(Actor actor) {
-        return actor.isAdmin() || (ownerId != null && ownerId.equals(actor.userId()));
+    public static StoredPokemon fromDetail(PokemonDetail detail, Instant now, Actor trainer) {
+        return copyOf(detail, null, null, trainer.userId(), LocalAttributes.empty(), now);
     }
 
     // Species data comes from separate upstream calls that can come back empty; a partial answer must not erase

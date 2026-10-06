@@ -12,7 +12,7 @@ import { useAuth } from './useAuth'
 export function RegisterPage() {
   const { user, login } = useAuth()
   const location = useLocation()
-  useDocumentTitle('Create account')
+  useDocumentTitle('Create profile')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -38,7 +38,7 @@ export function RegisterPage() {
   return (
     <div className={styles.page}>
       <form className={styles.card} onSubmit={submit} noValidate>
-        <h1>Create your account</h1>
+        <h1>Create your trainer profile</h1>
         {errors.general && (
           <p role="alert" className={styles.alert}>
             {errors.general}
@@ -72,10 +72,10 @@ export function RegisterPage() {
           error={errors.fields.password}
         />
         <button type="submit" className={styles.submit} disabled={submitting}>
-          {submitting ? 'Creating account…' : 'Create account'}
+          {submitting ? 'Creating profile…' : 'Create profile'}
         </button>
         <p className={styles.switch}>
-          <Link to="/login">I already have an account</Link>
+          <Link to="/login">I already have a profile</Link>
         </p>
       </form>
     </div>

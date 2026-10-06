@@ -18,16 +18,20 @@ describe('App shell', () => {
     renderApp(<App />)
 
     expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login')
-    expect(screen.getByRole('link', { name: 'Register' })).toHaveAttribute('href', '/register')
+    expect(screen.getByRole('link', { name: 'Create profile' })).toHaveAttribute('href', '/register')
     expect(screen.queryByRole('button', { name: 'Log out' })).not.toBeInTheDocument()
   })
 
-  it('has the main navigation', () => {
-    renderApp(<App />)
+  it('has the main navigation, with the collection only for logged-in trainers', () => {
+    const { unmount } = renderApp(<App />)
+    const anonymous = screen.getByRole('navigation', { name: 'Main' })
+    expect(within(anonymous).getByRole('link', { name: 'Catalog' })).toHaveAttribute('href', '/')
+    expect(within(anonymous).queryByRole('link', { name: 'My collection' })).not.toBeInTheDocument()
+    unmount()
 
+    renderApp(<App />, { token: makeToken() })
     const nav = screen.getByRole('navigation', { name: 'Main' })
-    expect(within(nav).getByRole('link', { name: 'Catalog' })).toHaveAttribute('href', '/')
-    expect(within(nav).getByRole('link', { name: 'Collection' })).toHaveAttribute('href', '/collection')
+    expect(within(nav).getByRole('link', { name: 'My collection' })).toHaveAttribute('href', '/collection')
   })
 
   it('shows the user and a logout button once logged in', () => {
@@ -68,19 +72,13 @@ describe('App shell', () => {
   })
 
   describe('session expiry', () => {
-    it('logs the user out, explains why, and reloads the data without the dead token', async () => {
-      let calls = 0
-      mockCollection(() => {
-        calls += 1
-        // A token that expired is refused even on public routes; the retry without it works.
-        return calls === 1 ? failWith(401, 'UNAUTHORIZED', 'Authentication is required') : pageOf([], { totalItems: 0 })
-      })
+    it('logs the user out, explains why, and sends them to the login page', async () => {
+      mockCollection(() => failWith(401, 'UNAUTHORIZED', 'Authentication is required'))
       renderApp(<App />, { route: '/collection', token: makeToken() })
 
       expect(await screen.findByText(/Your session expired/)).toBeInTheDocument()
-      expect(screen.getByRole('link', { name: 'Log in' })).toBeInTheDocument() // header back to anonymous
-      expect(await screen.findByText('The collection is empty')).toBeInTheDocument()
-      expect(calls).toBe(2)
+      expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Log out' })).not.toBeInTheDocument() // header back to anonymous
     })
 
     it('the notice can be dismissed and goes away after logging in', async () => {
@@ -98,11 +96,11 @@ describe('App shell', () => {
     it('follow the page the user is on', async () => {
       mockCollection(() => pageOf([], { totalItems: 0 }))
       mockDetail('25', pikachu)
-      renderApp(<App />, { route: '/' })
+      renderApp(<App />, { route: '/', token: makeToken() })
       await waitFor(() => expect(document.title).toBe('Catalog · Pokédex'))
 
-      await userEvent.click(screen.getByRole('link', { name: 'Collection' }))
-      await waitFor(() => expect(document.title).toBe('Collection · Pokédex'))
+      await userEvent.click(screen.getByRole('link', { name: 'My collection' }))
+      await waitFor(() => expect(document.title).toBe('My collection · Pokédex'))
     })
 
     it('use the name of the Pokémon on its detail page', async () => {
@@ -125,9 +123,9 @@ describe('App shell', () => {
 
   it('moves the focus to the main content when the page changes, so keyboard and screen-reader users notice', async () => {
     mockCollection(() => pageOf([], { totalItems: 0 }))
-    renderApp(<App />)
+    renderApp(<App />, { token: makeToken() })
 
-    await userEvent.click(screen.getByRole('link', { name: 'Collection' }))
+    await userEvent.click(screen.getByRole('link', { name: 'My collection' }))
 
     await waitFor(() => expect(screen.getByRole('main')).toHaveFocus())
   })

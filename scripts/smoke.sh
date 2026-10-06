@@ -39,31 +39,48 @@ check "a foreign Origin is still refused" 403 "$(status -X POST "$BASE/api/v1/au
 TOKEN="$(curl -s -X POST "$BASE/api/v1/auth/login" -H "$JSON" -d "$login_body" | field token)"
 AUTH="Authorization: Bearer $TOKEN"
 
+COLLECTION="$BASE/api/v1/collection"
+echo "Collections are private"
+check "anonymous visitors cannot read a collection" 401 "$(status "$COLLECTION")"
+
 if [ "${SEED_DEMO_DATA:-false}" = "true" ]; then
   echo "The demo data"
   ADMIN_PASSWORD="${DEMO_ADMIN_PASSWORD:?set DEMO_ADMIN_PASSWORD (copy .env.example to .env)}"
   admin_body="{\"username\":\"demo-admin\",\"password\":\"$ADMIN_PASSWORD\"}"
-  check "the demo collection is already there (16 Pokémon)" 16 "$(curl -s "$BASE/api/v1/collection?size=48" | field totalItems)"
   check "the admin account can log in" 200 "$(status -X POST "$BASE/api/v1/auth/login" -H "$JSON" -d "$admin_body")"
   ADMIN_TOKEN="$(curl -s -X POST "$BASE/api/v1/auth/login" -H "$JSON" -d "$admin_body" | field token)"
-  raichu_edit="{\"version\":$(curl -s "$BASE/api/v1/collection/26" | field version),\"nickname\":\"Raichu\"}"
-  charmander_edit="{\"version\":$(curl -s "$BASE/api/v1/collection/4" | field version),\"nickname\":\"Char\"}"
-  check "the demo user is refused on a Pokémon the admin added" 403 "$(status -X PATCH "$BASE/api/v1/collection/26" -H "$AUTH" -H "$JSON" -d "$raichu_edit")"
-  check "the admin can edit it" 200 "$(status -X PATCH "$BASE/api/v1/collection/26" -H "Authorization: Bearer $ADMIN_TOKEN" -H "$JSON" -d "$raichu_edit")"
-  check "the demo user can edit its own Pokémon" 200 "$(status -X PATCH "$BASE/api/v1/collection/4" -H "$AUTH" -H "$JSON" -d "$charmander_edit")"
+  demo_total="$(curl -s "$COLLECTION?size=48" -H "$AUTH" | field totalItems)"
+  admin_total="$(curl -s "$COLLECTION?size=48" -H "Authorization: Bearer $ADMIN_TOKEN" | field totalItems)"
+  check "the demo trainer already has a collection" yes "$([ "${demo_total:-0}" -ge 1 ] && echo yes || echo no)"
+  check "the admin trainer already has a collection" yes "$([ "${admin_total:-0}" -ge 1 ] && echo yes || echo no)"
 fi
 
-echo "The collection"
-sync_status="$(status -X POST "$BASE/api/v1/collection/pikachu/sync" -H "$AUTH")"
+echo "A trainer's collection"
+# A second trainer, new on every run, proves the collections are independent of each other.
+OTHER="smoke$$"
+register_body="{\"username\":\"$OTHER\",\"email\":\"$OTHER@example.com\",\"password\":\"Smoke${$}pass1\"}"
+other_login="{\"username\":\"$OTHER\",\"password\":\"Smoke${$}pass1\"}"
+check "a new trainer can create a profile" 201 "$(status -X POST "$BASE/api/v1/auth/register" -H "$JSON" -d "$register_body")"
+OTHER_AUTH="Authorization: Bearer $(curl -s -X POST "$BASE/api/v1/auth/login" -H "$JSON" -d "$other_login" | field token)"
+check "a new trainer starts with an empty collection" 0 "$(curl -s "$COLLECTION" -H "$OTHER_AUTH" | field totalItems)"
+
+# Mew (151) is not part of the demo data, so adding and removing it never touches it.
+sync_status="$(status -X POST "$COLLECTION/mew/sync" -H "$AUTH")"
 case "$sync_status" in 200|201) check "sync adds or refreshes" ok ok ;; *) check "sync adds or refreshes" "200 or 201" "$sync_status" ;; esac
-version="$(curl -s "$BASE/api/v1/collection/25" | field version)"
-# A different region on every run, so the first edit always changes something (and bumps the version).
+version="$(curl -s "$COLLECTION/151" -H "$AUTH" | field version)"
 edit_kanto="{\"version\":$version,\"region\":\"Smoke $$-a\"}"
 edit_johto="{\"version\":$version,\"region\":\"Smoke $$-b\"}"
-check "anonymous edits are refused" 401 "$(status -X PATCH "$BASE/api/v1/collection/25" -H "$JSON" -d "$edit_kanto")"
-check "edit with the current version" 200 "$(status -X PATCH "$BASE/api/v1/collection/25" -H "$AUTH" -H "$JSON" -H "Origin: $BASE" -d "$edit_kanto")"
-check "edit with a stale version is a conflict" 409 "$(status -X PATCH "$BASE/api/v1/collection/25" -H "$AUTH" -H "$JSON" -d "$edit_johto")"
-check "a user cannot delete (admin only)" 403 "$(status -X DELETE "$BASE/api/v1/collection/25" -H "$AUTH")"
+check "anonymous edits are refused" 401 "$(status -X PATCH "$COLLECTION/151" -H "$JSON" -d "$edit_kanto")"
+check "edit with the current version" 200 "$(status -X PATCH "$COLLECTION/151" -H "$AUTH" -H "$JSON" -H "Origin: $BASE" -d "$edit_kanto")"
+check "edit with a stale version is a conflict" 409 "$(status -X PATCH "$COLLECTION/151" -H "$AUTH" -H "$JSON" -d "$edit_johto")"
+check "another trainer does not see it" 404 "$(status "$COLLECTION/151" -H "$OTHER_AUTH")"
+check "another trainer cannot edit it" 404 "$(status -X PATCH "$COLLECTION/151" -H "$OTHER_AUTH" -H "$JSON" -d "$edit_johto")"
+check "another trainer can add the same Pokémon" 201 "$(status -X POST "$COLLECTION/mew/sync" -H "$OTHER_AUTH")"
+check "its notes are independent of the first trainer's" "" "$(curl -s "$COLLECTION/151" -H "$OTHER_AUTH" | field region | grep -o 'Smoke' || true)"
+check "a trainer removes their own copy" 204 "$(status -X DELETE "$COLLECTION/151" -H "$AUTH")"
+check "it is gone for them" 404 "$(status "$COLLECTION/151" -H "$AUTH")"
+check "but the other trainer still has theirs" 200 "$(status "$COLLECTION/151" -H "$OTHER_AUTH")"
+check "the other trainer cleans up" 204 "$(status -X DELETE "$COLLECTION/151" -H "$OTHER_AUTH")"
 
 if [ "$failed" -eq 0 ]; then echo "All checks passed."; else echo "Some checks FAILED."; fi
 exit "$failed"

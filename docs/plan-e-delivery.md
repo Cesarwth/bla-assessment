@@ -205,3 +205,19 @@ Minors fixed: compose no longer requires demo passwords when seeding is off; the
 Reviewer claims checked and discarded: JaCoCo report "missing" (a concurrent `clean` of mine), `smoke.sh` failing on a second run (it passed repeatedly), missing test for the demo-data flag (exists in `UseCaseConfigTest`), session-expiry cache reset untested (covered in `App.test`).
 
 Verified after the fixes: backend 356 tests (98.1 % / 88.1 %), frontend 172 tests (99.3 % / 93.8 %), `npm audit` 0, stack smoke 18/18 from a clean state in both `.env` paths, Chrome pass on all pages with 0 console problems.
+
+## Design change after manual testing: per-trainer collections (2026-10-06)
+
+Trying the app with two accounts showed that "the first user to sync a Pokémon owns it" made no sense for a trainer game: `demo-admin` could not have the Bulbasaur that `demo` already had, and the shared list showed other trainers' entries. The brief (US-03/US-04) asks for a local replica with room for proprietary fields and for update operations; it says nothing about owners or roles, so the model could be fixed without leaving the brief.
+
+| Before | After |
+| ------ | ----- |
+| one `pokemon` row per Pokémon, `owner_id`, nickname, region, tags on it | `pokemon` = shared catalog (PokeAPI data only); `trainer_pokemon` = one row per (trainer, Pokémon) with that trainer's nickname, region, tags and an optimistic-lock `version`; `trainer_pokemon_tags` |
+| `/collection` public, shared by everybody | every `/collection` call needs a token and is scoped to the caller; another trainer's entry is a `404` |
+| edit: owner or admin (`403` otherwise); delete: admin only | edit and remove: the trainer, on their own entries; no `403` left in the collection |
+| "Yours" badge, "added by another trainer", owner line | removed: everything in "My collection" is yours; the detail page offers "Add" only when you do not have it (`GET /collection/ids`) |
+| — | login page links to "Create your profile"; the Collection link and pages require a session |
+
+Migration `V4__trainer_collections.sql` keeps existing data: every owned row becomes an entry of its owner (notes and tags copied), ownerless rows stay catalog-only. It was verified on H2 (`TrainerCollectionsMigrationTest`) and on a real PostgreSQL volume that held the previous schema with 16 owned rows.
+
+Not done on purpose: an admin view of every trainer's collection (not in the brief; the `ADMIN` role already travels in the token, so it would be a small extension).

@@ -5,6 +5,7 @@ import com.ballastlane.assessment.application.port.in.DeleteStoredPokemonUseCase
 import com.ballastlane.assessment.application.port.in.GetPokemonDetailUseCase;
 import com.ballastlane.assessment.application.port.in.GetStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.ListPokemonUseCase;
+import com.ballastlane.assessment.application.port.in.ListStoredPokemonIdsUseCase;
 import com.ballastlane.assessment.application.port.in.ListStoredPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.RegisterUserUseCase;
 import com.ballastlane.assessment.application.port.in.SyncPokemonRangeUseCase;
@@ -21,6 +22,7 @@ import com.ballastlane.assessment.application.usecase.GetPokemonDetail;
 import com.ballastlane.assessment.application.usecase.GetStoredPokemon;
 import com.ballastlane.assessment.application.usecase.ListPokemon;
 import com.ballastlane.assessment.application.usecase.ListStoredPokemon;
+import com.ballastlane.assessment.application.usecase.ListStoredPokemonIds;
 import com.ballastlane.assessment.application.usecase.RegisterUser;
 import com.ballastlane.assessment.application.usecase.SyncPokemon;
 import com.ballastlane.assessment.application.usecase.SyncPokemonRange;
@@ -75,6 +77,11 @@ public class UseCaseConfig {
     @Bean
     ListStoredPokemonUseCase listStoredPokemonUseCase(PokemonRepository repository) {
         return new ListStoredPokemon(repository);
+    }
+
+    @Bean
+    ListStoredPokemonIdsUseCase listStoredPokemonIdsUseCase(PokemonRepository repository) {
+        return new ListStoredPokemonIds(repository);
     }
 
     @Bean

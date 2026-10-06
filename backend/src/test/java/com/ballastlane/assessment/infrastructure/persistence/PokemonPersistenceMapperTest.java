@@ -17,21 +17,55 @@ class PokemonPersistenceMapperTest {
         return new EvolutionNode(id, name, "s/" + id, requirements, List.of(next));
     }
 
+    private TrainerPokemonEntity entryOf(StoredPokemon source, PokemonEntity shared) {
+        TrainerPokemonEntity entry = mapper.toNewEntry(source, shared);
+        entry.id = source.id();
+        entry.version = source.version();
+        return entry;
+    }
+
+    private StoredPokemon roundTrip(StoredPokemon source) {
+        return mapper.toDomain(entryOf(source, mapper.toCatalogEntity(source)));
+    }
+
     @Test
     void roundTripKeepsEveryField() {
         LocalAttributes local = new LocalAttributes("Pika", "Kanto", List.of("starter", "electric"));
         StoredPokemon pokemon = TestData.stored(7, 3, 25, "pikachu", local);
 
-        assertThat(mapper.toDomain(mapper.toEntity(pokemon))).isEqualTo(pokemon);
+        assertThat(roundTrip(pokemon)).isEqualTo(pokemon);
     }
 
     @Test
-    void roundTripKeepsTheOwnerAndAnOwnerlessRecordStaysOwnerless() {
-        StoredPokemon owned = TestData.storedOwnedBy(42L, 7, 3, 25, "pikachu", LocalAttributes.empty());
-        StoredPokemon ownerless = TestData.storedOwnedBy(null, 8, 0, 26, "raichu", LocalAttributes.empty());
+    void roundTripKeepsTheTrainerWhoseCollectionTheEntryIsIn() {
+        StoredPokemon entry = TestData.storedOwnedBy(42L, 7, 3, 25, "pikachu", LocalAttributes.empty());
 
-        assertThat(mapper.toDomain(mapper.toEntity(owned)).ownerId()).isEqualTo(42L);
-        assertThat(mapper.toDomain(mapper.toEntity(ownerless)).ownerId()).isNull();
+        assertThat(roundTrip(entry).ownerId()).isEqualTo(42L);
+    }
+
+    @Test
+    void refreshingTheCatalogReplacesCollectionsInsteadOfAppending() {
+        StoredPokemon first = TestData.stored(7, 3, 25, "pikachu", LocalAttributes.empty());
+        PokemonEntity shared = mapper.toCatalogEntity(first);
+
+        mapper.refreshCatalog(shared, first.refreshedFrom(TestData.detail(25, "pikachu"), first.syncedAt()));
+
+        assertThat(shared.types).containsExactlyElementsOf(first.types());
+        assertThat(shared.stats).hasSize(first.stats().size());
+    }
+
+    @Test
+    void refreshingTheCatalogKeepsGenusDescriptionAndChainWhenTheIncomingOnesAreNull() {
+        StoredPokemon complete = TestData.stored(7, 3, 25, "pikachu", LocalAttributes.empty());
+        PokemonEntity shared = mapper.toCatalogEntity(complete);
+        StoredPokemon partial = new StoredPokemon(7L, 3L, 1L, 25, "pikachu", "s", "i", List.of("electric"), List.of("static"),
+                complete.stats(), 6.0, 0.4, null, null, null, LocalAttributes.empty(), complete.syncedAt());
+
+        mapper.refreshCatalog(shared, partial);
+
+        assertThat(shared.genus).isEqualTo(complete.genus());
+        assertThat(shared.description).isEqualTo(complete.description());
+        assertThat(mapper.toDomain(entryOf(complete, shared)).evolutionChain()).isEqualTo(complete.evolutionChain());
     }
 
     @Test
@@ -45,7 +79,7 @@ class PokemonPersistenceMapperTest {
                 pokemon.weightKg(), pokemon.heightM(), pokemon.genus(), pokemon.description(), eevee,
                 pokemon.localAttributes(), pokemon.syncedAt());
 
-        assertThat(mapper.toDomain(mapper.toEntity(withChain)).evolutionChain()).isEqualTo(eevee);
+        assertThat(roundTrip(withChain).evolutionChain()).isEqualTo(eevee);
     }
 
     @Test
@@ -56,6 +90,6 @@ class PokemonPersistenceMapperTest {
                 pokemon.weightKg(), pokemon.heightM(), pokemon.genus(), pokemon.description(), null,
                 pokemon.localAttributes(), pokemon.syncedAt());
 
-        assertThat(mapper.toDomain(mapper.toEntity(noChain)).evolutionChain()).isNull();
+        assertThat(roundTrip(noChain).evolutionChain()).isNull();
     }
 }

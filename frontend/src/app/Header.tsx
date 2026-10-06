@@ -16,7 +16,7 @@ export function Header() {
           <NavLink to="/" end>
             Catalog
           </NavLink>
-          <NavLink to="/collection">Collection</NavLink>
+          {user && <NavLink to="/collection">My collection</NavLink>}
         </nav>
         <div className={styles.account}>
           {user ? (
@@ -33,7 +33,7 @@ export function Header() {
                 Log in
               </Link>
               <Link to="/register" className={`${styles.link} ${styles.primary}`}>
-                Register
+                Create profile
               </Link>
             </>
           )}

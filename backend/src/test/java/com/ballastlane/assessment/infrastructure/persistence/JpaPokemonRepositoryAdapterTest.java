@@ -17,6 +17,7 @@ import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.support.TestData;
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,16 +38,34 @@ class JpaPokemonRepositoryAdapterTest {
     @Autowired EntityManager em;
 
     private Actor owner;
+    private Actor other;
 
     @BeforeEach
-    void createAnOwnerUser() {
-        // owner_id is a foreign key to users, so the owner has to be a real row
-        User saved = users.save(new User(null, "owner", "owner@pallet.town", "hash", Role.USER));
-        owner = new Actor(saved.id(), saved.username(), saved.role());
+    void createTwoTrainers() {
+        // user_id is a foreign key to users, so the trainers have to be real rows
+        owner = trainer("owner");
+        other = trainer("other");
+    }
+
+    private Actor trainer(String username) {
+        User saved = users.save(new User(null, username, username + "@pallet.town", "hash", Role.USER));
+        return new Actor(saved.id(), saved.username(), saved.role());
     }
 
     private StoredPokemon newPokemon(int pokeApiId, String name) {
-        return StoredPokemon.fromDetail(TestData.detail(pokeApiId, name), TestData.NOW, owner);
+        return newPokemon(owner, pokeApiId, name);
+    }
+
+    private StoredPokemon newPokemon(Actor trainer, int pokeApiId, String name) {
+        return StoredPokemon.fromDetail(TestData.detail(pokeApiId, name), TestData.NOW, trainer);
+    }
+
+    private Optional<StoredPokemon> find(int pokeApiId) {
+        return adapter.findByTrainerAndPokeApiId(owner.userId(), pokeApiId);
+    }
+
+    private Object count(String table) {
+        return em.createNativeQuery("select count(*) from " + table).getSingleResult();
     }
 
     /** Forces the next read to hit the database instead of the persistence context. */
@@ -71,39 +90,107 @@ class JpaPokemonRepositoryAdapterTest {
 
         assertThat(saved.id()).isNotNull();
         assertThat(saved.version()).isZero();
-        assertThat(adapter.findByPokeApiId(25)).hasValue(saved);
+        assertThat(find(25)).hasValue(saved);
     }
 
     @Test
-    void theOwnerIsStoredAndLoaded() {
+    void theTrainerIsStoredAndLoaded() {
         adapter.save(newPokemon(25, "pikachu"));
         reloadFromDatabase();
 
-        assertThat(adapter.findByPokeApiId(25).orElseThrow().ownerId()).isEqualTo(owner.userId());
+        assertThat(find(25).orElseThrow().ownerId()).isEqualTo(owner.userId());
     }
 
     @Test
-    void deletingTheOwnerUserKeepsTheRecordButWithoutOwner() {
-        adapter.save(newPokemon(25, "pikachu"));
+    void deletingTheUserRemovesTheirEntriesButKeepsTheSharedPokemon() {
+        adapter.save(newPokemon(25, "pikachu").withLocalAttributes(new LocalAttributes(null, null, List.of("a"))));
         reloadFromDatabase();
 
         em.createNativeQuery("delete from users where id = :id").setParameter("id", owner.userId()).executeUpdate();
         em.clear();
 
-        assertThat(adapter.findByPokeApiId(25)).hasValueSatisfying(found -> assertThat(found.ownerId()).isNull());
+        assertThat(count("trainer_pokemon")).isEqualTo(0L);
+        assertThat(count("trainer_pokemon_tags")).isEqualTo(0L);
+        assertThat(count("pokemon")).isEqualTo(1L);
+    }
+
+    @Test
+    void twoTrainersKeepTheSamePokemonWithTheirOwnNotesOverOneSharedRow() {
+        StoredPokemon mine = adapter.save(newPokemon(owner, 25, "pikachu")
+                .withLocalAttributes(new LocalAttributes("Sparky", "Kanto", List.of("mine"))));
+        StoredPokemon theirs = adapter.save(newPokemon(other, 25, "pikachu")
+                .withLocalAttributes(new LocalAttributes("Zap", null, List.of())));
+        reloadFromDatabase();
+
+        assertThat(count("pokemon")).isEqualTo(1L);
+        assertThat(count("trainer_pokemon")).isEqualTo(2L);
+        assertThat(mine.id()).isNotEqualTo(theirs.id());
+        assertThat(find(25).orElseThrow().localAttributes().nickname()).isEqualTo("Sparky");
+        assertThat(adapter.findByTrainerAndPokeApiId(other.userId(), 25).orElseThrow().localAttributes().nickname())
+                .isEqualTo("Zap");
+    }
+
+    @Test
+    void aTrainerCannotHaveTheSamePokemonTwice() {
+        adapter.save(newPokemon(25, "pikachu"));
+
+        assertThatThrownBy(() -> adapter.save(newPokemon(25, "pikachu")))
+                .isInstanceOf(DuplicateStoredPokemonException.class);
+    }
+
+    @Test
+    void theNotesOfOneTrainerAreNotVisibleToAnother() {
+        adapter.save(newPokemon(25, "pikachu"));
+        reloadFromDatabase();
+
+        assertThat(adapter.findByTrainerAndPokeApiId(other.userId(), 25)).isEmpty();
+        assertThat(adapter.findPage(other.userId(), 0, 10).items()).isEmpty();
+    }
+
+    @Test
+    void refreshingFromAnotherTrainerKeepsTheSharedGenusDescriptionAndChainWhenTheyComeBackEmpty() {
+        adapter.save(newPokemon(owner, 25, "pikachu"));
+        PokemonDetail partial = new PokemonDetail(25, "pikachu", "img/25", "sprite/25", List.of("electric"), 6.0, 0.4,
+                List.of("static"), List.of(new PokemonStat("hp", 35)), null, null, null);
+
+        adapter.save(StoredPokemon.fromDetail(partial, TestData.NOW.plusSeconds(60), other));
+        reloadFromDatabase();
+
+        StoredPokemon shared = find(25).orElseThrow();
+        assertThat(shared.genus()).isEqualTo("Mouse Pokémon");
+        assertThat(shared.description()).isEqualTo("description of pikachu");
+        assertThat(shared.evolutionChain()).isNotNull();
+        assertThat(shared.syncedAt()).isEqualTo(TestData.NOW.plusSeconds(60));
+    }
+
+    @Test
+    void savingNotesFromAnOlderCopyNeverRollsTheSharedDataBack() {
+        StoredPokemon mine = adapter.save(newPokemon(owner, 25, "pikachu"));
+        PokemonDetail renamed = TestData.detail(25, "pikachu-v2");
+        adapter.save(StoredPokemon.fromDetail(renamed, TestData.NOW.plusSeconds(60), other));
+        reloadFromDatabase();
+
+        adapter.save(mine.withLocalAttributes(new LocalAttributes("Sparky", null, List.of())));
+        reloadFromDatabase();
+
+        StoredPokemon loaded = find(25).orElseThrow();
+        assertThat(loaded.name()).isEqualTo("pikachu-v2");
+        assertThat(loaded.localAttributes().nickname()).isEqualTo("Sparky");
+    }
+
+    @Test
+    void anEntryRemovedMeanwhileIsReportedAsStale() {
+        StoredPokemon mine = adapter.save(newPokemon(25, "pikachu"));
+        adapter.deleteByTrainerAndPokeApiId(owner.userId(), 25);
+        reloadFromDatabase();
+
+        assertThatThrownBy(() -> adapter.save(mine.withLocalAttributes(new LocalAttributes("x", null, List.of()))))
+                .isInstanceOf(StaleStoredPokemonException.class);
     }
 
     @Test
     void findByPokeApiIdIsEmptyWhenMissing() {
-        assertThat(adapter.findByPokeApiId(999)).isEmpty();
-    }
-
-    @Test
-    void pokeApiIdIsUnique() {
-        adapter.save(newPokemon(25, "pikachu"));
-
-        assertThatThrownBy(() -> adapter.save(newPokemon(25, "pikachu-clone")))
-                .isInstanceOf(DuplicateStoredPokemonException.class);
+        assertThat(find(999)).isEmpty();
     }
 
     @Test
@@ -122,7 +209,7 @@ class JpaPokemonRepositoryAdapterTest {
         adapter.save(saved.refreshedFrom(reordered, TestData.NOW));
         reloadFromDatabase();
 
-        StoredPokemon loaded = adapter.findByPokeApiId(1).orElseThrow();
+        StoredPokemon loaded = find(1).orElseThrow();
         assertThat(loaded.types()).containsExactly("ghost", "grass", "poison");
         assertThat(loaded.abilities()).containsExactly("x", "overgrow", "chlorophyll");
         assertThat(loaded.stats()).extracting(PokemonStat::name).containsExactly("defense", "hp");
@@ -133,12 +220,12 @@ class JpaPokemonRepositoryAdapterTest {
         StoredPokemon saved = adapter.save(newPokemon(25, "pikachu"));
         StoredPokemon tagged = adapter.save(saved.withLocalAttributes(new LocalAttributes(null, null, List.of("a", "b"))));
         reloadFromDatabase();
-        assertThat(adapter.findByPokeApiId(25).orElseThrow().localAttributes().tags()).containsExactly("a", "b");
+        assertThat(find(25).orElseThrow().localAttributes().tags()).containsExactly("a", "b");
 
         adapter.save(tagged.withLocalAttributes(LocalAttributes.empty()));
         reloadFromDatabase();
 
-        assertThat(adapter.findByPokeApiId(25).orElseThrow().localAttributes()).isEqualTo(LocalAttributes.empty());
+        assertThat(find(25).orElseThrow().localAttributes()).isEqualTo(LocalAttributes.empty());
     }
 
     @Test
@@ -153,14 +240,15 @@ class JpaPokemonRepositoryAdapterTest {
     }
 
     @Test
-    void findPageOrdersByPokeApiIdAndReportsTheTotal() {
+    void findPageOrdersByPokeApiIdAndReportsTheTotalOfTheTrainersOwnEntries() {
+        adapter.save(newPokemon(other, 4, "charmander"));
         adapter.save(newPokemon(3, "venusaur"));
         adapter.save(newPokemon(1, "bulbasaur"));
         adapter.save(newPokemon(2, "ivysaur"));
         reloadFromDatabase();
 
-        PageResult<StoredPokemon> first = adapter.findPage(0, 2);
-        PageResult<StoredPokemon> second = adapter.findPage(1, 2);
+        PageResult<StoredPokemon> first = adapter.findPage(owner.userId(), 0, 2);
+        PageResult<StoredPokemon> second = adapter.findPage(owner.userId(), 1, 2);
 
         assertThat(first.items()).extracting(StoredPokemon::pokeApiId).containsExactly(1, 2);
         assertThat(second.items()).extracting(StoredPokemon::pokeApiId).containsExactly(3);
@@ -169,28 +257,46 @@ class JpaPokemonRepositoryAdapterTest {
     }
 
     @Test
+    void findPokeApiIdsListsOnlyTheTrainersOwnIdsInAscendingOrder() {
+        adapter.save(newPokemon(25, "pikachu"));
+        adapter.save(newPokemon(1, "bulbasaur"));
+        adapter.save(newPokemon(other, 4, "charmander"));
+        adapter.save(newPokemon(4, "charmander"));
+        reloadFromDatabase();
+
+        assertThat(adapter.findPokeApiIds(owner.userId())).containsExactly(1, 4, 25);
+        assertThat(adapter.findPokeApiIds(other.userId())).containsExactly(4);
+    }
+
+    @Test
+    void findPokeApiIdsIsEmptyForATrainerWithoutEntries() {
+        assertThat(adapter.findPokeApiIds(other.userId())).isEmpty();
+    }
+
+    @Test
     void findPageBeyondTheEndIsEmptyEvenForHugePageNumbers() {
         adapter.save(newPokemon(1, "bulbasaur"));
 
-        assertThat(adapter.findPage(5, 2).items()).isEmpty();
-        PageResult<StoredPokemon> huge = adapter.findPage(Integer.MAX_VALUE, 50);
+        assertThat(adapter.findPage(owner.userId(), 5, 2).items()).isEmpty();
+        PageResult<StoredPokemon> huge = adapter.findPage(owner.userId(), Integer.MAX_VALUE, 50);
         assertThat(huge.items()).isEmpty();
         assertThat(huge.totalItems()).isEqualTo(1);
     }
 
     @Test
-    void deleteRemovesTheRowAndItsChildRows() {
+    void deleteRemovesOnlyTheTrainersEntryAndItsTagsAndKeepsTheSharedPokemon() {
         adapter.save(newPokemon(25, "pikachu").withLocalAttributes(new LocalAttributes(null, null, List.of("a"))));
+        adapter.save(newPokemon(other, 25, "pikachu"));
         reloadFromDatabase();
 
-        assertThat(adapter.deleteByPokeApiId(25)).isTrue();
+        assertThat(adapter.deleteByTrainerAndPokeApiId(owner.userId(), 25)).isTrue();
         reloadFromDatabase();
 
-        assertThat(adapter.findByPokeApiId(25)).isEmpty();
-        for (String table : List.of("pokemon_types", "pokemon_abilities", "pokemon_stats", "pokemon_tags")) {
-            assertThat(em.createNativeQuery("select count(*) from " + table).getSingleResult())
-                    .as(table).isEqualTo(0L);
-        }
-        assertThat(adapter.deleteByPokeApiId(25)).isFalse();
+        assertThat(find(25)).isEmpty();
+        assertThat(adapter.findByTrainerAndPokeApiId(other.userId(), 25)).isPresent();
+        assertThat(count("trainer_pokemon")).isEqualTo(1L);
+        assertThat(count("trainer_pokemon_tags")).isEqualTo(0L);
+        assertThat(count("pokemon")).isEqualTo(1L);
+        assertThat(adapter.deleteByTrainerAndPokeApiId(owner.userId(), 25)).isFalse();
     }
 }

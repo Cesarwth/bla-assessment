@@ -1,6 +1,5 @@
 package com.ballastlane.assessment.infrastructure.web;
 
-import com.ballastlane.assessment.domain.exception.AdminRequiredException;
 import com.ballastlane.assessment.domain.exception.CatalogUnavailableException;
 import com.ballastlane.assessment.domain.exception.DuplicateStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.EmailAlreadyExistsException;
@@ -9,7 +8,6 @@ import com.ballastlane.assessment.domain.exception.InvalidPaginationException;
 import com.ballastlane.assessment.domain.exception.InvalidPokemonIdentifierException;
 import com.ballastlane.assessment.domain.exception.InvalidStoredPokemonUpdateException;
 import com.ballastlane.assessment.domain.exception.InvalidSyncRangeException;
-import com.ballastlane.assessment.domain.exception.NotOwnerException;
 import com.ballastlane.assessment.domain.exception.PokemonNotFoundException;
 import com.ballastlane.assessment.domain.exception.StaleStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.StoredPokemonNotFoundException;
@@ -93,16 +91,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateStoredPokemonException.class)
     ResponseEntity<ErrorResponse> duplicateStoredPokemon(DuplicateStoredPokemonException ex) {
         return respond(HttpStatus.CONFLICT, "CONFLICT", "Resource already exists");
-    }
-
-    @ExceptionHandler(AdminRequiredException.class)
-    ResponseEntity<ErrorResponse> adminRequired(AdminRequiredException ex) {
-        return respond(HttpStatus.FORBIDDEN, "FORBIDDEN", ex.getMessage());
-    }
-
-    @ExceptionHandler(NotOwnerException.class)
-    ResponseEntity<ErrorResponse> notOwner(NotOwnerException ex) {
-        return respond(HttpStatus.FORBIDDEN, "FORBIDDEN_NOT_OWNER", ex.getMessage());
     }
 
     // Raised inside a controller (e.g. a token that does not identify a user): without this the catch-all makes it a 500.

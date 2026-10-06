@@ -65,7 +65,7 @@ export function LoginPage() {
           {submitting ? 'Logging in…' : 'Log in'}
         </button>
         <p className={styles.switch}>
-          <Link to="/register">Create an account</Link>
+          New trainer? <Link to="/register">Create your profile</Link>
         </p>
       </form>
     </div>

@@ -22,6 +22,11 @@ export function syncRange(from: number, to: number) {
   return api.post<SyncReport>('/collection/sync', { from, to })
 }
 
+/** The PokeAPI ids in the caller's collection, ascending. */
+export function fetchCollectionIds(signal?: AbortSignal) {
+  return api.get<number[]>('/collection/ids', signal)
+}
+
 export function fetchCollectionEntry(id: number, signal?: AbortSignal) {
   return api.get<StoredPokemon>(`/collection/${id}`, signal)
 }
