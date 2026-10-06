@@ -1,5 +1,6 @@
 package com.ballastlane.assessment.infrastructure.web;
 
+import com.ballastlane.assessment.domain.exception.AdminRequiredException;
 import com.ballastlane.assessment.domain.exception.CatalogUnavailableException;
 import com.ballastlane.assessment.domain.exception.DuplicateStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.EmailAlreadyExistsException;
@@ -92,6 +93,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateStoredPokemonException.class)
     ResponseEntity<ErrorResponse> duplicateStoredPokemon(DuplicateStoredPokemonException ex) {
         return respond(HttpStatus.CONFLICT, "CONFLICT", "Resource already exists");
+    }
+
+    @ExceptionHandler(AdminRequiredException.class)
+    ResponseEntity<ErrorResponse> adminRequired(AdminRequiredException ex) {
+        return respond(HttpStatus.FORBIDDEN, "FORBIDDEN", ex.getMessage());
     }
 
     @ExceptionHandler(NotOwnerException.class)

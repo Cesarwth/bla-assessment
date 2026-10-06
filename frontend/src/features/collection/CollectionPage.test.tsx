@@ -81,6 +81,14 @@ describe('CollectionPage', () => {
     expect(screen.getByRole('link', { name: 'Browse the catalog' })).toHaveAttribute('href', '/')
   })
 
+  it('explains a page beyond the end and offers a way back, like the catalog does', async () => {
+    mockCollection(() => pageOf([], { page: 99, totalItems: 30 }))
+    renderApp(<App />, { route: '/collection?page=100' })
+
+    expect(await screen.findByText('No entries on this page')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Go to the first page' })).toHaveAttribute('href', '/collection?page=1&size=12')
+  })
+
   it('reports failures and lets the user retry', async () => {
     let calls = 0
     mockCollection(() => {

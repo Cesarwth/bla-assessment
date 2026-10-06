@@ -31,7 +31,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** The editable local replica. Reads are public; writes need a token; delete is restricted in SecurityConfig. */
+/**
+ * The editable local replica. Reads are public; writes need a token; delete is admin-only, enforced twice: by the
+ * route rules in SecurityConfig and by the use case itself.
+ */
 @RestController
 @RequestMapping("/api/v1/collection")
 public class CollectionController {
@@ -91,7 +94,7 @@ public class CollectionController {
 
     @DeleteMapping("/{pokeApiId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable int pokeApiId) {
-        deleteStored.delete(pokeApiId);
+    public void delete(@PathVariable int pokeApiId, @AuthenticationPrincipal Jwt jwt) {
+        deleteStored.delete(pokeApiId, ActorResolver.from(jwt));
     }
 }

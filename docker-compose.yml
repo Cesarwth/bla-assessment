@@ -26,11 +26,14 @@ services:
       JWT_SECRET: ${JWT_SECRET:?copy .env.example to .env}
       SEED_DEMO_USER: ${SEED_DEMO_USER:-false}
       SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
-      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:?copy .env.example to .env}
-      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:?copy .env.example to .env}
+      # Optional: only needed when the demo accounts are seeded (a real deployment leaves them empty).
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+    # Bound to this machine only: the browser goes through nginx (below), and a plain-HTTP API must not be reachable
+    # from the network. Publish it more widely only behind a TLS-terminating proxy.
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
 
   frontend:
     build: ./frontend
@@ -39,7 +42,7 @@ services:
         condition: service_healthy
     # The only door for the browser: nginx serves the app and proxies /api to the backend (no CORS needed).
     ports:
-      - "8081:8080"
+      - "127.0.0.1:8081:8080"
 
 volumes:
   pgdata:

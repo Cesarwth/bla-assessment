@@ -1,5 +1,8 @@
 package com.ballastlane.assessment.application.port.in;
 
+import com.ballastlane.assessment.domain.Actor;
+
 public interface DeleteStoredPokemonUseCase {
-    void delete(int pokeApiId);
+    /** Reserved to admins: the rule is enforced here, not only by the route rules of the web layer. */
+    void delete(int pokeApiId, Actor actor);
 }

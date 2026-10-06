@@ -6,9 +6,34 @@ cd "$(dirname "$0")/.."
 
 command -v docker >/dev/null 2>&1 || { echo "Docker is required: https://docs.docker.com/get-docker/"; exit 1; }
 
+random_hex() {
+  if command -v openssl >/dev/null 2>&1; then openssl rand -hex 32; else head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n'; fi
+}
+
+# Replaces the value of KEY in .env (portable: no sed -i, which differs between macOS and Linux).
+set_env() {
+  tmp="$(mktemp)"
+  awk -v key="$1" -v value="$2" 'BEGIN { FS = OFS = "=" } $1 == key { print key "=" value; next } { print }' .env > "$tmp"
+  mv "$tmp" .env
+}
+
+# The example file is public, so its secrets must never be used as they are.
 if [ ! -f .env ]; then
+  # A database volume from an earlier run keeps the password it was created with: a new random one would not match.
+  project="$(basename "$PWD" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9_-')"
+  if docker volume inspect "${project}_pgdata" >/dev/null 2>&1; then
+    echo "There is no .env, but a database from an earlier run exists (volume ${project}_pgdata) with the old password."
+    echo "To start from scratch (this ERASES that database):"
+    echo "  cp .env.example .env && docker compose down -v && rm .env && ./scripts/start.sh"
+    exit 1
+  fi
   cp .env.example .env
-  echo "Created .env from .env.example (demo-only values; change them for anything real)."
+  set_env JWT_SECRET "$(random_hex)"
+  set_env POSTGRES_PASSWORD "$(random_hex)"
+  echo "Created .env from .env.example with a random JWT secret and database password (the demo accounts keep their demo passwords)."
+elif grep -qi '^JWT_SECRET=change-me' .env; then
+  set_env JWT_SECRET "$(random_hex)"
+  echo "Replaced the placeholder JWT_SECRET in .env with a random one."
 fi
 
 docker compose up --build -d
@@ -34,6 +59,8 @@ Ready.
 
   Web app : http://localhost:8081
   API     : http://localhost:8080   (health: /actuator/health)
+
+  Both ports are bound to this machine only (127.0.0.1); put a TLS-terminating proxy in front to expose them.
 
   Demo accounts (from .env):
     admin : demo-admin / ${DEMO_ADMIN_PASSWORD:-<not set>}   can edit everything and delete

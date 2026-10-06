@@ -185,3 +185,23 @@ Branch-based; the history rewrite keeps `refs/original/*` until the owner confir
 
 ## Out of Scope
 CI pipeline, deployment, OpenAPI/Swagger UI, extra seed data volume, i18n, rate limiting (declined), refresh tokens.
+
+## Code review follow-up (2026-10-06)
+
+Final review (architecture, correctness, security, tests): 0 critical, 7 major. All fixed, test-first where code is involved:
+
+| Finding | Fix |
+| ------- | --- |
+| Public placeholder JWT secret shipped by default | `JwtProperties` refuses secrets starting with `change-me`; `start.sh` generates random `JWT_SECRET`/`POSTGRES_PASSWORD` for a new `.env` and replaces a placeholder secret in an existing one |
+| API published on `0.0.0.0:8080` | API and app bound to `127.0.0.1`; DB not published |
+| No TLS/HSTS story | documented; nginx passes `X-Forwarded-Proto` through and sends HSTS only over HTTPS |
+| Edit conflict could overwrite untouched fields (data loss) | `EditForm` tracks only the fields the user edited, sends only those, and rebases the rest on the latest version; typing during a save is kept |
+| 15 s proxy timeout cut range imports | exact-match route `/api/v1/collection/sync` with 120 s; shared `proxy-api.conf` |
+| Delete's admin-only rule lived only in the URL config | `DeleteStoredPokemon.delete(id, actor)` throws `AdminRequiredException` (403 `FORBIDDEN`); route rule kept as defense in depth |
+| Gates not enforced anywhere | `.github/workflows/ci.yml` (backend build, frontend checks, stack smoke); linted with actionlint |
+
+Minors fixed: compose no longer requires demo passwords when seeding is off; the collection page explains an out-of-range page; `smoke.sh` survives a missing field and uses a different region per run; the frontend console guard also covers `log/info/debug`; `start.sh` refuses (with instructions) to generate a new password when an old database volume exists.
+
+Reviewer claims checked and discarded: JaCoCo report "missing" (a concurrent `clean` of mine), `smoke.sh` failing on a second run (it passed repeatedly), missing test for the demo-data flag (exists in `UseCaseConfigTest`), session-expiry cache reset untested (covered in `App.test`).
+
+Verified after the fixes: backend 356 tests (98.1 % / 88.1 %), frontend 172 tests (99.3 % / 93.8 %), `npm audit` 0, stack smoke 18/18 from a clean state in both `.env` paths, Chrome pass on all pages with 0 console problems.

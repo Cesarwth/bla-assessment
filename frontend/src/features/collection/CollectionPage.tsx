@@ -39,6 +39,15 @@ export function CollectionPage() {
         </div>
       )
     }
+    if (query.data.items.length === 0) {
+      // Beyond the last page (a stale bookmark, or the last entry of the last page was just deleted).
+      return (
+        <div className={styles.empty}>
+          <h2>No entries on this page</h2>
+          <Link to={hrefFor(1)}>Go to the first page</Link>
+        </div>
+      )
+    }
     return (
       <>
         <ul className={styles.grid} aria-busy={query.isPlaceholderData}>

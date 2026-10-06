@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.ballastlane.assessment.domain.exception.AdminRequiredException;
 import com.ballastlane.assessment.domain.exception.CatalogUnavailableException;
 import com.ballastlane.assessment.domain.exception.DuplicateStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.EmailAlreadyExistsException;
@@ -93,6 +94,8 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("CONCURRENT_MODIFICATION"));
         mvc.perform(get("/boom/not-owner")).andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN_NOT_OWNER"));
+        mvc.perform(get("/boom/admin-required")).andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
         mvc.perform(get("/boom/duplicate")).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONFLICT"));
     }
@@ -179,6 +182,7 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/boom/bad-attributes") void o() { throw new InvalidLocalAttributesException("bad"); }
         @GetMapping("/boom/bad-update") void q() { throw new InvalidStoredPokemonUpdateException("bad"); }
         @GetMapping("/boom/bad-range") void r() { throw new InvalidSyncRangeException("bad"); }
+        @GetMapping("/boom/admin-required") void y() { throw new AdminRequiredException(); }
         @GetMapping("/boom/not-owner") void w() { throw new NotOwnerException(25); }
         @GetMapping("/boom/auth") void x() { throw new BadCredentialsException("token without uid"); }
         @GetMapping("/boom/duplicate") void v() { throw new DuplicateStoredPokemonException(25); }

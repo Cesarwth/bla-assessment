@@ -15,6 +15,15 @@ class JwtPropertiesTest {
     }
 
     @Test
+    void refusesTheWellKnownPlaceholderOfTheExampleFile() {
+        // Anyone who read the repository knows it: a token signed with it would be accepted as genuine.
+        assertThatThrownBy(() -> new JwtProperties("change-me-change-me-change-me-change-me-0000", 60))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("openssl");
+        assertThatThrownBy(() -> new JwtProperties("CHANGE-ME-" + "x".repeat(40), 60)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void rejectsNonPositiveTtl() {
         assertThatThrownBy(() -> new JwtProperties("x".repeat(32), 0)).isInstanceOf(IllegalArgumentException.class);
     }

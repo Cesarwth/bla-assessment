@@ -255,12 +255,79 @@ describe('CollectionEntryPage', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent('Someone else changed this entry')
       await userEvent.click(screen.getByRole('button', { name: 'Load the latest version' }))
 
-      expect(await screen.findByLabelText('Region')).toHaveValue('Kanto') // the draft is kept...
+      expect(await screen.findByLabelText('Region')).toHaveValue('Johto') // what the user did not touch follows the latest version...
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-      expect(nickname).toHaveValue('Sparky')
+      expect(nickname).toHaveValue('Sparky') // ...while what the user typed is kept
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
       await screen.findByText('Saved.')
-      expect(bodies[1]).toMatchObject({ version: 4 }) // ...and the next save is based on the latest version
+      expect(bodies[1]).toEqual({ version: 4, nickname: 'Sparky' }) // based on the latest version, and only what the user changed
+    })
+
+    it('never overwrites, after a conflict, a field the user did not touch (the other person’s edit survives)', async () => {
+      let reads = 0
+      server.use(
+        http.get(apiUrl('/collection/25'), () => {
+          reads += 1
+          // meanwhile somebody else renamed the Pokémon
+          return HttpResponse.json(reads === 1 ? entry() : entry({ version: 4, nickname: 'Renamed by someone else' }))
+        }),
+      )
+      const bodies: Record<string, unknown>[] = []
+      server.use(
+        http.patch(apiUrl('/collection/25'), async ({ request }) => {
+          bodies.push((await request.json()) as Record<string, unknown>)
+          return bodies.length === 1
+            ? failWith(409, 'CONCURRENT_MODIFICATION', 'modified by someone else')
+            : HttpResponse.json(entry({ version: 5, nickname: 'Renamed by someone else', region: 'Hoenn' }))
+        }),
+      )
+      renderApp(<App />, asOwner())
+      const region = await screen.findByLabelText('Region')
+      await userEvent.clear(region)
+      await userEvent.type(region, 'Hoenn') // the user only edits the region
+      await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Load the latest version' }))
+
+      expect(await screen.findByLabelText('Nickname')).toHaveValue('Renamed by someone else')
+      await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+      await screen.findByText('Saved.')
+      expect(bodies[1]).toEqual({ version: 4, region: 'Hoenn' }) // the nickname is not sent: nobody's change is lost
+    })
+
+    it('keeps what was typed while a save was in flight', async () => {
+      mockEntry(25, entry())
+      server.use(
+        http.patch(apiUrl('/collection/25'), async () => {
+          await delay(80)
+          return HttpResponse.json(entry({ version: 4, nickname: 'First' }))
+        }),
+      )
+      renderApp(<App />, asOwner())
+      const nickname = await screen.findByLabelText('Nickname')
+      await userEvent.clear(nickname)
+      await userEvent.type(nickname, 'First')
+      await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+      await userEvent.type(screen.getByLabelText('Region'), '!') // typed while the request is still running
+      // once the request finishes the button is back: "Saved." stays hidden because there is a new unsaved edit
+      const save = await screen.findByRole('button', { name: 'Save changes' })
+
+      expect(save).toBeEnabled()
+      expect(screen.getByLabelText('Region')).toHaveValue('Kanto!')
+      expect(screen.getByLabelText('Nickname')).toHaveValue('First')
+      expect(screen.queryByText('Saved.')).not.toBeInTheDocument()
+    })
+
+    it('undoing a change leaves nothing to save', async () => {
+      mockEntry(25, entry())
+      renderApp(<App />, asOwner())
+      const nickname = await screen.findByLabelText('Nickname')
+
+      await userEvent.type(nickname, 'x')
+      expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled()
+      await userEvent.type(nickname, '{Backspace}')
+
+      expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled()
     })
   })
 

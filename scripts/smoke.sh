@@ -18,7 +18,8 @@ check() { # description expected actual
   if [ "$2" = "$3" ]; then printf '  ok    %s\n' "$1"; else printf '  FAIL  %s (expected %s, got %s)\n' "$1" "$2" "$3"; failed=1; fi
 }
 status() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
-field() { grep -o "\"$1\":[^,}]*" | head -1 | sed 's/.*://; s/"//g'; } # first value of a JSON field (no jq needed)
+# First value of a JSON field (no jq needed). Prints nothing, instead of aborting the script, when it is absent.
+field() { grep -o "\"$1\":[^,}]*" | head -1 | sed 's/.*://; s/"//g' || true; }
 
 echo "Smoke test against $BASE"
 
@@ -56,8 +57,9 @@ echo "The collection"
 sync_status="$(status -X POST "$BASE/api/v1/collection/pikachu/sync" -H "$AUTH")"
 case "$sync_status" in 200|201) check "sync adds or refreshes" ok ok ;; *) check "sync adds or refreshes" "200 or 201" "$sync_status" ;; esac
 version="$(curl -s "$BASE/api/v1/collection/25" | field version)"
-edit_kanto="{\"version\":$version,\"region\":\"Kanto\"}"
-edit_johto="{\"version\":$version,\"region\":\"Johto\"}"
+# A different region on every run, so the first edit always changes something (and bumps the version).
+edit_kanto="{\"version\":$version,\"region\":\"Smoke $$-a\"}"
+edit_johto="{\"version\":$version,\"region\":\"Smoke $$-b\"}"
 check "anonymous edits are refused" 401 "$(status -X PATCH "$BASE/api/v1/collection/25" -H "$JSON" -d "$edit_kanto")"
 check "edit with the current version" 200 "$(status -X PATCH "$BASE/api/v1/collection/25" -H "$AUTH" -H "$JSON" -H "Origin: $BASE" -d "$edit_kanto")"
 check "edit with a stale version is a conflict" 409 "$(status -X PATCH "$BASE/api/v1/collection/25" -H "$AUTH" -H "$JSON" -d "$edit_johto")"

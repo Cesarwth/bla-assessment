@@ -16,7 +16,7 @@ beforeEach(() => {
   resetClient()
   // The brief asks for no warnings in the browser console: React warnings, failed prop types, unhandled
   // errors... all of it makes the test fail instead of scrolling by unnoticed.
-  for (const method of ['error', 'warn'] as const) {
+  for (const method of ['error', 'warn', 'info', 'log', 'debug'] as const) {
     vi.spyOn(console, method).mockImplementation((...args: unknown[]) => {
       consoleOutput.push(`console.${method}: ${args.map(String).join(' ')}`)
     })

@@ -34,19 +34,21 @@ You need **Docker** (with Compose) and **curl**. Nothing else.
 ./scripts/start.sh
 ```
 
-That creates `.env` from `.env.example` if it is missing, builds and starts PostgreSQL, the API and the web app, waits until they answer, and prints the URLs and accounts. The first build takes a few minutes.
+That creates `.env` from `.env.example` if it is missing — **with a random JWT secret and database password** (the example file is public, so its secrets are never used as they are) — then builds and starts PostgreSQL, the API and the web app, waits until they answer, and prints the URLs and accounts. The first build takes a few minutes.
 
 | What | Where |
 | --- | --- |
 | Web app | http://localhost:8081 |
 | API | http://localhost:8080 (health: `/actuator/health`) |
 
-Prefer to do it by hand? `cp .env.example .env && docker compose up --build`.
+Both ports are bound to **this machine only** (`127.0.0.1`); see [Security notes](#security-notes) before exposing them.
+
+Prefer to do it by hand? `cp .env.example .env`, put a random value in `JWT_SECRET` (`openssl rand -hex 32`; the API refuses the placeholder on purpose), then `docker compose up --build`.
 
 Check that everything works, the way a browser reaches it (through nginx):
 
 ```bash
-./scripts/smoke.sh        # 18 checks, exit code 0 when all pass
+./scripts/smoke.sh        # 18 checks, exit code 0 when all pass (the same script runs in CI)
 ```
 
 Stop it with `docker compose down` (add `-v` to also erase the database).
@@ -124,7 +126,7 @@ flowchart LR
   api -->|HTTPS, cached| pokeapi[(pokeapi.co)]
 ```
 
-The browser only talks to nginx, so the app needs **no CORS** configuration; the API additionally refuses foreign origins.
+The browser only talks to nginx, so the app needs **no CORS** configuration; the API additionally refuses foreign origins (nginx forwards the original `Host`, port included, so same-origin requests are recognised as such).
 
 ## API reference
 
@@ -189,8 +191,8 @@ curl -s -X PATCH localhost:8080/api/v1/collection/25 -H "Authorization: Bearer $
 ## Roles, ownership and concurrency
 
 - **Public**: auth endpoints, catalog reads, collection reads. **Everything else needs a token.** Route rules live in one place, `SecurityConfig`, and are checked by a table-driven test (`SecurityRulesMatrixTest`: every verb × path × caller).
-- **Ownership**: the user who first syncs a Pokémon owns that entry. **Owner or admin** can edit it; only an **admin** can delete. Syncing someone else's entry refreshes its PokeAPI data but never changes the owner or the local fields. The check lives in the use case (defense in depth), and a stranger gets `403` *before* the version is looked at, so nothing leaks.
-- **Versioned updates**: every entry has a `version`; `PATCH` must send the version it read. A stale one is refused with `409 CONCURRENT_MODIFICATION` (checked in the use case and again by the database through optimistic locking). The web app keeps your draft and lets you reload the latest version.
+- **Ownership**: the user who first syncs a Pokémon owns that entry. **Owner or admin** can edit it; only an **admin** can delete (enforced both by the route rules and inside the delete use case itself). Syncing someone else's entry refreshes its PokeAPI data but never changes the owner or the local fields. The check lives in the use case (defense in depth), and a stranger gets `403` *before* the version is looked at, so nothing leaks.
+- **Versioned updates**: every entry has a `version`; `PATCH` must send the version it read. A stale one is refused with `409 CONCURRENT_MODIFICATION` (checked in the use case and again by the database through optimistic locking). The web app keeps what you typed, loads the latest version, and sends **only the fields you changed** — so after a conflict it can never overwrite what somebody else saved in a field you did not touch.
 - **Idempotent sync**: sync is an upsert keyed by the **PokeAPI id** (`"25"` and `"pikachu"` are the same row). It refreshes PokeAPI-owned fields and keeps the local ones; if two syncs race, the loser re-reads and retries (up to 3 attempts).
 
 ## The web app
@@ -220,11 +222,11 @@ Set in `.env` (copied from `.env.example`); Docker Compose passes them to the co
 | Variable | Used by | Default | Meaning |
 | --- | --- | --- | --- |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | db, API | `.env.example` | database name and credentials (required) |
-| `JWT_SECRET` | API | — | **required**, at least 32 bytes; the API refuses to start otherwise |
+| `JWT_SECRET` | API | — | **required**, at least 32 bytes and not the `change-me…` placeholder of `.env.example`; the API refuses to start otherwise (`./scripts/start.sh` generates one) |
 | `JWT_TTL_MINUTES` | API | `60` | token lifetime |
 | `CORS_ALLOWED_ORIGINS` | API | `http://localhost:5173` | only needed when a browser calls the API directly (e.g. `npm run dev`) |
 | `POKEAPI_BASE_URL` | API | `https://pokeapi.co/api/v2` | upstream catalog |
-| `SEED_DEMO_USER`, `DEMO_USER_PASSWORD`, `DEMO_ADMIN_PASSWORD` | API | `false` / unset | create the `demo` and `demo-admin` accounts (the admin only exists if its password is set) |
+| `SEED_DEMO_USER`, `DEMO_USER_PASSWORD`, `DEMO_ADMIN_PASSWORD` | API | `false` / empty | create the `demo` and `demo-admin` accounts (each exists only if its password is set; the passwords may be left empty when seeding is off) |
 | `SEED_DEMO_DATA` | API | `false` | add the 16 demo Pokémon (needs the demo accounts) |
 
 Cache and upstream settings (`app.pokeapi.*` in `backend/src/main/resources/application.yml`): connect timeout 2 s, read timeout 5 s, cache TTL 1 h, up to 2000 entries per cache.
@@ -259,12 +261,13 @@ Tests were written **first** (red → green → refactor); the git history and t
 
 | Suite | Command | What it covers |
 | --- | --- | --- |
-| Backend | `cd backend && ./gradlew test` | **354 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
+| Backend | `cd backend && ./gradlew test` | **356 tests**: domain and use cases (pure Java + Mockito on ports), `@WebMvcTest` controllers, `@DataJpaTest` adapters (H2 with the production migrations), PokeAPI client against a stand-in HTTP server, ArchUnit architecture rules, a table of every route × role, and end-to-end flows with the real stack |
 | Backend gate | `./gradlew build` | JaCoCo: fails below **90 % lines / 80 % branches** (actual ≈ 98 % / 88 %) |
-| Frontend | `cd frontend && npm test` | **168 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
-| Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99 % / 93 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
+| Frontend | `cd frontend && npm test` | **172 tests**: Vitest + React Testing Library, API mocked at the network level with MSW, accessibility checks with axe |
+| Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99 % / 94 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
 | Static checks | `npm run typecheck && npm run lint` | strict TypeScript, ESLint with zero warnings |
 | Whole stack | `./scripts/smoke.sh` | 18 checks through nginx: SPA, proxy, security headers, browser-style requests with `Origin`, login, ownership, versions, roles |
+| CI | `.github/workflows/ci.yml` | on every push to `main` and every pull request: backend `build` (tests + coverage gate), frontend typecheck/lint/coverage/build/audit, and the whole stack with `start.sh` + `smoke.sh` |
 
 Beyond what jsdom can see (real CORS, CSP, nginx, layout) the delivered stack was also checked in Chrome through the DevTools protocol on desktop, mobile and dark mode, logged in and out: **no console warnings or errors, no CSP violations, no failed requests**. That pass found and fixed a real bug (nginx dropped the port from `Host`, so the API treated the browser's `Origin` as foreign and refused every `POST`/`PATCH`/`DELETE`); the smoke script now guards it.
 
@@ -286,7 +289,8 @@ Beyond what jsdom can see (real CORS, CSP, nginx, layout) the delivered stack wa
 ## Security notes
 
 - Passwords: BCrypt, with a 72-byte limit checked in bytes; unknown users cost the same hash work as wrong passwords; usernames/emails are normalized so look-alike accounts cannot exist.
-- No secrets in code or git: the JWT secret and database password come from the environment (the API refuses a short or missing secret); `.env` is git-ignored.
+- No secrets in code or git: the JWT secret and database password come from the environment (the API refuses a short, missing or placeholder secret, and `start.sh` generates random ones); `.env` is git-ignored.
+- **Transport**: everything here is plain HTTP on `localhost` — the API (`8080`) and the app (`8081`) are published on `127.0.0.1` only and the database is not published at all. For anything beyond a local demo, terminate **TLS in front of nginx** (a reverse proxy or load balancer): nginx honours `X-Forwarded-Proto` and then sends `Strict-Transport-Security`. Without TLS, passwords and tokens would cross the network in clear text.
 - Errors never leak internals (fixed `500` message, upstream text only in logs; database messages that could quote personal data are not logged).
 - Containers run as non-root (API: dedicated user; web: unprivileged nginx); the database port is not published; nginx sends CSP, `nosniff`, frame-deny and a referrer policy.
 - Dependencies were scanned (npm audit, Trivy on both images): **0 known fixable HIGH/CRITICAL findings and no secrets**. Tomcat and Jackson are pinned to patched versions in `backend/build.gradle` (with a note to remove the override once Spring Boot manages them).
@@ -313,10 +317,13 @@ CLAUDE.md           the conventions the code follows (architecture rules, TDD po
 | The API exits at startup mentioning `app.jwt.secret` | `JWT_SECRET` is missing or shorter than 32 bytes |
 | Catalog shows "not answering right now" | PokeAPI is unreachable from your network; the collection and demo data still work. Check connectivity and retry |
 | Want a clean slate | `docker compose down -v && ./scripts/start.sh` |
+| The API exits with `password authentication failed for user "pokemon"` | the database volume was created with another password (you deleted `.env` and kept the volume). `docker compose down -v` erases it and starts clean |
+| The API exits saying `app.jwt.secret is still the placeholder` | you copied `.env.example` by hand: put a random value in `JWT_SECRET` (`openssl rand -hex 32`) or use `./scripts/start.sh` |
+| Importing a range ends in a gateway timeout | the import runs up to ~60 PokeAPI calls; nginx allows 120 s for that route (15 s for the rest). Check your connection to pokeapi.co and retry: already imported ones are skipped as updates |
 | Something fails | `docker compose logs app` (API), `docker compose logs frontend` (nginx), `docker compose ps` |
 
 ## How it was built (process and AI)
 
-- The work followed a repeatable loop with Claude Code: **research → plan → implement (TDD, phase by phase) → code review**; the skills live in `.claude/`, the conventions in `CLAUDE.md`, and each plan and research note is kept in [`docs/`](docs/) (plans A–E, research notes). Every plan lists the tests to write first and records where reality differed from the plan.
+- The work followed a repeatable loop with Claude Code: **research → plan → implement (TDD, phase by phase) → code review**; the skills live in `.claude/`, the conventions in `CLAUDE.md`, and each plan and research note is kept in [`docs/`](docs/) (plans A–E and their research notes). Every plan lists the tests to write first and records where reality differed from the plan.
 - Multi-reviewer **code reviews** (architecture, correctness, security, tests) found real issues — for example BCrypt's 72-byte limit turning into a `500`, re-sync wiping data when PokeAPI answered partially, user enumeration — all fixed test-first; a reviewer claim that turned out to be wrong was checked against the test suite and discarded.
 - The GenAI exercise (prompt, sample output, validation, corrections, edge cases) is in **[`docs/genai.md`](docs/genai.md)**.

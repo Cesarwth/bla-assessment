@@ -271,7 +271,7 @@ class CollectionControllerTest {
         mvc.perform(delete("/api/v1/collection/25").header("Authorization", bearer(Role.ADMIN)))
                 .andExpect(status().isNoContent());
 
-        verify(deleteStored).delete(25);
+        verify(deleteStored).delete(25, new Actor(1L, "someone", Role.ADMIN)); // the actor comes from the token
     }
 
     @Test
@@ -291,7 +291,7 @@ class CollectionControllerTest {
 
     @Test
     void delete404WhenMissing() throws Exception {
-        doThrow(new StoredPokemonNotFoundException(99)).when(deleteStored).delete(99);
+        doThrow(new StoredPokemonNotFoundException(99)).when(deleteStored).delete(org.mockito.ArgumentMatchers.eq(99), any());
 
         mvc.perform(delete("/api/v1/collection/99").header("Authorization", bearer(Role.ADMIN)))
                 .andExpect(status().isNotFound())

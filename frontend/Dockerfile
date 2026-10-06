@@ -13,6 +13,7 @@ RUN npm run build
 FROM nginxinc/nginx-unprivileged:stable-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY security-headers.conf /etc/nginx/security-headers.conf
+COPY proxy-api.conf /etc/nginx/proxy-api.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 # The base image already runs as the unprivileged `nginx` user; stating it keeps that visible (and checkable).
 USER nginx
