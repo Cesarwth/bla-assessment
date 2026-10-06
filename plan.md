@@ -62,6 +62,9 @@ cd backend && ./gradlew test --tests '*DemoData*' --tests '*UseCaseConfigTest' -
 
 **Goal:** from a fresh clone, one command gives a running, populated system.
 
+**Status:** ✅ Complete 2026-10-06
+**Deviation:** acceptance run done from a truly clean state (containers, volume and `.env` removed): `./scripts/start.sh` created `.env`, built, started and printed the accounts; `./scripts/smoke.sh` passed 18/18 (5 new checks on the seeded system, only run when `SEED_DEMO_DATA=true`).
+
 ### Tests to Write First (RED)
 Acceptance-first: from a clean state (`docker compose down -v`, no `.env`), `./scripts/start.sh` must end with the app answering and `./scripts/smoke.sh` extended with checks for the seeded data must pass.
 

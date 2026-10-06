@@ -38,6 +38,20 @@ check "a foreign Origin is still refused" 403 "$(status -X POST "$BASE/api/v1/au
 TOKEN="$(curl -s -X POST "$BASE/api/v1/auth/login" -H "$JSON" -d "$login_body" | field token)"
 AUTH="Authorization: Bearer $TOKEN"
 
+if [ "${SEED_DEMO_DATA:-false}" = "true" ]; then
+  echo "The demo data"
+  ADMIN_PASSWORD="${DEMO_ADMIN_PASSWORD:?set DEMO_ADMIN_PASSWORD (copy .env.example to .env)}"
+  admin_body="{\"username\":\"demo-admin\",\"password\":\"$ADMIN_PASSWORD\"}"
+  check "the demo collection is already there (16 Pokémon)" 16 "$(curl -s "$BASE/api/v1/collection?size=48" | field totalItems)"
+  check "the admin account can log in" 200 "$(status -X POST "$BASE/api/v1/auth/login" -H "$JSON" -d "$admin_body")"
+  ADMIN_TOKEN="$(curl -s -X POST "$BASE/api/v1/auth/login" -H "$JSON" -d "$admin_body" | field token)"
+  raichu_edit="{\"version\":$(curl -s "$BASE/api/v1/collection/26" | field version),\"nickname\":\"Raichu\"}"
+  charmander_edit="{\"version\":$(curl -s "$BASE/api/v1/collection/4" | field version),\"nickname\":\"Char\"}"
+  check "the demo user is refused on a Pokémon the admin added" 403 "$(status -X PATCH "$BASE/api/v1/collection/26" -H "$AUTH" -H "$JSON" -d "$raichu_edit")"
+  check "the admin can edit it" 200 "$(status -X PATCH "$BASE/api/v1/collection/26" -H "Authorization: Bearer $ADMIN_TOKEN" -H "$JSON" -d "$raichu_edit")"
+  check "the demo user can edit its own Pokémon" 200 "$(status -X PATCH "$BASE/api/v1/collection/4" -H "$AUTH" -H "$JSON" -d "$charmander_edit")"
+fi
+
 echo "The collection"
 sync_status="$(status -X POST "$BASE/api/v1/collection/pikachu/sync" -H "$AUTH")"
 case "$sync_status" in 200|201) check "sync adds or refreshes" ok ok ;; *) check "sync adds or refreshes" "200 or 201" "$sync_status" ;; esac
