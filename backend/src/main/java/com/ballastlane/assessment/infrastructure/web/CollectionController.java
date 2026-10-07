@@ -8,7 +8,9 @@ import com.ballastlane.assessment.application.port.in.SyncSelectedPokemonUseCase
 import com.ballastlane.assessment.application.port.in.SyncPokemonUseCase;
 import com.ballastlane.assessment.application.port.in.UpdateStoredPokemonCommand;
 import com.ballastlane.assessment.application.port.in.UpdateStoredPokemonUseCase;
+import com.ballastlane.assessment.domain.Actor;
 import com.ballastlane.assessment.domain.SyncOutcome;
+import com.ballastlane.assessment.domain.SyncReport;
 import com.ballastlane.assessment.domain.SyncResult;
 import com.ballastlane.assessment.infrastructure.web.dto.PageResponse;
 import com.ballastlane.assessment.infrastructure.web.dto.StoredPokemonResponse;
@@ -18,6 +20,8 @@ import com.ballastlane.assessment.infrastructure.web.dto.SyncReportResponse;
 import com.ballastlane.assessment.infrastructure.web.dto.UpdatePokemonRequest;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -37,6 +41,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/collection")
 public class CollectionController {
+
+    private static final Logger log = LoggerFactory.getLogger(CollectionController.class);
 
     private final ListStoredPokemonUseCase listStored;
     private final ListStoredPokemonIdsUseCase listIds;
@@ -83,14 +89,23 @@ public class CollectionController {
 
     @PostMapping("/{idOrName}/sync")
     public ResponseEntity<StoredPokemonResponse> sync(@PathVariable String idOrName, @AuthenticationPrincipal Jwt jwt) {
-        SyncResult syncResult = syncOne.sync(idOrName, ActorResolver.from(jwt));
+        Actor actor = ActorResolver.from(jwt);
+        SyncResult syncResult = syncOne.sync(idOrName, actor);
+        if (syncResult.outcome() == SyncOutcome.CREATED) {
+            log.info("Trainer {} added Pokemon {}", actor.userId(), syncResult.pokemon().pokeApiId());
+        }
         HttpStatus status = syncResult.outcome() == SyncOutcome.CREATED ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(StoredPokemonResponse.from(syncResult.pokemon()));
     }
 
     @PostMapping("/sync")
     public SyncReportResponse syncSelected(@Valid @RequestBody SyncSelectionRequest request, @AuthenticationPrincipal Jwt jwt) {
-        return SyncReportResponse.from(syncSelected.sync(request.ids(), ActorResolver.from(jwt)));
+        Actor actor = ActorResolver.from(jwt);
+        SyncReport report = syncSelected.sync(request.ids(), actor);
+        log.info("Trainer {} bulk add: requested={} created={} updated={} failed={} aborted={}", actor.userId(),
+                request.ids().size(), report.created(), report.updated(), report.failures().size(),
+                report.abortedReason() == null ? "no" : report.abortedReason());
+        return SyncReportResponse.from(report);
     }
 
     @PatchMapping("/{pokeApiId}")
@@ -104,6 +119,8 @@ public class CollectionController {
     @DeleteMapping("/{pokeApiId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable int pokeApiId, @AuthenticationPrincipal Jwt jwt) {
-        deleteStored.delete(pokeApiId, ActorResolver.from(jwt));
+        Actor actor = ActorResolver.from(jwt);
+        deleteStored.delete(pokeApiId, actor);
+        log.info("Trainer {} removed Pokemon {}", actor.userId(), pokeApiId);
     }
 }

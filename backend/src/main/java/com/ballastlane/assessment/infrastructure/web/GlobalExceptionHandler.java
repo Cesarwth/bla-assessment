@@ -64,6 +64,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidCredentialsException.class)
     ResponseEntity<ErrorResponse> invalidCredentials(InvalidCredentialsException exception) {
+        // Neither the username nor the password: a failed attempt is worth counting, not worth identifying.
+        log.warn("Login failed");
         return respond(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", exception.getMessage());
     }
 
@@ -144,7 +146,9 @@ public class GlobalExceptionHandler {
     // The upstream's own message stays in the logs: clients only learn that the catalog is unavailable.
     @ExceptionHandler(CatalogUnavailableException.class)
     ResponseEntity<ErrorResponse> catalogUnavailable(CatalogUnavailableException exception) {
-        log.warn("Pokemon catalog unavailable (timeout={}): {}", exception.isTimeout(), exception.getMessage());
+        // Expected failure, so no stack trace: the message carries the upstream status, the cause class tells timeout from refusal.
+        String cause = exception.getCause() == null ? "none" : exception.getCause().getClass().getSimpleName();
+        log.warn("Pokemon catalog unavailable (timeout={}, cause={}): {}", exception.isTimeout(), cause, exception.getMessage());
         return exception.isTimeout()
                 ? respond(HttpStatus.GATEWAY_TIMEOUT, "CATALOG_TIMEOUT", "The Pokemon catalog took too long to answer")
                 : respond(HttpStatus.BAD_GATEWAY, "CATALOG_UNAVAILABLE", "The Pokemon catalog is temporarily unavailable");

@@ -28,6 +28,15 @@ spring:
       mail.smtp.timeout: 5000
       mail.smtp.writetimeout: 5000
 
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    com.ballastlane.assessment: ${APP_LOG_LEVEL:INFO}
+  pattern:
+    # Boot's default level column plus the request id set by RequestLogFilter, so every line of one request can be grepped.
+    # Production can switch to JSON lines (the id becomes a field) with LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs.
+    level: "%5p [%X{requestId:-}]"
+
 management:
   health:
     mail:

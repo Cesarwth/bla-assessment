@@ -34,7 +34,30 @@ To see it: `./scripts/start.sh`, open the printed address, log in as `demo` / `D
 - **One error shape and one place that produces it**; correct status codes (400, 401, 404, 409, 502/504).
 - **Security by default:** BCrypt (with the 72-byte limit handled), JWT secret required and checked at startup, no secrets in git, containers run as non-root, a strict CSP.
 
-## 4. Decisions I want to explain (including one I reversed)
+## 4. Technical decisions and why
+
+**Backend**
+
+- **Ports and adapters (hexagonal) on top of Clean Architecture.** I chose it to **separate the layers**: the business rules sit in the middle and know nothing about frameworks; REST, JPA, the PokeAPI client and SMTP are adapters at the edge. That keeps the code cleaner, lets each layer be tested alone, and means I can replace an adapter (another database, another catalog, another mail channel) without touching the rules. The cost is more interfaces than a plain layered CRUD, which I accepted for the clarity.
+- **Java 21 (LTS).** It is the version I handle best, with the most recent language features: records, sealed types, pattern matching and virtual threads (used for the parallel PokeAPI calls). Those features **remove the need for Lombok**: the project has none (53 records instead), so there are fewer dependencies and no annotation-processor magic to explain.
+- **Logging I can control and read.** Levels come from environment variables (`LOG_LEVEL`, `APP_LOG_LEVEL`), every request gets a **request id** (accepted from the caller or generated, returned in the `X-Request-Id` header and printed on every line of that request), each request writes one access line, and business events are logged with ids only (`Trainer 7 added Pokemon 25`). **No secrets or personal data reach the log**, and a test proves it by running register, failed login, password recovery and profile update and searching the captured output for the passwords, the token and the e-mails. JSON logs for production are one environment variable away. Logging lives only in the infrastructure layer; the use cases stay free of it.
+
+**Frontend**
+
+- **React 19 + TypeScript (strict) + Vite.** I picked the **stable** lines on purpose: my first choice was the newest majors, and the tooling (typescript-eslint, Vitest) broke, so I moved back.
+- **Server state in TanStack Query, paging and filter in the URL, no global store.** Cache, retries and invalidation come for free, links are shareable, and the Back arrow returns to the list exactly as it was.
+- **Feature folders that mirror the API** (`auth`, `catalog`, `collection`) and a `shared` layer for the API client and UI primitives. Features **never import each other**; `App.tsx` composes them and ESLint fails the build if the rule is broken, the same idea as ArchUnit on the backend.
+- **Tailwind CSS v4** as the design standard (tokens in one place, responsive from 320 px, dark mode), with small reusable components instead of long class lists. Text from the API is rendered as text, never HTML, and nginx sends a strict CSP.
+- **Tests at the network level (MSW)** so each page is exercised with its real data layer, plus accessibility (axe) and colour-contrast checks. Anything that jsdom cannot see (layout, CORS, CSP, clicks) I checked in real Chrome.
+
+**Delivery and process**
+
+- **Docker + Compose, multi-stage images, non-root.** The same artifact runs on my laptop, on the reviewer's machine and in a pipeline, so the project is ready for a real CI/CD flow: the GitHub Actions workflow builds, runs the tests and the coverage gates, then starts the real stack and runs the smoke test on every push; image scanning fits in the same pipeline.
+- **One repository for both projects.** For practicality: one link, one clone, one command, and the API and the UI change together and stay in step. Each project still keeps **its own structure, toolchain, tests, quality gates and Dockerfile**, so they can be split into separate pipelines later.
+- **Research → plan → implement → code review.** I wanted to **decide before writing code**: research the business and the external contract (the real PokeAPI payloads) first, plan the tests to write per phase, implement phase by phase, then review with independent reviewers. It gave me a better understanding of the business and of the problems before they reached the code, and every plan records where reality differed from it.
+- **Clean code is enforced, not hoped for:** names must say what they hold (Checkstyle and an ESLint rule fail the build on one-letter names), comments only explain *why*, no unused code (`knip` is clean), and the SOLID/DRY notes in the README say where to look.
+
+## 5. Decisions I want to explain (including one I reversed)
 
 - **Optimistic locking** (a `version` the client must send) instead of "last write wins": two tabs editing the same entry get a clear `409`, and the web app keeps what you typed and sends **only the fields you changed**, so one person can never overwrite another's change.
 - **Idempotent sync** keyed by PokeAPI id: `"25"` and `"pikachu"` are the same Pokémon; a partial answer from PokeAPI never erases a complete earlier one.
@@ -42,15 +65,15 @@ To see it: `./scripts/start.sh`, open the printed address, log in as `demo` / `D
 - **Things I deliberately did not build** (and say so): login rate limiting, e-mail verification, JWT revocation after a password change, an admin view. They are not in the brief; each is listed in the README with the trade-off.
 - **Extras I added because they make the product coherent:** catalog filter, multi-select add, password recovery by e-mail (a local Mailpit mailbox in the demo), a profile page, dark mode, CI.
 
-## 5. Tests and verification
+## 6. Tests and verification
 
-- **540 backend tests** (unit, web slice, persistence, adapters, full-context integration flows, 7 architecture rules), coverage gate 90 % lines / 80 % branches (actual ≈ 97 % / 88 %).
+- **566 backend tests** (unit, web slice, persistence, adapters, full-context integration flows, 7 architecture rules), coverage gate 90 % lines / 80 % branches (actual ≈ 97 % / 88 %).
 - **350 frontend tests** (React Testing Library + MSW at network level, accessibility checks with axe, palette contrast checks), gate 90 % / 85 % (actual ≈ 99.6 % / 95 %). Any `console.error` or `warn` fails a test.
 - **A 40-check smoke test** of the whole running stack, run in CI too; image scans (Trivy) with no fixable high or critical findings.
 - **Honest note on TDD:** the core (domain, use cases, adapters, first web and frontend phases) was built test-first. Later iterations were done with tests and code in the same change and verified by the full suite, the smoke test and a real-browser check, so the commit history does not always show a separate failing test.
 - **What tests could not see, I checked in a real browser** and found real bugs that way: nginx dropped the port from `Host`, so the API refused every browser `POST`; and a card whose click only worked on part of its area (the image sat above the link overlay).
 
-## 6. How I used generative AI (the mandatory part)
+## 7. How I used generative AI (the mandatory part)
 
 I used **Claude Code** throughout, with a repeatable loop kept in the repo (`.claude/`, `CLAUDE.md`): **research → plan → implement → code review**, with specialist reviewers (architecture, correctness, security, tests) running in parallel. The plans in `docs/plan-*.md` list the tests to write first and record where reality differed.
 
@@ -66,11 +89,11 @@ Real mistakes AI made, found and fixed (full table in [`docs/genai.md` §4](docs
 
 **The task-management exercise** (prompt, output sample, how I validated and corrected it, edge cases, authentication and validation) is in [`docs/genai.md`](docs/genai.md), with a runnable sample whose 15 tests pass and whose bugs were injected on purpose to show that the tests catch them.
 
-## 7. What I would do next
+## 8. What I would do next
 
 Rate limiting at a gateway; revoke tokens on password change (a token deny-list); e-mail verification; an admin view of all trainers; a real SMTP provider for recovery e-mails; more catalog search options (type, region).
 
-## 8. A short demo plan for the interview (about 6 minutes)
+## 9. A short demo plan for the interview (about 6 minutes)
 
 1. `./scripts/start.sh`, then log in as `demo`. (Run experience.)
 2. Catalog: filter `char`, open a Pokémon (detail with stats and evolution), use the **Back** arrow. (US-01, US-02.)
@@ -80,7 +103,7 @@ Rate limiting at a gateway; revoke tokens on password change (a token deny-list)
 6. Forgot password → open the mailbox → reset. (Auth.)
 7. Code: `ArchitectureTest`, a use case, a port and its adapter; then `docs/genai.md`. (Architecture, tests, GenAI.)
 
-## 9. Where to find things
+## 10. Where to find things
 
 | | |
 | --- | --- |

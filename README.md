@@ -259,11 +259,22 @@ Set in `.env` (copied from `.env.example`); Docker Compose passes them to the co
 | `APP_PUBLIC_URL` | API | `http://localhost:8081` | the address the reset link in the e-mail points to |
 | `PASSWORD_RESET_TTL_MINUTES` | API | `30` | how long a reset link is valid |
 | `SYNC_MAX_DURATION_SECONDS` | API | `90` | time budget of one "add selected Pokémon" request; when it runs out the answer lists what was added and why it stopped (nginx cuts the connection at 120 s) |
+| `LOG_LEVEL`, `APP_LOG_LEVEL` | API | `INFO`, `INFO` | log level of the libraries and of this application's own code (see [Logging](#logging)) |
 | `POKEAPI_BASE_URL` | API | `https://pokeapi.co/api/v2` | upstream catalog |
 | `SEED_DEMO_USER`, `DEMO_USER_PASSWORD`, `DEMO_ADMIN_PASSWORD` | API | `false` / empty | create the `demo` and `demo-admin` accounts (each exists only if its password is set; the passwords may be left empty when seeding is off) |
 | `SEED_DEMO_DATA` | API | `false` | add the 16 demo Pokémon (needs the demo accounts) |
 
 Cache and upstream settings (`app.pokeapi.*` in `backend/src/main/resources/application.yml`): connect timeout 2 s, read timeout 5 s, cache TTL 1 h, up to 2000 entries per cache.
+
+### Logging
+
+Logs go to the console (standard output), which is where Docker and any log collector read them: `docker compose logs -f app`.
+
+- **Control:** `LOG_LEVEL` (libraries) and `APP_LOG_LEVEL` (this application) in `.env`, `INFO` by default; use `APP_LOG_LEVEL=DEBUG` to investigate. Never run `LOG_LEVEL=DEBUG` in production: Spring Security's own debug output prints bearer tokens.
+- **One line per request**, with a request id: `INFO [3f6479aa-…] … RequestLogFilter : GET /api/v1/pokemon 200 14ms` (WARN from status 500). Send your own `X-Request-Id` (letters, digits, `.`, `_`, `-`, up to 64 characters) or one is generated; it is always returned in the response header, so a user's report can be matched to the log lines of that request. Query strings, headers and bodies are never logged, and the Docker health check only appears at `DEBUG`.
+- **Business events at INFO, with ids only:** `User 7 registered`, `Trainer 7 added Pokemon 25`, `Trainer 7 bulk add: requested=3 created=1 updated=1 failed=1 aborted=no`, `Password reset requested`, `Login failed` (WARN, without the username). Upstream problems are one WARN each (`Pokemon catalog unavailable (timeout=false, cause=…): PokeAPI answered 503`); only an unexpected exception logs an ERROR with a stack trace.
+- **No secrets, no personal data:** passwords, tokens, reset links, e-mails and usernames never reach the log. A test runs register, failed login, password recovery and profile update and asserts that none of those values appears in the captured output.
+- **Structured logs for production:** Spring Boot's built-in JSON format is available with `LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs` (add it to the `app` service environment); every line is then a JSON object with the request id as its own field. Local development keeps the readable format.
 
 ## Development without Docker for everything
 
@@ -295,8 +306,8 @@ The core (domain, use cases, persistence and PokeAPI adapters, the first web and
 
 | Suite | Command | What it covers |
 | --- | --- | --- |
-| Backend | `cd backend && ./gradlew test` | **540 tests**, by kind (approximate grouping): about **167 unit** tests of the domain and the use cases (pure Java, Mockito only on ports), **164 web-slice** tests (`@WebMvcTest` controllers, the table-driven security rules, the error handler), **49 persistence** tests (`@DataJpaTest` on H2 with the production Flyway migrations, including a migration that upgrades real data), **113 adapter and configuration** tests (PokeAPI client against a stand-in HTTP server, JWT, cache, mail, wiring), **40 integration** tests that boot the whole Spring context and exercise complete flows over HTTP (register → sync → edit → delete; password recovery; two trainers with the same Pokémon; the catalog filter; the demo data), and **7 ArchUnit** architecture rules |
-| Backend gate | `./gradlew build` | JaCoCo: fails below **90 % lines / 80 % branches** (actual ≈ 97 % / 88 %) |
+| Backend | `cd backend && ./gradlew test` | **566 tests**, by kind (approximate grouping): about **167 unit** tests of the domain and the use cases (pure Java, Mockito only on ports), **190 web-slice** tests (`@WebMvcTest` controllers, the table-driven security rules, the error handler, the request log filter), **49 persistence** tests (`@DataJpaTest` on H2 with the production Flyway migrations, including a migration that upgrades real data), **109 adapter and configuration** tests (PokeAPI client against a stand-in HTTP server, JWT, cache, mail, wiring), **44 integration** tests that boot the whole Spring context and exercise complete flows over HTTP (register → sync → edit → delete; password recovery; two trainers with the same Pokémon; the catalog filter; the demo data; that logs contain no secrets), and **7 ArchUnit** architecture rules |
+| Backend gate | `./gradlew build` | JaCoCo: fails below **90 % lines / 80 % branches** (actual ≈ 97 % / 89 %) |
 | Frontend | `cd frontend && npm test` | **350 tests**: Vitest + React Testing Library with the API mocked at the network level (MSW), so each page is tested together with its real data layer (this is the integration level of the web app); accessibility checks with axe; contrast checks of the colour palettes |
 | Frontend gate | `npm run test:coverage` | fails below 90 % lines / 85 % branches (actual ≈ 99.6 % / 95 %); **any `console.error`/`warn` fails the test** (the brief asks for no browser-console warnings) |
 | Static checks | `npm run typecheck && npm run lint` | strict TypeScript, ESLint with zero warnings |
@@ -309,6 +320,11 @@ Beyond what jsdom can see (real CORS, CSP, nginx, layout) the delivered stack wa
 
 | Decision | Why | Trade-off / limit |
 | --- | --- | --- |
+| Ports and adapters (hexagonal) on top of Clean Architecture | separates the layers: business rules in the middle, frameworks at the edges, so each layer is tested alone and an adapter (database, PokeAPI, mail) can be replaced without touching the rules | more interfaces than a layered CRUD, accepted for the clarity |
+| Java 21 (LTS) with records, pattern matching and virtual threads, **no Lombok** | the version I know best with the latest language features; records and sealed types replace most of what Lombok is used for, so the build has fewer dependencies and no annotation processor magic | none significant |
+| Docker + Compose, multi-stage images, non-root | the same artifact runs on a laptop, on the reviewer's machine and in a pipeline; the CI workflow builds, runs the tests and the coverage gates, then starts the real stack and runs the smoke test | needs Docker installed |
+| One repository with `backend/` and `frontend/` | practical: one clone, one command, API and UI evolve together and stay in step; each project still has its own structure, toolchain, tests, quality gates and Dockerfile, so they could be split into separate pipelines later | a monorepo needs path-aware CI at larger scale |
+| Research → plan → implement → code review | decide before coding: understand the business and the external contract first, write the tests to create per phase, then implement, then review independently; problems show up in the plan, not in production | slower start, paid back in fewer reversals |
 | Use cases are plain Java wired in one config class | the business layer is independent of Spring, as the brief asks | a little wiring code |
 | Shared Pokémon table + one row per trainer and Pokémon (`trainer_pokemon`) | the data is the same for everybody, the personalisation is individual; no duplicated PokeAPI data | one join when reading a collection |
 | Local copy = separate store, not a cache of the catalog | US-03/04 need data we own and edit; the catalog stays a pure read-through of PokeAPI | two read models for the same Pokémon |
@@ -319,7 +335,7 @@ Beyond what jsdom can see (real CORS, CSP, nginx, layout) the delivered stack wa
 | Parallel detail fetch with a cap of 10 in-flight calls | cold page ≈ 0.5 s instead of ≈ 1 s without hammering PokeAPI | — |
 | JWT in `sessionStorage` | survives a reload, ends with the tab, simple | readable by injected scripts; mitigated by a strict CSP and by never rendering API text as HTML |
 | Demo data bundled as a snapshot, opt-in | works offline, deterministic, restart-safe | the snapshot does not follow PokeAPI changes (sync refreshes any entry) |
-| **No** login rate limiting / lockout, no refresh tokens, no search endpoint, no i18n | a small game, not a bank; the brief does not ask | a production system would add rate limiting (e.g. at a gateway) |
+| **No** login rate limiting / lockout, no refresh tokens, no i18n | a small game, not a bank; the brief does not ask | a production system would add rate limiting (e.g. at a gateway) |
 
 ## Security notes
 

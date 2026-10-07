@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.ballastlane.assessment.domain.exception.CatalogUnavailableException;
+import com.ballastlane.assessment.support.LogCapture;
 import com.ballastlane.assessment.domain.exception.DuplicateStoredPokemonException;
 import com.ballastlane.assessment.domain.exception.EmailAlreadyExistsException;
 import com.ballastlane.assessment.domain.exception.InvalidPaginationException;
@@ -132,6 +133,44 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void anUpstreamFailureIsLoggedOnceAtWarnWithItsCauseAndNoStackTrace() throws Exception {
+        try (LogCapture logs = LogCapture.of(GlobalExceptionHandler.class)) {
+            mockMvc.perform(get("/boom/catalog-cause")).andExpect(status().isBadGateway());
+
+            org.assertj.core.api.Assertions.assertThat(logs.events()).singleElement().satisfies(event -> {
+                org.assertj.core.api.Assertions.assertThat(event.getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);
+                org.assertj.core.api.Assertions.assertThat(event.getFormattedMessage())
+                        .contains("PokeAPI answered 503", "IOException", "timeout=false");
+                org.assertj.core.api.Assertions.assertThat(event.getThrowableProxy()).isNull();
+            });
+        }
+    }
+
+    @Test
+    void aFailedLoginIsLoggedAtWarnWithoutAnyCredentials() throws Exception {
+        try (LogCapture logs = LogCapture.of(GlobalExceptionHandler.class)) {
+            mockMvc.perform(get("/boom/bad-credentials")).andExpect(status().isUnauthorized());
+
+            org.assertj.core.api.Assertions.assertThat(logs.events()).singleElement().satisfies(event -> {
+                org.assertj.core.api.Assertions.assertThat(event.getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);
+                org.assertj.core.api.Assertions.assertThat(event.getFormattedMessage()).isEqualTo("Login failed");
+            });
+        }
+    }
+
+    @Test
+    void onlyAnUnexpectedErrorIsLoggedAtErrorWithItsStackTrace() throws Exception {
+        try (LogCapture logs = LogCapture.of(GlobalExceptionHandler.class)) {
+            mockMvc.perform(get("/boom/unexpected")).andExpect(status().isInternalServerError());
+
+            org.assertj.core.api.Assertions.assertThat(logs.events()).singleElement().satisfies(event -> {
+                org.assertj.core.api.Assertions.assertThat(event.getLevel()).isEqualTo(ch.qos.logback.classic.Level.ERROR);
+                org.assertj.core.api.Assertions.assertThat(event.getThrowableProxy()).isNotNull();
+            });
+        }
+    }
+
+    @Test
     void anAuthenticationErrorRaisedInsideTheAppIs401NotA500() throws Exception {
         mockMvc.perform(get("/boom/auth")).andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
@@ -194,6 +233,9 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/boom/bad-identifier") void badIdentifier() { throw new InvalidPokemonIdentifierException("bad"); }
         @GetMapping("/boom/catalog-down") void catalogDown() { throw new CatalogUnavailableException("down", false, null); }
         @GetMapping("/boom/catalog-timeout") void catalogTimeout() { throw new CatalogUnavailableException("slow", true, null); }
+        @GetMapping("/boom/catalog-cause") void catalogCause() {
+            throw new CatalogUnavailableException("PokeAPI answered 503", false, new java.io.IOException("upstream detail"));
+        }
         @GetMapping("/boom/stored-missing") void storedMissing() { throw new StoredPokemonNotFoundException(25); }
         @GetMapping("/boom/bad-attributes") void badAttributes() { throw new InvalidLocalAttributesException("bad"); }
         @GetMapping("/boom/bad-update") void badUpdate() { throw new InvalidStoredPokemonUpdateException("bad"); }

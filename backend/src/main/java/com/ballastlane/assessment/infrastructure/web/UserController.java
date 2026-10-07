@@ -11,6 +11,10 @@ import com.ballastlane.assessment.infrastructure.web.dto.ProfileUpdateResponse;
 import com.ballastlane.assessment.infrastructure.web.dto.UpdateProfileRequest;
 import com.ballastlane.assessment.infrastructure.web.dto.UserResponse;
 import jakarta.validation.Valid;
+import java.util.ArrayList;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -26,6 +30,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/users/me")
 public class UserController {
+
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     private final GetProfileUseCase getProfile;
     private final UpdateProfileUseCase updateProfile;
@@ -48,14 +54,29 @@ public class UserController {
     @PatchMapping
     public ProfileUpdateResponse update(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody UpdateProfileRequest request) {
         Actor actor = ActorResolver.from(jwt);
-        return ProfileUpdateResponse.from(updateProfile.update(
+        ProfileUpdateResponse response = ProfileUpdateResponse.from(updateProfile.update(
                 new UpdateProfileCommand(actor.userId(), request.username(), request.email(), request.currentPassword())));
+        log.info("User {} updated their profile (fields: {})", actor.userId(), String.join(", ", sentFields(request)));
+        return response;
     }
 
     @PostMapping("/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void changePassword(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody ChangePasswordRequest request) {
-        changePassword.change(new ChangePasswordCommand(
-                ActorResolver.from(jwt).userId(), request.currentPassword(), request.newPassword()));
+        Long userId = ActorResolver.from(jwt).userId();
+        changePassword.change(new ChangePasswordCommand(userId, request.currentPassword(), request.newPassword()));
+        log.info("User {} changed their password", userId);
+    }
+
+    // Names only: the values are the very data (username, e-mail) that must not end up in logs.
+    private static List<String> sentFields(UpdateProfileRequest request) {
+        List<String> fields = new ArrayList<>();
+        if (request.username() != null) {
+            fields.add("username");
+        }
+        if (request.email() != null) {
+            fields.add("email");
+        }
+        return fields;
     }
 }
