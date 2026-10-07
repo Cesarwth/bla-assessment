@@ -118,7 +118,9 @@ Technical requirements from the brief: public repository ✔ · tests ✔ · pro
 
 Clean Architecture: dependencies point **inward only**. The business rules know nothing about Spring, JPA, HTTP or JSON.
 
-![Architecture: infrastructure adapters depend on the application layer (use cases and ports), which depends on the pure Java domain](docs/architecture.svg)
+[![Architecture: infrastructure adapters depend on the application layer (use cases and ports), which depends on the pure Java domain](docs/architecture.png)](docs/architecture.svg)
+
+*(Click the picture for the vector version, `docs/architecture.svg`.)*
 
 - **`domain`** — entities, value objects and rules (`LocalAttributes` limits, `PokemonSearchQuery`, `PokemonIdentifier`). No framework imports.
 - **`application`** — one class per use case, written as plain Java against **ports** it defines (`port.in` for what the outside asks, `port.out` for what it needs).
