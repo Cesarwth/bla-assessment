@@ -30,6 +30,8 @@ A full-stack take on the Ballast Lane Java exercise. A **REST API** (Java 21, Sp
 
 **You need:** Docker (Docker Desktop, or Docker Engine with the Compose plugin), `curl`, and a terminal with `bash` (macOS, Linux, WSL or Git Bash). No Java, Node or database installed; no accounts, no keys, nothing to configure.
 
+> **On a Mac without Docker Desktop:** [Rancher Desktop](https://rancherdesktop.io/) works as a free replacement. In its *Preferences → Container Engine* choose **dockerd (moby)** (not containerd), so that the `docker` and `docker compose` commands the script uses exist, and make sure it is running before you start. (Colima and Podman Desktop with Docker compatibility are alternatives.) The project itself is plain Docker Compose and uses nothing specific to Docker Desktop; the script has been run here with Docker Desktop only, so if Rancher gives you trouble, the troubleshooting table below is the first stop.
+
 ```bash
 git clone https://github.com/Cesarwth/bla-assessment.git
 cd bla-assessment
