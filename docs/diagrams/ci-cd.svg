@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 604" role="img" aria-labelledby="t d" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title id="t">CI/CD pipeline: what exists and next steps</title>
+  <desc id="d">A push or pull request runs the GitHub Actions workflow with a backend job, a frontend job and, after both, a stack job that starts docker compose.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#334155"/></marker>
+    <marker id="arrow-dash" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7c3aed"/></marker>
+    <style>
+      .t { font-size: 16px; fill: #0f172a; }
+      .b { font-weight: 700; }
+      .s { font-size: 13.5px; fill: #334155; }
+      .h { font-size: 16px; font-weight: 700; fill: #1e293b; letter-spacing: .02em; }
+      .n { font-size: 24px; font-weight: 800; fill: #0f172a; }
+      .ext { fill: #f1f5f9; stroke: #64748b; stroke-width: 1.5; }
+      .ad { fill: #e0f2fe; stroke: #0369a1; stroke-width: 1.5; }
+      .ap { fill: #dcfce7; stroke: #15803d; stroke-width: 1.5; }
+      .dm { fill: #fef9c3; stroke: #a16207; stroke-width: 1.5; }
+      .nx { fill: #faf5ff; stroke: #7c3aed; stroke-width: 1.8; stroke-dasharray: 6 4; }
+      .fr { fill: none; stroke-width: 2; }
+      .ln { stroke: #334155; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .im { stroke: #7c3aed; stroke-width: 2; fill: none; stroke-dasharray: 6 4; marker-end: url(#arrow-dash); }
+      .pu { fill: #7c3aed; }
+    </style>
+  </defs>
+  <rect width="1000" height="604" fill="#ffffff"/>
+  <text class="h" x="30" y="30">CI/CD — what exists today, and the next steps</text>
+  <rect class="ext" x="30" y="56" width="170" height="76" rx="8"/>
+  <text class="t b" x="115" y="80" text-anchor="middle">Developer</text>
+  <text class="s" x="115" y="100" text-anchor="middle">push to main</text>
+  <text class="s" x="115" y="117" text-anchor="middle">or pull request</text>
+  <path class="ln" d="M200 94 H238"/>
+  <rect class="fr" x="240" y="48" width="470" height="300" rx="14" stroke="#0369a1"/>
+  <text class="h" x="256" y="72" fill="#0369a1">GitHub Actions  .github/workflows/ci.yml</text>
+  <rect class="ad" x="260" y="88" width="205" height="110" rx="8"/>
+  <text class="t b" x="362.5" y="112" text-anchor="middle">job: backend</text>
+  <text class="s" x="362.5" y="132" text-anchor="middle">./gradlew build</text>
+  <text class="s" x="362.5" y="149" text-anchor="middle">tests + JaCoCo gate</text>
+  <text class="s" x="362.5" y="166" text-anchor="middle">(90% / 80%) + Checkstyle</text>
+  <text class="s" x="362.5" y="183" text-anchor="middle">Java 21</text>
+  <rect class="ad" x="485" y="88" width="205" height="110" rx="8"/>
+  <text class="t b" x="587.5" y="112" text-anchor="middle">job: frontend</text>
+  <text class="s" x="587.5" y="132" text-anchor="middle">typecheck, lint,</text>
+  <text class="s" x="587.5" y="149" text-anchor="middle">tests + coverage gate,</text>
+  <text class="s" x="587.5" y="166" text-anchor="middle">build, npm audit</text>
+  <text class="s" x="587.5" y="183" text-anchor="middle">Node 22</text>
+  <rect class="ap" x="260" y="246" width="430" height="84" rx="8"/>
+  <text class="t b" x="475" y="270" text-anchor="middle">job: stack  (needs backend + frontend)</text>
+  <text class="s" x="475" y="290" text-anchor="middle">./scripts/start.sh  →  docker compose up, waits until healthy</text>
+  <text class="s" x="475" y="307" text-anchor="middle">./scripts/smoke.sh  →  40 checks through nginx</text>
+  <path class="ln" d="M362 198 V244"/><path class="ln" d="M588 198 V244"/>
+  <rect class="ap" x="740" y="88" width="236" height="100" rx="8"/>
+  <text class="t b" x="858" y="112" text-anchor="middle">Docker images</text>
+  <text class="s" x="858" y="132" text-anchor="middle">API: JRE only, non-root</text>
+  <text class="s" x="858" y="149" text-anchor="middle">web: unprivileged nginx</text>
+  <text class="s" x="858" y="166" text-anchor="middle">multi-stage, via compose</text>
+  <path class="ln" d="M690 288 H720 V160 H738"/>
+  <rect class="ext" x="30" y="160" width="170" height="100" rx="8"/>
+  <text class="t b" x="115" y="184" text-anchor="middle">Same on a laptop</text>
+  <text class="s" x="115" y="204" text-anchor="middle">./scripts/start.sh</text>
+  <text class="s" x="115" y="221" text-anchor="middle">./scripts/smoke.sh</text>
+  <text class="s" x="115" y="238" text-anchor="middle">(one command each)</text>
+  <path class="ln" d="M115 262 V292 H258"/>
+  <rect class="fr" x="24" y="388" width="952" height="196" rx="14" stroke="#7c3aed" stroke-dasharray="8 5"/>
+  <text class="h" x="40" y="412" fill="#7c3aed">NEXT STEPS — not implemented in this repo</text>
+  <rect class="nx" x="174" y="430" width="200" height="84" rx="8"/>
+  <text class="t b" x="274" y="454" text-anchor="middle">Image scan</text>
+  <text class="s" x="274" y="474" text-anchor="middle">Trivy on both images</text>
+  <text class="s" x="274" y="491" text-anchor="middle">(done by hand today)</text>
+  <text class="s" x="274" y="508" text-anchor="middle" style="fill:#7c3aed;font-weight:700">next step</text>
+  <path class="im" d="M375 472 H452"/>
+  <rect class="nx" x="454" y="430" width="200" height="84" rx="8"/>
+  <text class="t b" x="554" y="454" text-anchor="middle">Push to registry</text>
+  <text class="s" x="554" y="474" text-anchor="middle">tagged, versioned</text>
+  <text class="s" x="554" y="491" text-anchor="middle">images</text>
+  <text class="s" x="554" y="508" text-anchor="middle" style="fill:#7c3aed;font-weight:700">next step</text>
+  <path class="im" d="M655 472 H732"/>
+  <rect class="nx" x="734" y="430" width="200" height="84" rx="8"/>
+  <text class="t b" x="834" y="454" text-anchor="middle">Deploy</text>
+  <text class="s" x="834" y="474" text-anchor="middle">to an environment,</text>
+  <text class="s" x="834" y="491" text-anchor="middle">then smoke test it</text>
+  <text class="s" x="834" y="508" text-anchor="middle" style="fill:#7c3aed;font-weight:700">next step</text>
+  <path class="im" d="M858 190 V386"/>
+  <text class="s" x="40" y="552">Solid = exists and runs on every push/PR. Dashed purple = the pipeline is ready for it, not built.</text>
+  <text class="s" x="40" y="572">knip and Trivy are run by hand today; they are not CI jobs.</text>
+</svg>

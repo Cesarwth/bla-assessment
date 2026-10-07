@@ -124,6 +124,8 @@ Clean Architecture: dependencies point **inward only**. The business rules know 
 
 *(Click the picture for the vector version, `docs/architecture.svg`.)*
 
+More diagrams (what the backend includes, security layers, error handling, logging, tests, frontend, CI/CD) are in [`docs/diagrams/`](docs/diagrams/) and are used in [`PRESENTATION.md`](PRESENTATION.md).
+
 - **`domain`** — entities, value objects and rules (`LocalAttributes` limits, `PokemonSearchQuery`, `PokemonIdentifier`). No framework imports.
 - **`application`** — one class per use case, written as plain Java against **ports** it defines (`port.in` for what the outside asks, `port.out` for what it needs).
 - **`infrastructure`** — everything that touches a framework: REST controllers and DTOs, Spring Security + JWT, the PokeAPI HTTP client with Caffeine caching, JPA adapters and Flyway migrations, and the configuration that wires use cases into Spring (the only place that does).

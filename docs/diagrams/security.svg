@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" role="img" aria-labelledby="t d" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title id="t">Layers of security</title>
+  <desc id="d">A request crosses four layers: nginx (CSP and security headers, same-origin proxy, no access log for the reset link), the Spring Security filter chain (stateless JWT, public versus protected routes, CORS allow-list), the use cases (trainer-scoped data, version check) and the data layer (BCrypt, SHA-256 hashed reset tokens, unique constraints). Below, operational controls: non-root containers, no secrets in git, random generated secrets, loopback ports and Trivy scans.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#334155"/>
+    </marker>
+    <style>
+      .t { font-size: 17px; fill: #0f172a; }
+      .b { font-weight: 700; }
+      .s { font-size: 14px; fill: #334155; }
+      .h { font-size: 15px; font-weight: 700; letter-spacing: .02em; }
+      .ext { fill: #f1f5f9; stroke: #64748b; stroke-width: 1.5; }
+      .ad { fill: #e0f2fe; stroke: #0369a1; stroke-width: 1.5; }
+      .ap { fill: #dcfce7; stroke: #15803d; stroke-width: 1.5; }
+      .ln { stroke: #334155; stroke-width: 1.8; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1000" height="700" fill="#ffffff"/>
+  <text x="24" y="30" style="font-size:22px;font-weight:700;fill:#0f172a">Layers of security</text>
+  <text class="s" x="24" y="52">Every request crosses four layers; each one rejects what it can before the next one runs</text>
+  <text class="h" x="24" y="84" style="fill:#0369a1">Request path</text>
+
+  <rect class="ext" x="24" y="96" width="217" height="372" rx="8"/>
+  <text class="t b" x="38" y="122">1 · nginx</text>
+  <text class="s" x="38" y="142">the only door for the browser</text>
+  <text class="s" x="38" y="172" style="font-weight:700;fill:#0f172a">CSP</text>
+  <text class="s" x="38" y="190">scripts and styles only</text>
+  <text class="s" x="38" y="208">from this origin</text>
+  <text class="s" x="38" y="238" style="font-weight:700;fill:#0f172a">Security headers</text>
+  <text class="s" x="38" y="256">nosniff, X-Frame DENY,</text>
+  <text class="s" x="38" y="274">Referrer and Permissions</text>
+  <text class="s" x="38" y="292">Policy, HSTS behind HTTPS</text>
+  <text class="s" x="38" y="322" style="font-weight:700;fill:#0f172a">Same-origin proxy</text>
+  <text class="s" x="38" y="340">/api goes through nginx,</text>
+  <text class="s" x="38" y="358">so the app needs no CORS</text>
+  <text class="s" x="38" y="388" style="font-weight:700;fill:#0f172a">Reset link</text>
+  <text class="s" x="38" y="406">access log off for it</text>
+  <rect class="ad" x="269" y="96" width="217" height="372" rx="8"/>
+  <text class="t b" x="283" y="122">2 · Spring Security</text>
+  <text class="s" x="283" y="142">filter chain, before MVC</text>
+  <text class="s" x="283" y="172" style="font-weight:700;fill:#0f172a">Stateless JWT</text>
+  <text class="s" x="283" y="190">no session, no CSRF surface</text>
+  <text class="s" x="283" y="208">HS256, 60 min</text>
+  <text class="s" x="283" y="238" style="font-weight:700;fill:#0f172a">Route rules</text>
+  <text class="s" x="283" y="256">public: /auth/**,</text>
+  <text class="s" x="283" y="274">GET /pokemon/**, health</text>
+  <text class="s" x="283" y="292">all the rest: valid token</text>
+  <text class="s" x="283" y="322" style="font-weight:700;fill:#0f172a">CORS allow-list</text>
+  <text class="s" x="283" y="340">origins from an env variable</text>
+  <text class="s" x="283" y="370" style="font-weight:700;fill:#0f172a">401 / 403</text>
+  <text class="s" x="283" y="388">same JSON error body</text>
+  <rect class="ap" x="514" y="96" width="217" height="372" rx="8"/>
+  <text class="t b" x="528" y="122">3 · Use cases</text>
+  <text class="s" x="528" y="142">rules in plain Java</text>
+  <text class="s" x="528" y="172" style="font-weight:700;fill:#0f172a">Trainer-scoped data</text>
+  <text class="s" x="528" y="190">another trainer's entry</text>
+  <text class="s" x="528" y="208">is a 404, never a 403</text>
+  <text class="s" x="528" y="238" style="font-weight:700;fill:#0f172a">Version check</text>
+  <text class="s" x="528" y="256">PATCH needs the version;</text>
+  <text class="s" x="528" y="274">a stale one is a 409</text>
+  <text class="s" x="528" y="304" style="font-weight:700;fill:#0f172a">Password reset</text>
+  <text class="s" x="528" y="322">same answer for unknown</text>
+  <text class="s" x="528" y="340">e-mails; newest link only,</text>
+  <text class="s" x="528" y="358">single use, 30 min</text>
+  <rect class="ad" x="759" y="96" width="217" height="372" rx="8"/>
+  <text class="t b" x="773" y="122">4 · Data</text>
+  <text class="s" x="773" y="142">what is stored</text>
+  <text class="s" x="773" y="172" style="font-weight:700;fill:#0f172a">BCrypt</text>
+  <text class="s" x="773" y="190">password hashes</text>
+  <text class="s" x="773" y="220" style="font-weight:700;fill:#0f172a">Reset tokens</text>
+  <text class="s" x="773" y="238">only the SHA-256 hash</text>
+  <text class="s" x="773" y="256">is stored</text>
+  <text class="s" x="773" y="286" style="font-weight:700;fill:#0f172a">Unique constraints</text>
+  <text class="s" x="773" y="304">username, e-mail,</text>
+  <text class="s" x="773" y="322">(trainer, pokemon), token</text>
+  <text class="s" x="773" y="352" style="font-weight:700;fill:#0f172a">Optimistic locking</text>
+  <text class="s" x="773" y="370">on the version column</text>
+  <text class="s" x="773" y="400" style="font-weight:700;fill:#0f172a">Database</text>
+  <text class="s" x="773" y="418">not published: only the</text>
+  <text class="s" x="773" y="436">app container reaches it</text>
+  <path class="ln" d="M243 282 H267"/>
+  <path class="ln" d="M488 282 H512"/>
+  <path class="ln" d="M733 282 H757"/>
+
+  <text class="h" x="24" y="514" style="fill:#475569">Operations and supply chain</text>
+  <rect class="ext" x="24" y="528" width="304" height="58" rx="8"/>
+  <text class="s" x="38" y="552" style="font-weight:700;fill:#0f172a">Containers run non-root</text>
+  <text class="s" x="38" y="572">backend user app, nginx-unprivileged</text>
+  <rect class="ext" x="352" y="528" width="304" height="58" rx="8"/>
+  <text class="s" x="366" y="552" style="font-weight:700;fill:#0f172a">No secrets in git</text>
+  <text class="s" x="366" y="572">only .env.example; .env is git-ignored</text>
+  <rect class="ext" x="680" y="528" width="304" height="58" rx="8"/>
+  <text class="s" x="694" y="552" style="font-weight:700;fill:#0f172a">Random secrets</text>
+  <text class="s" x="694" y="572">start.sh generates JWT and DB secrets</text>
+  <rect class="ext" x="24" y="598" width="304" height="58" rx="8"/>
+  <text class="s" x="38" y="622" style="font-weight:700;fill:#0f172a">Weak JWT secret refused</text>
+  <text class="s" x="38" y="642">placeholder or under 32 bytes: no start</text>
+  <rect class="ext" x="352" y="598" width="304" height="58" rx="8"/>
+  <text class="s" x="366" y="622" style="font-weight:700;fill:#0f172a">Ports bound to 127.0.0.1</text>
+  <text class="s" x="366" y="642">API and web app, mail UI: this machine only</text>
+  <rect class="ext" x="680" y="598" width="304" height="58" rx="8"/>
+  <text class="s" x="694" y="622" style="font-weight:700;fill:#0f172a">Trivy scans of both images</text>
+  <text class="s" x="694" y="642">no fixable HIGH or CRITICAL findings</text>
+  <text class="s" x="24" y="690">Unexpected failures answer a fixed 500 message; details go to the log only (see error-handling diagram).</text>
+</svg>

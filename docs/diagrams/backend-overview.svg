@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 790" role="img" aria-labelledby="t d" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title id="t">What the backend includes</title>
+  <desc id="d">The REST API under /api/v1 in four areas (auth, profile, catalog, collection) with their real endpoints. Below each area are its use cases, 16 in total. Adapters implement the ports the use cases need: PostgreSQL with Flyway migrations V1 to V5, a PokeAPI client with timeouts, a one hour Caffeine cache and parallel detail calls capped at 10, an SMTP mail sender. Demo data seeders fill an empty system.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#334155"/>
+    </marker>
+    <marker id="arrow-dash" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#7c3aed"/>
+    </marker>
+    <style>
+      .t { font-size: 16px; fill: #0f172a; }
+      .b { font-weight: 700; }
+      .e { font-size: 13px; fill: #0f172a; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .s { font-size: 14px; fill: #334155; }
+      .h { font-size: 15px; font-weight: 700; letter-spacing: .02em; }
+      .ad { fill: #e0f2fe; stroke: #0369a1; stroke-width: 1.5; }
+      .ap { fill: #dcfce7; stroke: #15803d; stroke-width: 1.5; }
+      .ln { stroke: #334155; stroke-width: 1.8; fill: none; marker-end: url(#arrow); }
+      .im { stroke: #7c3aed; stroke-width: 1.8; fill: none; stroke-dasharray: 6 4; marker-end: url(#arrow-dash); }
+    </style>
+  </defs>
+  <rect width="1000" height="790" fill="#ffffff"/>
+
+  <text x="24" y="30" style="font-size:22px;font-weight:700;fill:#0f172a">What the backend includes</text>
+  <text class="s" x="24" y="52">REST API under /api/v1 · 16 use cases, one class and one interface each · adapters behind ports</text>
+
+  <text class="h" x="24" y="84" style="fill:#0369a1">REST API (controllers)</text>
+
+  <!-- Auth -->
+  <rect class="ad" x="24" y="94" width="212" height="226" rx="8"/>
+  <text class="t b" x="40" y="118">Auth</text>
+  <text class="s" x="224" y="118" text-anchor="end">public</text>
+  <text class="e" x="40" y="148">POST /auth/register</text>
+  <text class="e" x="40" y="172">POST /auth/login</text>
+  <text class="e" x="40" y="196">POST /auth/forgot-</text>
+  <text class="e" x="40" y="214">      password</text>
+  <text class="e" x="40" y="238">POST /auth/reset-</text>
+  <text class="e" x="40" y="256">      password</text>
+  <text class="s" x="40" y="298">login returns a JWT</text>
+
+  <!-- Profile -->
+  <rect class="ad" x="248" y="94" width="212" height="226" rx="8"/>
+  <text class="t b" x="264" y="118">Profile</text>
+  <text class="s" x="448" y="118" text-anchor="end">JWT</text>
+  <text class="e" x="264" y="148">GET   /users/me</text>
+  <text class="e" x="264" y="172">PATCH /users/me</text>
+  <text class="e" x="264" y="196">POST  /users/me/</text>
+  <text class="e" x="264" y="214">      password</text>
+  <text class="s" x="264" y="298">username, e-mail, password</text>
+
+  <!-- Catalog -->
+  <rect class="ad" x="472" y="94" width="212" height="226" rx="8"/>
+  <text class="t b" x="488" y="118">Catalog</text>
+  <text class="s" x="672" y="118" text-anchor="end">public (GET)</text>
+  <text class="e" x="488" y="148">GET /pokemon</text>
+  <text class="s" x="488" y="168">paged, filter with ?q=</text>
+  <text class="e" x="488" y="200">GET /pokemon/</text>
+  <text class="e" x="488" y="218">    {id or name}</text>
+  <text class="s" x="488" y="298">live from PokeAPI</text>
+
+  <!-- Collection -->
+  <rect class="ad" x="696" y="94" width="280" height="226" rx="8"/>
+  <text class="t b" x="712" y="118">Collection</text>
+  <text class="s" x="964" y="118" text-anchor="end">per trainer · JWT</text>
+  <text class="e" x="712" y="158">GET    /collection</text>
+  <text class="e" x="712" y="180">GET    /collection/ids</text>
+  <text class="e" x="712" y="202">GET    /collection/{id}</text>
+  <text class="e" x="712" y="224">POST   /collection/{id}/sync</text>
+  <text class="e" x="712" y="246">POST   /collection/sync</text>
+  <text class="e" x="712" y="268">PATCH  /collection/{id}</text>
+  <text class="e" x="712" y="290">DELETE /collection/{id}</text>
+  <text class="s" x="712" y="311" style="font-size:13px">bulk: max 50 ids · PATCH + version</text>
+
+  <!-- area -> use cases -->
+  <path class="ln" d="M130 320 V348"/>
+  <path class="ln" d="M354 320 V348"/>
+  <path class="ln" d="M578 320 V348"/>
+  <path class="ln" d="M836 320 V348"/>
+
+  <rect class="ap" x="24" y="350" width="212" height="176" rx="8"/>
+  <text class="t b" x="40" y="374">4 use cases</text>
+  <text class="s" x="40" y="400">RegisterUser</text>
+  <text class="s" x="40" y="422">AuthenticateUser</text>
+  <text class="s" x="40" y="444">RequestPasswordReset</text>
+  <text class="s" x="40" y="466">ResetPassword</text>
+
+  <rect class="ap" x="248" y="350" width="212" height="176" rx="8"/>
+  <text class="t b" x="264" y="374">3 use cases</text>
+  <text class="s" x="264" y="400">GetProfile</text>
+  <text class="s" x="264" y="422">UpdateProfile</text>
+  <text class="s" x="264" y="444">ChangePassword</text>
+
+  <rect class="ap" x="472" y="350" width="212" height="176" rx="8"/>
+  <text class="t b" x="488" y="374">2 use cases</text>
+  <text class="s" x="488" y="400">ListPokemon</text>
+  <text class="s" x="488" y="422">GetPokemonDetail</text>
+
+  <rect class="ap" x="696" y="350" width="280" height="176" rx="8"/>
+  <text class="t b" x="712" y="374">7 use cases</text>
+  <text class="s" x="712" y="400">ListStoredPokemon</text>
+  <text class="s" x="712" y="422">ListStoredPokemonIds</text>
+  <text class="s" x="712" y="444">GetStoredPokemon</text>
+  <text class="s" x="712" y="466">SyncPokemon · SyncSelectedPokemon</text>
+  <text class="s" x="712" y="488">UpdateStoredPokemon</text>
+  <text class="s" x="712" y="510">DeleteStoredPokemon</text>
+
+  <!-- adapters -->
+  <path class="im" d="M160 606 V528"/>
+  <path class="im" d="M500 606 V528"/>
+  <path class="im" d="M770 606 V528"/>
+  <path class="ln" d="M920 606 V528"/>
+  <text class="s" x="176" y="580" style="fill:#7c3aed">adapters implement the ports out</text>
+  <text class="s" x="786" y="580" style="fill:#334155">seeders use</text>
+  <text class="s" x="786" y="598" style="fill:#334155">the ports</text>
+
+  <rect class="ad" x="24" y="608" width="278" height="130" rx="8"/>
+  <text class="t b" x="40" y="632">Persistence</text>
+  <text class="s" x="40" y="654">PostgreSQL · Flyway V1 to V5</text>
+  <text class="s" x="40" y="674">users · pokemon · trainer_pokemon</text>
+  <text class="s" x="40" y="694">trainer_pokemon_tags</text>
+  <text class="s" x="40" y="714">password_reset_tokens</text>
+
+  <rect class="ad" x="314" y="608" width="290" height="130" rx="8"/>
+  <text class="t b" x="330" y="632">PokeAPI client</text>
+  <text class="s" x="330" y="654">timeouts: connect 2 s, read 5 s</text>
+  <text class="s" x="330" y="674">Caffeine cache, TTL 1 h</text>
+  <text class="s" x="330" y="694">detail calls in parallel, max 10</text>
+  <text class="s" x="330" y="714">timeout → 504, 5xx → 502</text>
+
+  <rect class="ad" x="616" y="608" width="160" height="130" rx="8"/>
+  <text class="t b" x="632" y="632">Mail</text>
+  <text class="s" x="632" y="654">SMTP sender</text>
+  <text class="s" x="632" y="674">reset-link e-mail</text>
+  <text class="s" x="632" y="694">Mailpit in Docker</text>
+
+  <rect class="ad" x="788" y="608" width="188" height="130" rx="8"/>
+  <text class="t b" x="804" y="632">Demo seeders</text>
+  <text class="s" x="804" y="654">DemoUserSeeder</text>
+  <text class="s" x="804" y="674">DemoDataSeeder</text>
+  <text class="s" x="804" y="694">opt-in, off by default</text>
+
+  <!-- legend -->
+  <path class="ln" d="M24 766 H64"/>
+  <text class="s" x="72" y="771">calls / uses</text>
+  <path class="im" d="M200 766 H240"/>
+  <text class="s" x="248" y="771">implements a port</text>
+  <text class="s" x="440" y="771">Blue: infrastructure · Green: application</text>
+</svg>

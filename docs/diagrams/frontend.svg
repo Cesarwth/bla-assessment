@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 626" role="img" aria-labelledby="t d" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title id="t">Frontend structure and data flow</title>
+  <desc id="d">The app folder composes three feature folders (auth, catalog, collection) that never import each other, all sitting on shared, which holds the only fetch call in the API client. A request goes from component to query hook to API function to the API client to nginx and the backend; failures return as ApiError. State is TanStack Query, the URL and an auth provider; styling is Tailwind v4 with tokens; tests use MSW.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#334155"/></marker>
+    <marker id="arrow-dash" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7c3aed"/></marker>
+    <style>
+      .t { font-size: 16px; fill: #0f172a; }
+      .b { font-weight: 700; }
+      .s { font-size: 13.5px; fill: #334155; }
+      .h { font-size: 16px; font-weight: 700; fill: #1e293b; letter-spacing: .02em; }
+      .n { font-size: 24px; font-weight: 800; fill: #0f172a; }
+      .ext { fill: #f1f5f9; stroke: #64748b; stroke-width: 1.5; }
+      .ad { fill: #e0f2fe; stroke: #0369a1; stroke-width: 1.5; }
+      .ap { fill: #dcfce7; stroke: #15803d; stroke-width: 1.5; }
+      .dm { fill: #fef9c3; stroke: #a16207; stroke-width: 1.5; }
+      .nx { fill: #faf5ff; stroke: #7c3aed; stroke-width: 1.8; stroke-dasharray: 6 4; }
+      .fr { fill: none; stroke-width: 2; }
+      .ln { stroke: #334155; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .im { stroke: #7c3aed; stroke-width: 2; fill: none; stroke-dasharray: 6 4; marker-end: url(#arrow-dash); }
+      .pu { fill: #7c3aed; }
+    </style>
+  </defs>
+  <rect width="1000" height="626" fill="#ffffff"/>
+  <text class="h" x="30" y="30">FRONTEND — React 19 + Vite + TypeScript (strict), Tailwind v4</text>
+  <rect class="ad" x="30" y="50" width="170" height="70" rx="8"/>
+  <text class="t b" x="115" y="74" text-anchor="middle">Component</text>
+  <text class="s" x="115" y="94" text-anchor="middle">page in a feature</text>
+  <rect class="ad" x="225" y="50" width="170" height="70" rx="8"/>
+  <text class="t b" x="310" y="74" text-anchor="middle">Query hook</text>
+  <text class="s" x="310" y="94" text-anchor="middle">queries.ts</text>
+  <text class="s" x="310" y="111" text-anchor="middle">TanStack Query</text>
+  <rect class="ad" x="420" y="50" width="170" height="70" rx="8"/>
+  <text class="t b" x="505" y="74" text-anchor="middle">API function</text>
+  <text class="s" x="505" y="94" text-anchor="middle">api.ts of the feature</text>
+  <rect class="ap" x="615" y="50" width="190" height="70" rx="8"/>
+  <text class="t b" x="710" y="74" text-anchor="middle">shared/api/client.ts</text>
+  <text class="s" x="710" y="94" text-anchor="middle">the only code that</text>
+  <text class="s" x="710" y="111" text-anchor="middle">calls fetch</text>
+  <rect class="ext" x="830" y="50" width="140" height="70" rx="8"/>
+  <text class="t b" x="900" y="74" text-anchor="middle">nginx</text>
+  <text class="s" x="900" y="94" text-anchor="middle">/api → backend</text>
+  <path class="ln" d="M200 85 H223"/>
+  <path class="ln" d="M395 85 H418"/>
+  <path class="ln" d="M590 85 H613"/>
+  <path class="ln" d="M805 85 H828"/>
+  <path class="im" d="M900 122 V146 H710 V124"/>
+  <text class="s" x="805" y="166" text-anchor="middle" style="fill:#7c3aed">failures come back as ApiError</text>
+  <rect class="fr" x="24" y="170" width="952" height="270" rx="14" stroke="#0369a1"/>
+  <text class="h" x="40" y="192" fill="#0369a1">src/   ·   features never import each other (ESLint error)</text>
+  <rect class="dm" x="44" y="206" width="912" height="60" rx="8"/>
+  <text class="t b" x="500" y="230" text-anchor="middle">app/  (the only place that composes the features)</text>
+  <text class="s" x="500" y="250" text-anchor="middle">routes in App.tsx · Layout + Header · RequireLogin guard · ErrorBoundary · forest Backdrop · providers</text>
+  <rect class="ad" x="44" y="296" width="272" height="66" rx="8"/>
+  <text class="t b" x="180" y="320" text-anchor="middle">features/auth</text>
+  <text class="s" x="180" y="340" text-anchor="middle">login, register, reset,</text>
+  <text class="s" x="180" y="357" text-anchor="middle">profile; AuthProvider</text>
+  <rect class="ad" x="364" y="296" width="272" height="66" rx="8"/>
+  <text class="t b" x="500" y="320" text-anchor="middle">features/catalog</text>
+  <text class="s" x="500" y="340" text-anchor="middle">list + filter, detail,</text>
+  <text class="s" x="500" y="357" text-anchor="middle">evolution tree</text>
+  <rect class="ad" x="684" y="296" width="272" height="66" rx="8"/>
+  <text class="t b" x="820" y="320" text-anchor="middle">features/collection</text>
+  <text class="s" x="820" y="340" text-anchor="middle">private collection,</text>
+  <text class="s" x="820" y="357" text-anchor="middle">selection, add to collection</text>
+  <path class="ln" d="M180 268 V294"/><path class="ln" d="M500 268 V294"/><path class="ln" d="M820 268 V294"/>
+  <text class="s" x="190" y="286">composes</text>
+  <rect class="ap" x="44" y="394" width="912" height="36" rx="8"/>
+  <text class="t b" x="500" y="417" text-anchor="middle">shared/  — api client + ApiError · ui primitives · session context (useAuth) · usePaging · format</text>
+  <path class="ln" d="M180 364 V392"/><path class="ln" d="M500 364 V392"/><path class="ln" d="M820 364 V392"/>
+  <rect class="ext" x="30" y="466" width="300" height="112" rx="8"/>
+  <text class="t b" x="180" y="490" text-anchor="middle">State</text>
+  <text class="s" x="180" y="510" text-anchor="middle">server state: TanStack Query</text>
+  <text class="s" x="180" y="527" text-anchor="middle">paging + filter: the URL</text>
+  <text class="s" x="180" y="544" text-anchor="middle">session: AuthProvider (sessionStorage)</text>
+  <text class="s" x="180" y="561" text-anchor="middle">no global store</text>
+  <rect class="ext" x="350" y="466" width="300" height="112" rx="8"/>
+  <text class="t b" x="500" y="490" text-anchor="middle">Styling</text>
+  <text class="s" x="500" y="510" text-anchor="middle">Tailwind v4, tokens in @theme</text>
+  <text class="s" x="500" y="527" text-anchor="middle">(index.css), no raw hex</text>
+  <text class="s" x="500" y="544" text-anchor="middle">light and dark palettes</text>
+  <text class="s" x="500" y="561" text-anchor="middle">forest backdrop (SVG art)</text>
+  <rect class="ext" x="670" y="466" width="300" height="112" rx="8"/>
+  <text class="t b" x="820" y="490" text-anchor="middle">Tests (350)</text>
+  <text class="s" x="820" y="510" text-anchor="middle">Vitest + Testing Library</text>
+  <text class="s" x="820" y="527" text-anchor="middle">MSW at the network level</text>
+  <text class="s" x="820" y="544" text-anchor="middle">axe on pages; console.error fails</text>
+  <text class="s" x="820" y="561" text-anchor="middle">coverage gate 90/90/90/85</text>
+  <text class="s" x="30" y="606">shared/ may not import features or app/ (ESLint). Text from the API is rendered as text, never as HTML.</text>
+</svg>

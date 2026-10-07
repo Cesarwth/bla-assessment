@@ -22,7 +22,7 @@ To see it: `./scripts/start.sh`, open the printed address, log in as `demo` / `D
 ## 2. How I read the brief
 
 1. **The brief grades architecture and tests first, frontend second.** So I made the backend the centre: Clean Architecture with enforced rules (ArchUnit), and tests at every level.
-2. **"A primary entity and a secondary collection for users"** and **"room for proprietary fields"** suggested a replica of PokeAPI data plus data that is *ours*. I kept the PokeAPI data as a shared catalog table and the proprietary fields on a per-trainer row (see section 4).
+2. **"A primary entity and a secondary collection for users"** and **"room for proprietary fields"** suggested a replica of PokeAPI data plus data that is *ours*. I kept the PokeAPI data as a shared catalog table and the proprietary fields on a per-trainer row (see section 5).
 3. **"The reviewer should not have to do anything."** I treated the run experience as part of the product: one command, random secrets generated for them, free ports chosen automatically, demo accounts and data already loaded, a local test mailbox, and a smoke test that checks the running stack.
 
 ## 3. Architecture and why
@@ -34,6 +34,14 @@ To see it: `./scripts/start.sh`, open the printed address, log in as `demo` / `D
 - **One error shape and one place that produces it**; correct status codes (400, 401, 404, 409, 502/504).
 - **Security by default:** BCrypt (with the 72-byte limit handled), JWT secret required and checked at startup, no secrets in git, containers run as non-root, a strict CSP.
 
+**What the backend includes** (every endpoint, use case and adapter on one page):
+
+![What the backend includes](docs/diagrams/backend-overview.png)
+
+**Security in layers** (each layer rejects what it can before the next one runs):
+
+![Layers of security](docs/diagrams/security.png)
+
 ## 4. Technical decisions and why
 
 **Backend**
@@ -41,7 +49,12 @@ To see it: `./scripts/start.sh`, open the printed address, log in as `demo` / `D
 - **Ports and adapters (hexagonal) on top of Clean Architecture.** I chose it to **separate the layers**: the business rules sit in the middle and know nothing about frameworks; REST, JPA, the PokeAPI client and SMTP are adapters at the edge. That keeps the code cleaner, lets each layer be tested alone, and means I can replace an adapter (another database, another catalog, another mail channel) without touching the rules. The cost is more interfaces than a plain layered CRUD, which I accepted for the clarity.
 - **Java 21 (LTS).** It is the version I handle best, with the most recent language features: records, sealed types, pattern matching and virtual threads (used for the parallel PokeAPI calls). Those features **remove the need for Lombok**: the project has none (53 records instead), so there are fewer dependencies and no annotation-processor magic to explain.
 - **Error handling with one structure end to end.** The domain raises **19 specific exceptions** (`StoredPokemonNotFoundException`, `StaleStoredPokemonException`, `InvalidResetTokenException`…); no controller has a `try/catch`. **One** `@RestControllerAdvice` (plus one handler for the security layer's 401/403) turns every exception into the **same body** `{timestamp, status, code, message, fieldErrors[]}` with the right status (400, 401, 404, 409, 502/504). The `code` is stable for clients, the `message` is written for people, field-level problems come in `fieldErrors`, and an unexpected failure returns a **fixed 500 message** with the detail only in the server log (no stack traces or class names to the client). Every case has a test, and a table of codes is in the README.
+
+![Error handling from exception to screen](docs/diagrams/error-handling.png)
+
 - **Logging I can control and read.** Levels come from environment variables (`LOG_LEVEL`, `APP_LOG_LEVEL`), every request gets a **request id** (accepted from the caller or generated, returned in the `X-Request-Id` header and printed on every line of that request), each request writes one access line, and business events are logged with ids only (`Trainer 7 added Pokemon 25`). **No secrets or personal data reach the log**, and a test proves it by running register, failed login, password recovery and profile update and searching the captured output for the passwords, the token and the e-mails. JSON logs for production are one environment variable away. Logging lives only in the infrastructure layer; the use cases stay free of it.
+
+![Logging: the life of one request](docs/diagrams/logging.png)
 
 **Frontend**
 
@@ -52,12 +65,18 @@ To see it: `./scripts/start.sh`, open the printed address, log in as `demo` / `D
 - **Errors on the screen follow the same contract.** The single API client turns any failure into an `ApiError` (status, code, field errors) and falls back to a generic one when the answer is not JSON (for example a gateway error from nginx), so components never parse responses. Field errors appear next to their field and take focus; a retry button is offered for failed loads; an `ErrorBoundary` catches rendering bugs; a `401` ends the session cleanly, and a wrong current password is a form error (400), never a logout.
 - **Tests at the network level (MSW)** so each page is exercised with its real data layer, plus accessibility (axe) and colour-contrast checks. Anything that jsdom cannot see (layout, CORS, CSP, clicks) I checked in real Chrome.
 
+![Frontend structure and data flow](docs/diagrams/frontend.png)
+
 **Delivery and process**
 
 - **Docker + Compose, multi-stage images, non-root.** The same artifact runs on my laptop, on the reviewer's machine and in a pipeline, so the project is ready for a real CI/CD flow: the GitHub Actions workflow builds, runs the tests and the coverage gates, then starts the real stack and runs the smoke test on every push; image scanning fits in the same pipeline.
+
+![CI/CD: what exists today and the next steps](docs/diagrams/ci-cd.png)
+
+  What runs on every push and pull request **today**: the backend job (`./gradlew build`: tests, the JaCoCo gate, Checkstyle), the frontend job (typecheck, lint, tests with their coverage gate, build, `npm audit`) and, after both, the whole-stack job (`start.sh` then `smoke.sh`). The dashed boxes are the natural **next steps** (image scan, registry, deploy); I have not built them.
 - **One repository for both projects.** For practicality: one link, one clone, one command, and the API and the UI change together and stay in step. Each project still keeps **its own structure, toolchain, tests, quality gates and Dockerfile**, so they can be split into separate pipelines later.
 - **Research → plan → implement → code review.** I wanted to **decide before writing code**: research the business and the external contract (the real PokeAPI payloads) first, plan the tests to write per phase, implement phase by phase, then review with independent reviewers. It gave me a better understanding of the business and of the problems before they reached the code, and every plan records where reality differed from it.
-- **Clean code is enforced, not hoped for:** names must say what they hold (Checkstyle and an ESLint rule fail the build on one-letter names), comments only explain *why*, no unused code (`knip` is clean), and the SOLID/DRY notes in the README say where to look.
+- **Clean code is enforced, not hoped for:** names must say what they hold (Checkstyle and an ESLint rule fail the build on one-letter names), comments only explain *why*, no unused code (`knip`, which I run by hand, reports nothing), and the SOLID/DRY notes in the README say where to look.
 
 ## 5. Decisions I want to explain (including one I reversed)
 
@@ -69,9 +88,11 @@ To see it: `./scripts/start.sh`, open the printed address, log in as `demo` / `D
 
 ## 6. Tests and verification
 
-- **566 backend tests** (unit, web slice, persistence, adapters, full-context integration flows, 7 architecture rules), coverage gate 90 % lines / 80 % branches (actual ≈ 97 % / 88 %).
+![Test levels and quality gates](docs/diagrams/testing.png)
+
+- **566 backend tests** (unit, web slice, persistence, adapters, full-context integration flows, 7 architecture rules), coverage gate 90 % lines / 80 % branches (actual ≈ 97 % / 89 %).
 - **350 frontend tests** (React Testing Library + MSW at network level, accessibility checks with axe, palette contrast checks), gate 90 % / 85 % (actual ≈ 99.6 % / 95 %). Any `console.error` or `warn` fails a test.
-- **A 40-check smoke test** of the whole running stack, run in CI too; image scans (Trivy) with no fixable high or critical findings.
+- **A 40-check smoke test** of the whole running stack, run in CI too. Image scans (Trivy) of the API, web and mail images had no fixable high or critical findings when I ran them by hand; they are not a CI job yet.
 - **Honest note on TDD:** the core (domain, use cases, adapters, first web and frontend phases) was built test-first. Later iterations were done with tests and code in the same change and verified by the full suite, the smoke test and a real-browser check, so the commit history does not always show a separate failing test.
 - **What tests could not see, I checked in a real browser** and found real bugs that way: nginx dropped the port from `Host`, so the API refused every browser `POST`; and a card whose click only worked on part of its area (the image sat above the link overlay).
 
@@ -114,3 +135,4 @@ Rate limiting at a gateway; revoke tokens on password change (a token deny-list)
 | Plans and research per phase | [docs/](docs/) |
 | Conventions the code follows | [CLAUDE.md](CLAUDE.md) |
 | Architecture drawing | [docs/architecture.svg](docs/architecture.svg) |
+| Diagrams: backend, security, errors, logging, tests, frontend, CI/CD | [docs/diagrams/](docs/diagrams/) |
