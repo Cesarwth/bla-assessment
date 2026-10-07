@@ -9,7 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 class BlaAssessmentApplicationTests {
 
 	@Test
-	void contextLoads() {
+	void theApplicationStartsWithTheProductionWiring() {
 	}
 
 }

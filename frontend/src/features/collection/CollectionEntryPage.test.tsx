@@ -419,7 +419,7 @@ describe('CollectionEntryPage', () => {
       ).toBeInTheDocument()
     })
 
-    it('cancelling does nothing', async () => {
+    it('cancelling the removal closes the confirmation and keeps the entry', async () => {
       mockEntry(25, entry())
       renderApp(<App />, asTrainer())
 

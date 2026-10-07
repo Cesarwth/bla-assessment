@@ -31,7 +31,7 @@ describe('decodeToken', () => {
     expect(decodeToken(noUid)).toBeNull()
   })
 
-  it('understands non-ASCII usernames', () => {
+  it('reads a username with accents or other non-ASCII characters from the token', () => {
     expect(decodeToken(makeToken({ sub: 'pokémon' }))?.user.username).toBe('pokémon')
   })
 })

@@ -57,7 +57,7 @@ describe('App shell', () => {
     expect(screen.queryByText('Admin')).not.toBeInTheDocument()
   })
 
-  it('labels admins', () => {
+  it('shows an Admin badge next to the username of an administrator', () => {
     renderApp(<App />, { token: makeToken({ sub: 'boss', role: 'ADMIN' }) })
 
     expect(screen.getByText('Admin')).toBeInTheDocument()
