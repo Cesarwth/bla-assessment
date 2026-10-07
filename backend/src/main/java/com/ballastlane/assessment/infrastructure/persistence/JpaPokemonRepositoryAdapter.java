@@ -62,12 +62,12 @@ public class JpaPokemonRepositoryAdapter implements PokemonRepository {
         try {
             PokemonEntity shared = upsertCatalog(entry);
             return mapper.toDomain(entry.id() == null ? createEntry(entry, shared) : updateEntry(entry));
-        } catch (DataIntegrityViolationException e) {
-            if (UniqueViolations.isUnique(e)) {
+        } catch (DataIntegrityViolationException exception) {
+            if (UniqueViolations.isUnique(exception)) {
                 throw new DuplicateStoredPokemonException(entry.pokeApiId());
             }
-            throw e;
-        } catch (OptimisticLockingFailureException e) {
+            throw exception;
+        } catch (OptimisticLockingFailureException exception) {
             throw new StaleStoredPokemonException(entry.pokeApiId());
         }
     }
@@ -82,7 +82,7 @@ public class JpaPokemonRepositoryAdapter implements PokemonRepository {
         }
         try {
             return mapper.toDomain(updateEntry(entry));
-        } catch (OptimisticLockingFailureException e) {
+        } catch (OptimisticLockingFailureException exception) {
             throw new StaleStoredPokemonException(entry.pokeApiId());
         }
     }

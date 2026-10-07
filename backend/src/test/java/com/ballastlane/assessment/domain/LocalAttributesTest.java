@@ -50,7 +50,7 @@ class LocalAttributesTest {
 
     @Test
     void rejectsTooManyTagsAfterDedupe() {
-        List<String> eleven = java.util.stream.IntStream.range(0, 11).mapToObj(i -> "tag" + i).toList();
+        List<String> eleven = java.util.stream.IntStream.range(0, 11).mapToObj(index -> "tag" + index).toList();
 
         assertThatThrownBy(() -> new LocalAttributes(null, null, eleven)).isInstanceOf(InvalidLocalAttributesException.class);
         assertThat(new LocalAttributes(null, null, eleven.subList(0, 10)).tags()).hasSize(10);

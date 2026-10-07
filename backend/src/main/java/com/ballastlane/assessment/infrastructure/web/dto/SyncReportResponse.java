@@ -11,7 +11,7 @@ public record SyncReportResponse(int created, int updated, List<FailureResponse>
 
     public static SyncReportResponse from(SyncReport report) {
         return new SyncReportResponse(report.created(), report.updated(),
-                report.failures().stream().map(f -> new FailureResponse(f.identifier(), f.reason())).toList(),
+                report.failures().stream().map(failure -> new FailureResponse(failure.identifier(), failure.reason())).toList(),
                 report.abortedReason());
     }
 }

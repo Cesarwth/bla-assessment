@@ -88,9 +88,9 @@ public class PokeApiGatewayAdapter implements PokeApiGateway {
     private PokemonSummary fetchSummary(PokeApiPage.Entry entry) {
         try {
             inFlight.acquire();
-        } catch (InterruptedException e) {
+        } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new CatalogUnavailableException("Interrupted while calling PokeAPI", false, e);
+            throw new CatalogUnavailableException("Interrupted while calling PokeAPI", false, exception);
         }
         try {
             String id = String.valueOf(mapper.idFromUrl(entry.url()));
@@ -105,11 +105,11 @@ public class PokeApiGatewayAdapter implements PokeApiGateway {
     private static PokemonSummary await(CompletableFuture<PokemonSummary> call) {
         try {
             return call.join();
-        } catch (CompletionException e) {
-            if (e.getCause() instanceof RuntimeException runtime) {
+        } catch (CompletionException exception) {
+            if (exception.getCause() instanceof RuntimeException runtime) {
                 throw runtime;
             }
-            throw e;
+            throw exception;
         }
     }
 }

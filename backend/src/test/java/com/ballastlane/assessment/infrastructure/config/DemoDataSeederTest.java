@@ -104,7 +104,7 @@ class DemoDataSeederTest {
         ArgumentCaptor<StoredPokemon> saved = ArgumentCaptor.forClass(StoredPokemon.class);
         verify(repository, times(2)).save(saved.capture());
         assertThat(saved.getAllValues()).extracting(StoredPokemon::trainerId).containsExactly(1L, 2L);
-        assertThat(saved.getAllValues()).extracting(e -> e.localAttributes().nickname()).containsExactly("Sparky", null);
+        assertThat(saved.getAllValues()).extracting(stored -> stored.localAttributes().nickname()).containsExactly("Sparky", null);
     }
 
     @Test

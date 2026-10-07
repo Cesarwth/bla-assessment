@@ -131,7 +131,7 @@ class SyncSelectedPokemonTest {
         when(syncOne.sync("1", ACTOR)).thenThrow(new CatalogUnavailableException("down", true, null));
 
         assertThatThrownBy(() -> syncSelected.sync(List.of(1, 2, 3, 4, 5), ACTOR))
-                .isInstanceOfSatisfying(CatalogUnavailableException.class, e -> assertThat(e.isTimeout()).isTrue());
+                .isInstanceOfSatisfying(CatalogUnavailableException.class, exception -> assertThat(exception.isTimeout()).isTrue());
     }
 
     @Test

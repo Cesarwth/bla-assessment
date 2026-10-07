@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { fetchCatalogPage, fetchPokemonDetail } from './api'
 
-export const catalogKeys = {
+const catalogKeys = {
   all: ['catalog'] as const,
   page: (page: number, size: number, filter: string) =>
     [...catalogKeys.all, 'page', page, size, filter] as const,

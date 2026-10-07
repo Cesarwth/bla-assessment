@@ -37,7 +37,7 @@ class PokemonPersistenceMapper {
         entity.abilities.clear();
         entity.abilities.addAll(source.abilities());
         entity.stats.clear();
-        entity.stats.addAll(source.stats().stream().map(s -> new StatEmbeddable(s.name(), s.baseValue())).toList());
+        entity.stats.addAll(source.stats().stream().map(stat -> new StatEmbeddable(stat.name(), stat.baseValue())).toList());
         entity.weightKg = source.weightKg();
         entity.heightM = source.heightM();
         if (source.genus() != null) {
@@ -80,7 +80,7 @@ class PokemonPersistenceMapper {
                 entity.imageUrl,
                 entity.types,
                 entity.abilities,
-                entity.stats.stream().map(s -> new PokemonStat(s.name, s.baseValue)).toList(),
+                entity.stats.stream().map(stat -> new PokemonStat(stat.name, stat.baseValue)).toList(),
                 entity.weightKg,
                 entity.heightM,
                 entity.genus,
@@ -96,8 +96,8 @@ class PokemonPersistenceMapper {
         }
         try {
             return JSON.writeValueAsString(chain);
-        } catch (JacksonException e) {
-            throw new IllegalStateException("Could not serialize the evolution chain", e);
+        } catch (JacksonException exception) {
+            throw new IllegalStateException("Could not serialize the evolution chain", exception);
         }
     }
 
@@ -107,8 +107,8 @@ class PokemonPersistenceMapper {
         }
         try {
             return JSON.readValue(json, EvolutionNode.class);
-        } catch (JacksonException e) {
-            throw new IllegalStateException("Stored evolution chain is not readable", e);
+        } catch (JacksonException exception) {
+            throw new IllegalStateException("Stored evolution chain is not readable", exception);
         }
     }
 }

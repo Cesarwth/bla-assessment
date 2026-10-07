@@ -40,8 +40,8 @@ final class Fixtures {
                 throw new IllegalArgumentException("Missing fixture " + name);
             }
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
         }
     }
 }

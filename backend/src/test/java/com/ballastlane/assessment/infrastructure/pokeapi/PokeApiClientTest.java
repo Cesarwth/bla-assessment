@@ -48,14 +48,14 @@ class PokeApiClientTest {
 
         Optional<PokeApiPokemon> result = client.getPokemon("25");
 
-        assertThat(result).hasValueSatisfying(p -> {
-            assertThat(p.id()).isEqualTo(25);
-            assertThat(p.name()).isEqualTo("pikachu");
-            assertThat(p.weight()).isEqualTo(60);
-            assertThat(p.types().get(0).type().name()).isEqualTo("electric");
-            assertThat(p.stats().get(0).baseStat()).isEqualTo(35);
-            assertThat(p.sprites().other().officialArtwork().frontDefault()).contains("official-artwork/25.png");
-            assertThat(p.species().url()).endsWith("/pokemon-species/25/");
+        assertThat(result).hasValueSatisfying(pokemon -> {
+            assertThat(pokemon.id()).isEqualTo(25);
+            assertThat(pokemon.name()).isEqualTo("pikachu");
+            assertThat(pokemon.weight()).isEqualTo(60);
+            assertThat(pokemon.types().get(0).type().name()).isEqualTo("electric");
+            assertThat(pokemon.stats().get(0).baseStat()).isEqualTo(35);
+            assertThat(pokemon.sprites().other().officialArtwork().frontDefault()).contains("official-artwork/25.png");
+            assertThat(pokemon.species().url()).endsWith("/pokemon-species/25/");
         });
         server.verify();
     }
@@ -94,7 +94,7 @@ class PokeApiClientTest {
         PokeApiEvolutionChain chain = client.getEvolutionChain(10).orElseThrow();
 
         assertThat(species.evolutionChain().url()).endsWith("/evolution-chain/10/");
-        assertThat(species.genera()).anyMatch(g -> g.genus().equals("Mouse Pokémon"));
+        assertThat(species.genera()).anyMatch(entry -> entry.genus().equals("Mouse Pokémon"));
         assertThat(chain.chain().species().name()).isEqualTo("pichu");
         assertThat(chain.chain().evolvesTo().get(0).evolvesTo().get(0).species().name()).isEqualTo("raichu");
         server.verify();
@@ -112,7 +112,7 @@ class PokeApiClientTest {
         server.expect(requestTo(BASE + "/pokemon/25")).andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
 
         assertThatThrownBy(() -> client.getPokemon("25"))
-                .isInstanceOfSatisfying(CatalogUnavailableException.class, e -> assertThat(e.isTimeout()).isFalse());
+                .isInstanceOfSatisfying(CatalogUnavailableException.class, exception -> assertThat(exception.isTimeout()).isFalse());
     }
 
     @Test
@@ -127,7 +127,7 @@ class PokeApiClientTest {
         server.expect(requestTo(BASE + "/pokemon/25")).andRespond(withException(new SocketTimeoutException("Read timed out")));
 
         assertThatThrownBy(() -> client.getPokemon("25"))
-                .isInstanceOfSatisfying(CatalogUnavailableException.class, e -> assertThat(e.isTimeout()).isTrue());
+                .isInstanceOfSatisfying(CatalogUnavailableException.class, exception -> assertThat(exception.isTimeout()).isTrue());
     }
 
     @Test

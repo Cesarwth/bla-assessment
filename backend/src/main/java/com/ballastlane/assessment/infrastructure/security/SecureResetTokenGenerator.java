@@ -28,8 +28,8 @@ public class SecureResetTokenGenerator implements ResetTokenGenerator {
         try {
             return HexFormat.of().formatHex(
                     MessageDigest.getInstance("SHA-256").digest(rawToken.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is guaranteed by every Java runtime", e);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is guaranteed by every Java runtime", exception);
         }
     }
 }

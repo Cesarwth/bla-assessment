@@ -68,14 +68,14 @@ public class PokeApiClient {
     private <T> Optional<T> fetch(Function<RestClient, T> call) {
         try {
             return Optional.ofNullable(call.apply(http));
-        } catch (HttpClientErrorException.NotFound e) {
+        } catch (HttpClientErrorException.NotFound exception) {
             return Optional.empty();
-        } catch (RestClientResponseException e) {
-            throw new CatalogUnavailableException("PokeAPI answered " + e.getStatusCode().value(), false, e);
-        } catch (ResourceAccessException e) {
-            throw new CatalogUnavailableException("PokeAPI is unreachable", isTimeout(e), e);
-        } catch (RestClientException e) {
-            throw new CatalogUnavailableException("PokeAPI response could not be read", false, e);
+        } catch (RestClientResponseException exception) {
+            throw new CatalogUnavailableException("PokeAPI answered " + exception.getStatusCode().value(), false, exception);
+        } catch (ResourceAccessException exception) {
+            throw new CatalogUnavailableException("PokeAPI is unreachable", isTimeout(exception), exception);
+        } catch (RestClientException exception) {
+            throw new CatalogUnavailableException("PokeAPI response could not be read", false, exception);
         }
     }
 

@@ -383,8 +383,8 @@ class CollectionFlowIT {
             }
 
             // Every edit started from the same version, so optimistic locking lets exactly one through: no 500, no lost update.
-            assertThat(statuses).allMatch(s -> s == 200 || s == 409);
-            assertThat(statuses.stream().filter(s -> s == 200).count()).isEqualTo(1);
+            assertThat(statuses).allMatch(status -> status == 200 || status == 409);
+            assertThat(statuses.stream().filter(status -> status == 200).count()).isEqualTo(1);
             assertThat(jdbc.queryForObject("select version from trainer_pokemon", Long.class))
                     .isEqualTo(version + 1);
         } finally {

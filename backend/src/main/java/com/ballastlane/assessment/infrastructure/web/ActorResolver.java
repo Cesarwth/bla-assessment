@@ -19,8 +19,8 @@ final class ActorResolver {
         }
         try {
             return new Actor(id.longValue(), jwt.getSubject(), Role.valueOf(role));
-        } catch (IllegalArgumentException e) {
-            throw new BadCredentialsException("The token carries an unknown role", e);
+        } catch (IllegalArgumentException exception) {
+            throw new BadCredentialsException("The token carries an unknown role", exception);
         }
     }
 }

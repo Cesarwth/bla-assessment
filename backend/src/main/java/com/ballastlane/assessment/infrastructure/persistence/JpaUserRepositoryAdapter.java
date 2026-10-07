@@ -51,9 +51,9 @@ public class JpaUserRepositoryAdapter implements UserRepository {
     public User save(User user) {
         try {
             return mapper.toDomain(repository.saveAndFlush(mapper.toEntity(user)));
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException exception) {
             // The use case checks first, but two simultaneous registrations can both pass that check.
-            throw asDomainConflict(e, user.username(), user.email());
+            throw asDomainConflict(exception, user.username(), user.email());
         }
     }
 
@@ -63,8 +63,8 @@ public class JpaUserRepositoryAdapter implements UserRepository {
         int updated;
         try {
             updated = repository.updateProfile(userId, username, email);
-        } catch (DataIntegrityViolationException e) {
-            throw asDomainConflict(e, username, email);
+        } catch (DataIntegrityViolationException exception) {
+            throw asDomainConflict(exception, username, email);
         }
         if (updated == 0) {
             throw new UserNotFoundException();
@@ -80,9 +80,9 @@ public class JpaUserRepositoryAdapter implements UserRepository {
         }
     }
 
-    private static RuntimeException asDomainConflict(DataIntegrityViolationException e, String username, String email) {
-        if (UniqueViolations.isUnique(e)) {
-            String details = UniqueViolations.details(e);
+    private static RuntimeException asDomainConflict(DataIntegrityViolationException violation, String username, String email) {
+        if (UniqueViolations.isUnique(violation)) {
+            String details = UniqueViolations.details(violation);
             if (details.contains("uq_users_username")) {
                 return new UsernameAlreadyExistsException(username);
             }
@@ -90,6 +90,6 @@ public class JpaUserRepositoryAdapter implements UserRepository {
                 return new EmailAlreadyExistsException(email);
             }
         }
-        return e;
+        return violation;
     }
 }

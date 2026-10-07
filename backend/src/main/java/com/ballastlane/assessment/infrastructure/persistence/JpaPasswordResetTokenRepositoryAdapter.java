@@ -39,7 +39,7 @@ public class JpaPasswordResetTokenRepositoryAdapter implements PasswordResetToke
         repository.invalidateUnusedForUser(userId, at);
     }
 
-    private static PasswordResetToken toDomain(PasswordResetTokenEntity e) {
-        return new PasswordResetToken(e.getId(), e.getUserId(), e.getTokenHash(), e.getExpiresAt(), e.getUsedAt(), e.getCreatedAt());
+    private static PasswordResetToken toDomain(PasswordResetTokenEntity entity) {
+        return new PasswordResetToken(entity.getId(), entity.getUserId(), entity.getTokenHash(), entity.getExpiresAt(), entity.getUsedAt(), entity.getCreatedAt());
     }
 }

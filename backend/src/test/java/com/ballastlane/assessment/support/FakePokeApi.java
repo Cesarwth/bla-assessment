@@ -40,8 +40,8 @@ public final class FakePokeApi {
             server.createContext("/api/v2/", fake::handle);
             server.start();
             return fake;
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
+        } catch (IOException exception) {
+            throw new IllegalStateException(exception);
         }
     }
 
@@ -69,7 +69,7 @@ public final class FakePokeApi {
 
     private void handle(HttpExchange exchange) throws IOException {
         String path = exchange.getRequestURI().getPath().substring("/api/v2".length());
-        hits.computeIfAbsent(path + "?" + exchange.getRequestURI().getQuery(), k -> new AtomicInteger()).incrementAndGet();
+        hits.computeIfAbsent(path + "?" + exchange.getRequestURI().getQuery(), requestKey -> new AtomicInteger()).incrementAndGet();
         try {
             if (path.startsWith("/pokemon/") && path.substring(9).matches("\\d+")) {
                 int id = Integer.parseInt(path.substring(9));
@@ -97,7 +97,7 @@ public final class FakePokeApi {
                 }
                 default -> respond(exchange, 404, "Not Found");
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
         }
     }
@@ -109,8 +109,8 @@ public final class FakePokeApi {
     private static String fixture(String name) {
         try (InputStream in = FakePokeApi.class.getResourceAsStream("/pokeapi/" + name)) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
+        } catch (IOException exception) {
+            throw new IllegalStateException(exception);
         }
     }
 

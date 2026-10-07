@@ -20,8 +20,8 @@ public class DemoDataReader {
     public List<DemoEntry> read() {
         try (InputStream in = new ClassPathResource(RESOURCE).getInputStream()) {
             return JSON.readValue(in, new TypeReference<List<DemoEntry>>() { });
-        } catch (IOException | JacksonException e) {
-            throw new IllegalStateException("Could not read the demo data (" + RESOURCE + ")", e);
+        } catch (IOException | JacksonException exception) {
+            throw new IllegalStateException("Could not read the demo data (" + RESOURCE + ")", exception);
         }
     }
 }

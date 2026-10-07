@@ -80,18 +80,18 @@ public class MailPasswordResetNotifier implements PasswordResetNotifier {
                 """.formatted(ttlMinutes, publicUrl, rawToken));
         try {
             executor.execute(() -> deliver(message));
-        } catch (RejectedExecutionException e) {
-            log.warn("Dropped a password reset e-mail: the outgoing mail queue is full or closed");
+        } catch (RejectedExecutionException exception) {
+            log.warn("Dropped a password reset exception-mail: the outgoing mail queue is full or closed");
         }
     }
 
     private void deliver(SimpleMailMessage message) {
         try {
             mailSender.send(message);
-        } catch (RuntimeException e) {
+        } catch (RuntimeException failure) {
             // The same 202 goes back either way (no enumeration). Never log the message, the address or the link:
             // the link is a credential and exception texts can quote the recipient.
-            log.warn("Could not send a password reset e-mail ({})", e.getClass().getSimpleName());
+            log.warn("Could not send a password reset failure-mail ({})", failure.getClass().getSimpleName());
         }
     }
 
@@ -103,7 +103,7 @@ public class MailPasswordResetNotifier implements PasswordResetNotifier {
             if (!executor.awaitTermination(SHUTDOWN_GRACE_SECONDS, TimeUnit.SECONDS)) {
                 executor.shutdownNow();
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException exception) {
             executor.shutdownNow();
             Thread.currentThread().interrupt();
         }

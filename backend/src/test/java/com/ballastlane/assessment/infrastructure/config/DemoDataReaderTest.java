@@ -16,7 +16,7 @@ class DemoDataReaderTest {
     private final List<DemoEntry> entries = new DemoDataReader().read();
 
     private DemoEntry entry(int pokeApiId) {
-        return entries.stream().filter(e -> e.detail().id() == pokeApiId).findFirst().orElseThrow();
+        return entries.stream().filter(entry -> entry.detail().id() == pokeApiId).findFirst().orElseThrow();
     }
 
     @Test
@@ -26,18 +26,18 @@ class DemoDataReaderTest {
 
     @Test
     void noTrainerHasThePokemonTwiceAndEveryEntryBelongsToAKnownDemoAccount() {
-        Set<String> perTrainer = entries.stream().map(e -> e.trainer() + "/" + e.detail().id()).collect(Collectors.toSet());
+        Set<String> perTrainer = entries.stream().map(entry -> entry.trainer() + "/" + entry.detail().id()).collect(Collectors.toSet());
 
         assertThat(perTrainer).hasSize(entries.size());
         assertThat(entries).extracting(DemoEntry::trainer).containsOnly("demo", "demo-admin");
-        assertThat(entries.stream().filter(e -> e.trainer().equals("demo"))).hasSizeGreaterThanOrEqualTo(3);
-        assertThat(entries.stream().filter(e -> e.trainer().equals("demo-admin"))).hasSizeGreaterThanOrEqualTo(3);
+        assertThat(entries.stream().filter(entry -> entry.trainer().equals("demo"))).hasSizeGreaterThanOrEqualTo(3);
+        assertThat(entries.stream().filter(entry -> entry.trainer().equals("demo-admin"))).hasSizeGreaterThanOrEqualTo(3);
     }
 
     @Test
     void bothTrainersOwnSomeOfTheSamePokemonWithDifferentNotes() {
-        List<DemoEntry> bulbasaurs = entries.stream().filter(e -> e.detail().id() == 1).toList();
-        List<DemoEntry> pikachus = entries.stream().filter(e -> e.detail().id() == 25).toList();
+        List<DemoEntry> bulbasaurs = entries.stream().filter(entry -> entry.detail().id() == 1).toList();
+        List<DemoEntry> pikachus = entries.stream().filter(entry -> entry.detail().id() == 25).toList();
 
         assertThat(bulbasaurs).extracting(DemoEntry::trainer).containsExactlyInAnyOrder("demo", "demo-admin");
         assertThat(pikachus).extracting(DemoEntry::trainer).containsExactlyInAnyOrder("demo", "demo-admin");
@@ -80,7 +80,7 @@ class DemoDataReaderTest {
 
     @Test
     void someEntriesHaveNoNicknameSoTheUiShowsBothKinds() {
-        assertThat(entries).anyMatch(e -> e.nickname() == null);
-        assertThat(entries).anyMatch(e -> e.nickname() != null);
+        assertThat(entries).anyMatch(entry -> entry.nickname() == null);
+        assertThat(entries).anyMatch(entry -> entry.nickname() != null);
     }
 }

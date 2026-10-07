@@ -58,8 +58,9 @@ public record StoredPokemon(
     }
 
     private static StoredPokemon copyOf(
-            PokemonDetail d, Long id, Long version, Long trainerId, LocalAttributes local, Instant syncedAt) {
-        return new StoredPokemon(id, version, trainerId, d.id(), d.name(), d.spriteUrl(), d.imageUrl(), d.types(), d.abilities(),
-                d.stats(), d.weightKg(), d.heightM(), d.genus(), d.description(), d.evolutionChain(), local, syncedAt);
+            PokemonDetail detail, Long id, Long version, Long trainerId, LocalAttributes localAttributes, Instant syncedAt) {
+        return new StoredPokemon(id, version, trainerId, detail.id(), detail.name(), detail.spriteUrl(), detail.imageUrl(), detail.types(),
+                detail.abilities(), detail.stats(), detail.weightKg(), detail.heightM(), detail.genus(), detail.description(),
+                detail.evolutionChain(), localAttributes, syncedAt);
     }
 }

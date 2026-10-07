@@ -33,9 +33,9 @@ public class PokemonController {
     @GetMapping
     public ResponseEntity<PageResponse<PokemonSummaryResponse>> list(
             @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size,
-            @RequestParam(required = false) String q) {
+            @RequestParam(name = "q", required = false) String query) {
         return ResponseEntity.ok().cacheControl(CLIENT_CACHE)
-                .body(PageResponse.from(listPokemon.list(page, size, q), PokemonSummaryResponse::from));
+                .body(PageResponse.from(listPokemon.list(page, size, query), PokemonSummaryResponse::from));
     }
 
     @GetMapping("/{idOrName}")

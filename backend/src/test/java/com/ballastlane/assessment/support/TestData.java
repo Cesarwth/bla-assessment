@@ -41,9 +41,9 @@ public final class TestData {
     /** {@code trainerId} is the trainer whose collection the record is in. */
     public static StoredPokemon storedFor(
             Long trainerId, long dbId, long version, int pokeApiId, String name, LocalAttributes local) {
-        PokemonDetail d = detail(pokeApiId, name);
-        return new StoredPokemon(dbId, version, trainerId, d.id(), d.name(), d.spriteUrl(), d.imageUrl(), d.types(),
-                d.abilities(), d.stats(), d.weightKg(), d.heightM(), d.genus(), d.description(), d.evolutionChain(),
-                local, NOW);
+        PokemonDetail detail = detail(pokeApiId, name);
+        return new StoredPokemon(dbId, version, trainerId, detail.id(), detail.name(), detail.spriteUrl(), detail.imageUrl(),
+                detail.types(), detail.abilities(), detail.stats(), detail.weightKg(), detail.heightM(), detail.genus(),
+                detail.description(), detail.evolutionChain(), local, NOW);
     }
 }

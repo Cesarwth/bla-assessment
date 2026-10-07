@@ -117,7 +117,7 @@ class PokeApiGatewayAdapterTest {
         when(client.getPokemon("3")).thenReturn(Optional.of(named(3, "venusaur")));
 
         assertThatThrownBy(() -> adapter.findPage(0, 3))
-                .isInstanceOfSatisfying(CatalogUnavailableException.class, e -> assertThat(e.isTimeout()).isTrue());
+                .isInstanceOfSatisfying(CatalogUnavailableException.class, exception -> assertThat(exception.isTimeout()).isTrue());
     }
 
     @Test

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { changePassword, fetchProfile, updateProfile, type ProfileChanges } from './api'
 import { useAuth } from '../../shared/session/useAuth'
 
-export const profileKey = ['auth', 'profile'] as const
+const profileKey = ['auth', 'profile'] as const
 
 export function useProfile() {
   return useQuery({ queryKey: profileKey, queryFn: ({ signal }) => fetchProfile(signal) })
