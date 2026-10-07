@@ -78,7 +78,6 @@ class CollectionControllerTest {
         return "Bearer " + tokens.issue(new User(1L, "someone", "someone@pallet.town", "hash", role)).jwt();
     }
 
-    // ---- reads: the caller's own collection ----
 
     @Test
     void idsReturnsAPlainArrayOfTheCallersPokeApiIdsAndIsNotParsedAsAnId() throws Exception {
@@ -174,7 +173,6 @@ class CollectionControllerTest {
         verifyNoInteractions(listStored, getStored);
     }
 
-    // ---- sync ----
 
     @Test
     void syncSingleReturns201WhenCreatedAnd200WhenRefreshed() throws Exception {
@@ -268,7 +266,6 @@ class CollectionControllerTest {
         verifyNoInteractions(syncSelected);
     }
 
-    // ---- patch ----
 
     @Test
     void patchUpdatesTheCallersNotes() throws Exception {
@@ -350,7 +347,6 @@ class CollectionControllerTest {
         verifyNoInteractions(updateStored);
     }
 
-    // ---- delete: any authenticated trainer, their own entry ----
 
     @Test
     void deleteReturns204ForAnyAuthenticatedTrainerAndUsesTheActorFromTheToken() throws Exception {
@@ -375,7 +371,6 @@ class CollectionControllerTest {
                 .andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
     }
 
-    // ---- identity and ownership ----
 
     @Test
     void syncPassesTheActorBuiltFromTheTokenNotFromTheRequest() throws Exception {

@@ -15,7 +15,6 @@ class PokemonPersistenceMapper {
     // SHORTCUT: the evolution chain is one JSON column; upgrade to a table when we need to query by evolution.
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
-    /** A new catalog row from the PokeAPI-owned part of an entry. */
     PokemonEntity toCatalogEntity(StoredPokemon source) {
         PokemonEntity entity = new PokemonEntity();
         entity.pokeApiId = source.pokeApiId();

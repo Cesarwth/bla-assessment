@@ -32,7 +32,6 @@ export function RegisterPage() {
     setErrors({ fields: {} })
     try {
       await api.post<RegisteredUser>('/auth/register', { username, email, password })
-      // The account exists now: sign in with the same credentials so the user does not have to type them again.
       await login(username, password)
     } catch (error) {
       setErrors(toFormErrors(error))

@@ -1,9 +1,7 @@
 import { describeError, isApiError } from '../../shared/api/errors'
 
 export interface FormErrors {
-  /** Messages keyed by the name of the field they belong to. */
   fields: Record<string, string>
-  /** Anything that does not belong to a single field. */
   general?: string
 }
 

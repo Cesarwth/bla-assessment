@@ -4,7 +4,7 @@ import com.ballastlane.assessment.domain.StoredPokemon;
 import java.time.Instant;
 import java.util.List;
 
-/** The caller's collection entry; {@code version} is the entry's. {@code id} is the PokeAPI id (the identifier used in URLs); our internal row id is not exposed. */
+/** {@code id} is the PokeAPI id (the one used in URLs, the internal row id is not exposed); {@code version} belongs to the collection entry. */
 public record StoredPokemonResponse(
         int id,
         Long version,

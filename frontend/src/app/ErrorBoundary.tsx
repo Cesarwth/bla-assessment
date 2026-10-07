@@ -5,10 +5,7 @@ interface State {
   failed: boolean
 }
 
-/**
- * Last line of defense: a bug while rendering a page shows this message instead of a blank screen. It must be a
- * class because React offers no hook for it. The error itself is reported by React (and never shown to users).
- */
+// A class because React offers no hook for error boundaries; React reports the error itself, users never see it.
 export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
   state: State = { failed: false }
 

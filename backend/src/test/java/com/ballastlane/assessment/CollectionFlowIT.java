@@ -66,7 +66,6 @@ class CollectionFlowIT {
         UPSTREAM.stop();
     }
 
-    // ---- helpers ----
 
     private String login(String username, String password) throws Exception {
         String body = mockMvc.perform(post("/api/v1/auth/login").contentType(JSON)
@@ -101,7 +100,6 @@ class CollectionFlowIT {
         return "{\"version\":" + version + (fields.isEmpty() ? "" : "," + fields) + "}";
     }
 
-    // ---- flows ----
 
     @Test
     void syncPatchResyncKeepsLocalEditsAndRefreshesTheRest() throws Exception {

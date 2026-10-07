@@ -21,7 +21,6 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const formRef = useFocusFirstInvalid(errors.fields)
 
-  // Logging in (or already being logged in) leaves this page: back to where the user came from.
   if (user) return <Navigate to={safeReturnPath(location.state)} replace />
 
   async function submit(event: FormEvent) {

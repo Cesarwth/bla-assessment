@@ -18,7 +18,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 
-/** Orchestrates the client and the mapper; it is the only implementation of the PokeApiGateway port. */
 public class PokeApiGatewayAdapter implements PokeApiGateway {
 
     // Shared across requests: caps how many calls we have in flight against PokeAPI at any moment.

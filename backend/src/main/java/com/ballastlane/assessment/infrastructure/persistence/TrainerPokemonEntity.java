@@ -17,7 +17,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-/** A trainer's entry in their collection: the link to a shared Pokemon plus the trainer's own notes. */
 @Entity
 @Table(name = "trainer_pokemon")
 class TrainerPokemonEntity {

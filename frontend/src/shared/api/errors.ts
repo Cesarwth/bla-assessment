@@ -3,7 +3,6 @@ export interface FieldError {
   message: string
 }
 
-/** Every failure of the API client, whatever its cause, in the shape the backend uses for its own errors. */
 export class ApiError extends Error {
   readonly status: number
   readonly code: string

@@ -3,7 +3,6 @@ package com.ballastlane.assessment.infrastructure.web.dto;
 import java.time.Instant;
 import java.util.List;
 
-/** Single error shape for every failure the API returns. */
 public record ErrorResponse(Instant timestamp, int status, String code, String message, List<FieldViolation> fieldErrors) {
 
     public record FieldViolation(String field, String message) {

@@ -5,11 +5,7 @@ import { useCollectionIds } from '../queries'
 import { useSelection } from '../useSelection'
 import { InCollectionBadge } from './InCollectionBadge'
 
-/**
- * What a trainer sees on a catalog card: the mark when the Pokémon is already collected, otherwise, only while
- * selection mode is on, a checkbox to select it. Nothing for visitors, and nothing while we cannot tell (the
- * catalog must work without it).
- */
+// Renders nothing while it cannot tell (visitors, ids still loading): the catalog must work without it.
 export function CatalogCardExtras({ pokemon }: { pokemon: PokemonSummary }) {
   const { user } = useAuth()
   const ids = useCollectionIds(user !== null)

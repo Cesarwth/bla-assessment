@@ -10,7 +10,6 @@ import com.ballastlane.assessment.domain.StoredPokemon;
 import java.time.Instant;
 import java.util.List;
 
-/** Small builders shared by tests so each test only states what it cares about. */
 public final class TestData {
 
     public static final Instant NOW = Instant.parse("2026-10-05T12:00:00Z");

@@ -8,7 +8,6 @@ interface Props extends Omit<ComponentPropsWithoutRef<'button'>, 'children'> {
   glyph?: string
 }
 
-/** A round, borderless button with a single glyph; 44px on phones. */
 export function IconButton({ glyph = '×', className, type = 'button', ...rest }: Props) {
   return (
     <button

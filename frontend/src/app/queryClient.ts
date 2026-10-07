@@ -2,7 +2,6 @@ import { QueryClient } from '@tanstack/react-query'
 import { isApiError } from '../shared/api/errors'
 
 interface Options {
-  /** Tests turn retries off so failures show up immediately. */
   retry?: boolean
 }
 

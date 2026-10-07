@@ -92,7 +92,7 @@ describe('App shell', () => {
 
       expect(await screen.findByText(/Your session expired/)).toBeInTheDocument()
       expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: 'Log out' })).not.toBeInTheDocument() // header back to anonymous
+      expect(screen.queryByRole('button', { name: 'Log out' })).not.toBeInTheDocument()
     })
 
     it('the notice can be dismissed and goes away after logging in', async () => {

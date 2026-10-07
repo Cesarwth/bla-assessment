@@ -10,10 +10,6 @@ import { useSelection } from '../useSelection'
 
 const rowClass = 'flex flex-wrap items-center gap-3'
 
-/**
- * Selection for the catalog, trainers only: the "Select Pokémon" switch (with "Select all on this page" while it is
- * on), the result of the last add, and the tray with everything chosen so far. `items` are the Pokémon on screen.
- */
 export function SelectionToolbar({ items }: { items: PokemonSummary[] }) {
   const { user } = useAuth()
   const selection = useSelection()

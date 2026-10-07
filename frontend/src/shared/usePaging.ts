@@ -38,7 +38,6 @@ export function usePaging() {
     /** 0-based, as the API expects it. */
     apiPage: page - 1,
     size,
-    /** The text to filter by; empty when there is no filter. */
     filter,
     hrefFor: (target: number) => `?${search(target, size, filter)}`,
     hrefWithoutFilter: `?${search(1, size, '')}`,

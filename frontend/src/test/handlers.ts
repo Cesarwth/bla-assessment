@@ -11,7 +11,6 @@ import { server } from './server'
 
 export const apiUrl = (path: string) => `*/api/v1${path}`
 
-/** The error body the backend sends for every failure. */
 export function errorBody(
   status: number,
   code: string,
@@ -104,7 +103,6 @@ export const signedInUser = {
   role: 'USER' as const,
 }
 
-/** Answers GET /users/me. */
 export function mockProfile(profile: typeof signedInUser | Response = signedInUser): void {
   server.use(
     http.get(apiUrl('/users/me'), () =>

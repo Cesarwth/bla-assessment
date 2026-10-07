@@ -91,7 +91,6 @@ class SecurityRulesMatrixTest {
 
     static Stream<Arguments> matrix() {
         List<Arguments> rows = new java.util.ArrayList<>();
-        // public: auth and catalog reads
         open(rows, HttpMethod.POST, "/api/v1/auth/login");
         open(rows, HttpMethod.POST, "/api/v1/auth/register");
         open(rows, HttpMethod.POST, "/api/v1/auth/forgot-password");

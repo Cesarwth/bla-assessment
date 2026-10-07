@@ -74,8 +74,8 @@ class DemoDataReaderTest {
     @Test
     void evolutionLinesAreCarriedAlong() {
         assertThat(entry(25).detail().evolutionChain().name()).isEqualTo("pichu");
-        assertThat(entry(133).detail().evolutionChain().evolvesTo()).hasSize(8); // Eevee's branches
-        assertThat(entry(151).detail().evolutionChain().evolvesTo()).isEmpty(); // Mew does not evolve
+        assertThat(entry(133).detail().evolutionChain().evolvesTo()).hasSize(8);
+        assertThat(entry(151).detail().evolutionChain().evolvesTo()).isEmpty();
     }
 
     @Test

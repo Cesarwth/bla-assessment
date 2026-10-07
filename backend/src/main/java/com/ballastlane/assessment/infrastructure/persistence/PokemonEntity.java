@@ -15,7 +15,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-/** The shared catalog row: PokeAPI data only, no trainer-specific fields. Persistence shape only. Fields are package-private because {@link PokemonPersistenceMapper} is the sole user. */
+/** The shared catalog row: PokeAPI data only, no trainer-specific fields. Fields are package-private because {@link PokemonPersistenceMapper} is the sole user. */
 @Entity
 @Table(name = "pokemon")
 class PokemonEntity {

@@ -11,7 +11,6 @@ export function Header() {
   const { user, isAdmin, logout } = useAuth()
   return (
     <header className="sticky top-0 z-5 border-b border-border bg-surface/80 backdrop-blur-md">
-      {/* Phones: brand and account share the first row, the navigation takes the second. From sm: one row. */}
       <div className="mx-auto flex max-w-content flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
         <Link
           to="/"

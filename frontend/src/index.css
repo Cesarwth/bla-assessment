@@ -7,7 +7,6 @@
  * border-border, bg-primary...): components never use raw hex. The light values are declared in @theme; the dark
  * values replace the same variables inside `prefers-color-scheme: dark` further down, so a component written once
  * (`bg-surface`) is correct in both schemes and needs no `dark:` variant.
- * Spacing uses Tailwind's default scale (1 = 0.25rem); breakpoints are Tailwind's (sm 40rem, md 48rem, lg 64rem).
  */
 @theme {
   --color-canvas: #cfe4e1; /* the color under the forest art while it loads, and its base tone */
@@ -376,8 +375,7 @@
 }
 
 /* What utilities cannot express readably: values mixed from --type-color, the shimmer gradient, <meter> parts. */
-/* The look of a Pokémon type: gradient surface with its readable ink, a glass pill for the number, a solid pill with a
-   tinted shadow. Everything reads --type-* from the nearest [data-type]. */
+/* Everything below reads --type-* from the nearest [data-type]. */
 @utility type-card {
   background: linear-gradient(to bottom, var(--type-from), var(--type-to));
   color: var(--type-ink);

@@ -58,11 +58,8 @@ function SelectionState({ children }: { children: ReactNode }) {
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>
 }
 
-/**
- * Which Pokémon the trainer chose in the catalog, and whether the catalog is in selection mode. It lives above the
- * routes so the selection survives paging, filtering and a visit to a detail page; the key drops it when the session
- * changes, so one trainer's choices never leak to the next.
- */
+// Lives above the routes so the selection survives paging, filtering and a detail visit; the key drops it when the
+// session changes, so one trainer's choices never leak to the next.
 export function SelectionProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   return <SelectionState key={user?.id ?? 'anonymous'}>{children}</SelectionState>

@@ -12,11 +12,9 @@ const base =
   'aria-disabled:pointer-events-none aria-disabled:border-dashed aria-disabled:opacity-50 sm:min-h-0'
 
 const variants: Record<ButtonVariant, string> = {
-  // The one call to action of a screen: a soft red tint with red ink.
   primary:
     'border-primary/70 bg-primary-soft font-semibold text-primary-ink ' +
     'not-disabled:hover:border-primary not-disabled:hover:bg-primary-soft-hover',
-  // Glass: translucent theme surface over whatever is behind it.
   secondary:
     'border-fg/20 bg-surface/80 font-medium text-fg backdrop-blur-sm not-disabled:hover:bg-surface-muted',
   outline:

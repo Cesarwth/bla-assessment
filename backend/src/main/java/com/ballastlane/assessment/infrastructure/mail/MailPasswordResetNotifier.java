@@ -17,9 +17,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
 /**
- * Sends the reset e-mail in the background. A request for a known address would otherwise wait for the SMTP server
- * while an unknown one returns instantly, and the response time would reveal which accounts exist. (The known path
- * still does two small DB writes before this is called; that difference is negligible next to an SMTP round trip.)
+ * Sends the reset e-mail in the background: waiting for SMTP only for known addresses would let response time reveal
+ * which accounts exist.
  */
 @Component
 public class MailPasswordResetNotifier implements PasswordResetNotifier {
@@ -81,7 +80,7 @@ public class MailPasswordResetNotifier implements PasswordResetNotifier {
         try {
             executor.execute(() -> deliver(message));
         } catch (RejectedExecutionException exception) {
-            log.warn("Dropped a password reset exception-mail: the outgoing mail queue is full or closed");
+            log.warn("Dropped a password reset e-mail: the outgoing mail queue is full or closed");
         }
     }
 
@@ -91,7 +90,7 @@ public class MailPasswordResetNotifier implements PasswordResetNotifier {
         } catch (RuntimeException failure) {
             // The same 202 goes back either way (no enumeration). Never log the message, the address or the link:
             // the link is a credential and exception texts can quote the recipient.
-            log.warn("Could not send a password reset failure-mail ({})", failure.getClass().getSimpleName());
+            log.warn("Could not send a password reset e-mail ({})", failure.getClass().getSimpleName());
         }
     }
 

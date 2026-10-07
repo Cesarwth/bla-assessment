@@ -16,10 +16,7 @@ import { usePokemonDetail } from './queries'
 const MISSING_CODES = ['POKEMON_NOT_FOUND', 'INVALID_POKEMON_IDENTIFIER']
 
 interface Props {
-  /**
-   * Extra actions shown under the facts. The app composes them in, so this feature does not depend on the
-   * collection feature.
-   */
+  /** Supplied by the app so this feature does not depend on the collection feature. */
   renderActions?: (pokemon: PokemonDetail) => ReactNode
 }
 

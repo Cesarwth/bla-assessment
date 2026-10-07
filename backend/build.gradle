@@ -67,7 +67,6 @@ tasks.named('jacocoTestReport') {
 	}))
 }
 
-// Coverage gate: `./gradlew build` fails if coverage drops below these floors (the app entry point is excluded).
 tasks.named('jacocoTestCoverageVerification') {
 	dependsOn 'test'
 	classDirectories.setFrom(files(classDirectories.files.collect {

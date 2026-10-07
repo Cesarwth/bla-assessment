@@ -21,7 +21,6 @@ const firstPage = () =>
 const checkbox = (name: string) => screen.findByRole('checkbox', { name: `Select ${name}` })
 const tray = () => screen.getByRole('region', { name: 'Your selection' })
 
-/** Turns selection mode on, the way a trainer does. */
 async function startSelecting() {
   await userEvent.click(await screen.findByRole('button', { name: 'Select Pokémon' }))
 }

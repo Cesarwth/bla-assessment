@@ -51,9 +51,7 @@ interface Props {
   entry: StoredPokemon
   /** Refetches the entry from the API (used after a conflict). */
   onReload: () => void
-  /** Called once the changes are saved; the page leaves the form. */
   onSaved: () => void
-  /** Closes the form without saving. */
   onCancel: () => void
 }
 

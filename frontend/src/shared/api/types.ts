@@ -83,7 +83,6 @@ export interface RegisteredUser {
   role: Role
 }
 
-/** The answer of PATCH /users/me: the trainer as saved and a token for the new username. */
 export interface UpdatedProfile extends AuthResponse {
   user: RegisteredUser
 }

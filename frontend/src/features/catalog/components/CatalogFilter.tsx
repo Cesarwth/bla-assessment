@@ -6,7 +6,6 @@ import { IconButton } from '../../../shared/ui/IconButton'
 const DEBOUNCE_MS = 300
 
 interface Props {
-  /** The filter currently in the URL. */
   value: string
   onChange: (filter: string) => void
 }

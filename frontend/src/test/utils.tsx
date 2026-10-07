@@ -36,7 +36,6 @@ interface RenderOptions {
   route?: string | { pathname: string; state?: unknown }
   /** A page visited before `route`, so the browser's Back has somewhere to go. */
   previous?: string
-  /** Puts a session in storage before rendering, as if the user had logged in earlier in this tab. */
   token?: string
 }
 

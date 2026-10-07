@@ -14,7 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.json.JsonMapper;
 
-/** Whole stack, no mocks: HTTP -> security -> use case -> JPA -> H2 (same Flyway migration as production). */
+/** Whole stack, no mocks: HTTP -> security -> use case -> JPA -> H2 (same Flyway migrations as production). */
 @SpringBootTest(properties = "app.seed.demo-user.enabled=true")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -39,8 +39,7 @@ class AuthFlowIT {
 
         String token = loginAndGetToken("misty", "Starmie2024");
 
-        // No protected controller exists yet: an authenticated call gets past security and reaches MVC (404),
-        // an anonymous one is stopped by security (401).
+        // Unmapped path: a token gets past security and reaches MVC (404), an anonymous call is stopped (401).
         mockMvc.perform(get("/api/v1/anything").header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));

@@ -5,17 +5,13 @@ import { TypeChip } from './TypeChip'
 
 interface Props {
   id: number
-  /** The Pokémon's name as shown (the page title). */
   name: string
   types: string[]
   imageSrc: string | null
-  /** The category line, e.g. "Mouse Pokémon". */
   genus?: string | null
-  /** More content for the text side, under the type pills. */
   children?: ReactNode
 }
 
-/** The banner of a detail page: the same type gradient, glass number, glowing artwork and pills as the cards. */
 export function PokemonHero({ id, name, types, imageSrc, genus, children }: Props) {
   return (
     <div
@@ -23,7 +19,6 @@ export function PokemonHero({ id, name, types, imageSrc, genus, children }: Prop
       data-type={types[0] ?? 'unknown'}
     >
       <div className="relative mx-auto grid size-52 place-items-center sm:size-64">
-        {/* Decorative glow behind the art. */}
         <div className="absolute inset-2 rounded-full bg-white/30 blur-2xl" aria-hidden="true" />
         <div className="relative size-full drop-shadow-xl">
           <PokemonImage

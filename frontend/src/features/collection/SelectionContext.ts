@@ -10,7 +10,6 @@ export interface SelectedPokemon {
 }
 
 export interface SelectionValue {
-  /** Whether the catalog is showing checkboxes. */
   active: boolean
   setActive: (active: boolean) => void
   /** In the order they were ticked. */

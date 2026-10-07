@@ -31,7 +31,7 @@ describe('ErrorBoundary', () => {
     )
 
     expect(screen.getByRole('alert')).toHaveTextContent('Something went wrong')
-    expect(screen.queryByText(/Boom from a component/)).not.toBeInTheDocument() // internals stay out of sight
+    expect(screen.queryByText(/Boom from a component/)).not.toBeInTheDocument()
     expect(expectConsoleOutput(/Boom from a component/).length).toBeGreaterThan(0) // React reports it, we assert it
   })
 

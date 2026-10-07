@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react'
 
 /**
- * After a failed submit, moves focus to the first field marked `aria-invalid` (WCAG 3.3.1: people using a keyboard or
- * a screen reader land on the problem instead of hunting for it). Pass the object holding the field errors: every
- * failed submit stores a new one, so repeating the same mistake focuses again. Attach the returned ref to the form.
+ * Focuses the first `aria-invalid` field after a failed submit (WCAG 3.3.1). Pass the field-errors object: every
+ * failed submit stores a new one, so repeating the same mistake focuses again.
  */
 export function useFocusFirstInvalid(fieldErrors: Record<string, string>) {
   const form = useRef<HTMLFormElement>(null)

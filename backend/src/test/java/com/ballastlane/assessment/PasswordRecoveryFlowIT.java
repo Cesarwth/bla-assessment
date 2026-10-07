@@ -97,7 +97,7 @@ class PasswordRecoveryFlowIT {
 
         login("dawn", "Piplup2024", 401);
         login("dawn", "Empoleon99", 200);
-        assertThat(reset(token, "Another123")).isEqualTo(400); // single use
+        assertThat(reset(token, "Another123")).isEqualTo(400);
         login("dawn", "Empoleon99", 200);
     }
 
@@ -189,7 +189,6 @@ class PasswordRecoveryFlowIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.user.email").value("champion@sinnoh.region"));
 
-        // resets now go to the new address
         mail.sent.clear();
         forgot("champion@sinnoh.region");
         assertThat(mail.sent).hasSize(1);

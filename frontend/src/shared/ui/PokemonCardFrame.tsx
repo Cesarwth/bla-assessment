@@ -3,25 +3,18 @@ import { formatId } from '../format'
 import { PokemonImage } from './PokemonImage'
 
 interface Props {
-  /** The primary type: it picks the gradient. */
   type: string | undefined
   id: number
   /** The Pokémon's name as shown; it is also the alt text of the image. */
   name: string
-  /** The official artwork, or the sprite when there is none. */
   imageSrc: string | null
   /** The title link. It must cover the card (`after:absolute after:inset-0 after:z-1`: the z-index keeps it above the positioned art area) so the card is one big target. */
   title: ReactNode
   /** Marks and controls that sit on the art, above the card-wide link. */
   extras?: ReactNode
-  /** The inner light panel: pills and facts. */
   children: ReactNode
 }
 
-/**
- * The shared look of the catalog and collection cards: type gradient, glass number, glowing artwork and an inner
- * panel on theme surface colors, so the text there is readable in both color schemes.
- */
 export function PokemonCardFrame({ type, id, name, imageSrc, title, extras, children }: Props) {
   return (
     <article
@@ -35,7 +28,6 @@ export function PokemonCardFrame({ type, id, name, imageSrc, title, extras, chil
         </span>
       </div>
       <div className="relative grid place-items-center px-4 py-3">
-        {/* Decorative glow behind the art. */}
         <div
           className="absolute size-40 rounded-full bg-white/30 blur-2xl sm:size-44"
           aria-hidden="true"

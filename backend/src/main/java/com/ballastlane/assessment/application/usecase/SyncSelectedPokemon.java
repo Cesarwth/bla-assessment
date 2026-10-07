@@ -68,13 +68,13 @@ public class SyncSelectedPokemon implements SyncSelectedPokemonUseCase {
                     updated++;
                 }
             } catch (PokemonNotFoundException exception) {
-                // PokeAPI has gaps (exception.g. 1026-10000): a missing id is a per-item failure, not a reason to stop.
+                // PokeAPI has gaps (e.g. 1026-10000): a missing id is a per-item failure, not a reason to stop.
                 failures.add(new SyncReport.Failure(String.valueOf(id), "Not found upstream"));
             } catch (StaleStoredPokemonException exception) {
                 // Someone edited this record while we synced it: report it and keep the rest of the selection.
                 failures.add(new SyncReport.Failure(String.valueOf(id), "Modified concurrently, retry it"));
             } catch (DuplicateStoredPokemonException exception) {
-                // Still racing after SyncPokemon's own retries (exception.g. the same trainer adding it from two tabs).
+                // Still racing after SyncPokemon's own retries (e.g. the same trainer adding it from two tabs).
                 failures.add(new SyncReport.Failure(String.valueOf(id), "Already being added, retry it"));
             } catch (CatalogUnavailableException exception) {
                 // Upstream is down: stop instead of repeating the failure for every remaining id. What was already

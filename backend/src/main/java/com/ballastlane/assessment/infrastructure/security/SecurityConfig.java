@@ -18,7 +18,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import tools.jackson.databind.json.JsonMapper;
 
-/** Single source of truth for which routes are public and which need a token. */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
