@@ -22,16 +22,16 @@ function parseFilter(raw: string | null): string {
 }
 
 function search(page: number, size: number, filter: string): string {
-  const params = new URLSearchParams({ page: String(page), size: String(size) })
-  if (filter) params.set('q', filter)
-  return params.toString()
+  const searchParams = new URLSearchParams({ page: String(page), size: String(size) })
+  if (filter) searchParams.set('q', filter)
+  return searchParams.toString()
 }
 
 export function usePaging() {
-  const [params, setParams] = useSearchParams()
-  const page = parsePage(params.get('page'))
-  const size = parseSize(params.get('size'))
-  const filter = parseFilter(params.get('q'))
+  const [searchParams, setParams] = useSearchParams()
+  const page = parsePage(searchParams.get('page'))
+  const size = parseSize(searchParams.get('size'))
+  const filter = parseFilter(searchParams.get('q'))
   return {
     /** 1-based, as shown to people. */
     page,

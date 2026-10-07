@@ -3,9 +3,9 @@ import type { PageResponse, PokemonDetail, PokemonSummary } from '../../shared/a
 
 /** `filter` is a name fragment or a number; the API ignores it when empty, so it is left out. */
 export function fetchCatalogPage(page: number, size: number, filter: string, signal?: AbortSignal) {
-  const params = new URLSearchParams({ page: String(page), size: String(size) })
-  if (filter) params.set('q', filter)
-  return api.get<PageResponse<PokemonSummary>>(`/pokemon?${params}`, signal)
+  const searchParams = new URLSearchParams({ page: String(page), size: String(size) })
+  if (filter) searchParams.set('q', filter)
+  return api.get<PageResponse<PokemonSummary>>(`/pokemon?${searchParams}`, signal)
 }
 
 export function fetchPokemonDetail(idOrName: string, signal?: AbortSignal) {

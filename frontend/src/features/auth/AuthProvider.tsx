@@ -18,12 +18,12 @@ interface Session {
 function restoreSession(): Session | null {
   const token = readToken()
   if (!token) return null
-  const info = decodeToken(token)
-  if (!info || isExpired(info)) {
+  const decodedToken = decodeToken(token)
+  if (!decodedToken || isExpired(decodedToken)) {
     clearToken()
     return null
   }
-  return { token, user: info.user }
+  return { token, user: decodedToken.user }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -67,11 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (username: string, password: string) => {
       const { token } = await api.post<AuthResponse>('/auth/login', { username, password })
-      const info = decodeToken(token)
-      if (!info) throw new Error('The server returned a session this app cannot read.')
+      const decodedToken = decodeToken(token)
+      if (!decodedToken) throw new Error('The server returned a session this app cannot read.')
       tokenRef.current = token
       storeToken(token)
-      setSession({ token, user: info.user })
+      setSession({ token, user: decodedToken.user })
       setSessionExpired(false)
       queryClient.getMutationCache().clear()
       queryClient.removeQueries({ type: 'inactive' })
@@ -82,11 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Same trainer, new claims: unlike login, cached data stays valid, so the query cache is left alone.
   const adoptSession = useCallback((token: string) => {
-    const info = decodeToken(token)
-    if (!info) throw new Error('The server returned a session this app cannot read.')
+    const decodedToken = decodeToken(token)
+    if (!decodedToken) throw new Error('The server returned a session this app cannot read.')
     tokenRef.current = token
     storeToken(token)
-    setSession({ token, user: info.user })
+    setSession({ token, user: decodedToken.user })
   }, [])
 
   const dismissSessionExpired = useCallback(() => setSessionExpired(false), [])
