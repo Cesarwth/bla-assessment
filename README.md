@@ -2,6 +2,8 @@
 
 A full-stack take on the Ballast Lane Java exercise. A **REST API** (Java 21, Spring Boot, PostgreSQL) wraps the public [PokeAPI](https://pokeapi.co/docs/v2), lets every trainer **build their own collection** by replicating Pokémon into a local database and **keep personal notes** on them (nickname, region, tags), and a **React app** (TypeScript) lets you browse the catalog, collect and edit. It is built with **Clean Architecture** and **TDD**, and everything starts with one command.
 
+**Reviewing this?** [`PRESENTATION.md`](PRESENTATION.md) explains the thought process and decisions in about five minutes; the generative-AI exercise is in [`docs/genai.md`](docs/genai.md); to run everything, jump to [Quick start](#quick-start).
+
 ![Catalog](docs/screenshots/catalog.png)
 
 | My collection (logged in as `demo`) | Editing your notes |
