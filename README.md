@@ -118,35 +118,6 @@ Clean Architecture: dependencies point **inward only**. The business rules know 
 
 ![Architecture: infrastructure adapters depend on the application layer (use cases and ports), which depends on the pure Java domain](docs/architecture.svg)
 
-The same idea as a diagram you can read in text:
-
-```mermaid
-flowchart LR
-  subgraph infra[infrastructure — adapters and frameworks]
-    web[web: controllers, DTOs, error handler]
-    sec[security: JWT, route rules]
-    pok[pokeapi: HTTP client, mapper, cache]
-    per[persistence: JPA entities, Flyway]
-    cfg[config: wiring, seeders]
-  end
-  subgraph app[application — use cases and ports]
-    uc[use cases: SyncPokemon, UpdateStoredPokemon, ...]
-    pin[ports in]
-    pout[ports out: PokeApiGateway, PokemonRepository, UserRepository, ...]
-  end
-  subgraph dom[domain — pure Java]
-    ent[StoredPokemon, LocalAttributes, User, Actor, EvolutionNode, rules]
-  end
-  web --> pin
-  pin --> uc
-  uc --> pout
-  uc --> ent
-  pok -. implements .-> pout
-  per -. implements .-> pout
-  sec -. implements .-> pout
-  cfg --> uc
-```
-
 - **`domain`** — entities, value objects and rules (`LocalAttributes` limits, `PokemonSearchQuery`, `PokemonIdentifier`). No framework imports.
 - **`application`** — one class per use case, written as plain Java against **ports** it defines (`port.in` for what the outside asks, `port.out` for what it needs).
 - **`infrastructure`** — everything that touches a framework: REST controllers and DTOs, Spring Security + JWT, the PokeAPI HTTP client with Caffeine caching, JPA adapters and Flyway migrations, and the configuration that wires use cases into Spring (the only place that does).
@@ -166,17 +137,7 @@ flowchart LR
 
 Honest limits: some rules are repeated on purpose (the password policy exists in the API *and* in the form, and DTO validation repeats what the use case enforces: defence in depth, kept in line by tests on both sides); `UseCaseConfig` is a long but boring wiring class; the use cases are plain Java without transactions (the adapters own them), which the code documents where it matters.
 
-Runtime view:
-
-```mermaid
-flowchart LR
-  browser((Browser)) -->|8081| nginx[nginx: static app + /api proxy]
-  nginx -->|/api| api[Spring Boot API]
-  api --> db[(PostgreSQL)]
-  api -->|HTTPS, cached| pokeapi[(pokeapi.co)]
-```
-
-The browser only talks to nginx, so the app needs **no CORS** configuration; the API additionally refuses foreign origins (nginx forwards the original `Host`, port included, so same-origin requests are recognised as such).
+In the drawing, the browser only talks to nginx (which serves the app and proxies `/api` to the API), so the app needs **no CORS** configuration; the API additionally refuses foreign origins (nginx forwards the original `Host`, port included, so same-origin requests are recognised as such).
 
 ## API reference
 
