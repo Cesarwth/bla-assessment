@@ -83,9 +83,9 @@ public class CollectionController {
 
     @PostMapping("/{idOrName}/sync")
     public ResponseEntity<StoredPokemonResponse> sync(@PathVariable String idOrName, @AuthenticationPrincipal Jwt jwt) {
-        SyncResult result = syncOne.sync(idOrName, ActorResolver.from(jwt));
-        HttpStatus status = result.outcome() == SyncOutcome.CREATED ? HttpStatus.CREATED : HttpStatus.OK;
-        return ResponseEntity.status(status).body(StoredPokemonResponse.from(result.pokemon()));
+        SyncResult syncResult = syncOne.sync(idOrName, ActorResolver.from(jwt));
+        HttpStatus status = syncResult.outcome() == SyncOutcome.CREATED ? HttpStatus.CREATED : HttpStatus.OK;
+        return ResponseEntity.status(status).body(StoredPokemonResponse.from(syncResult.pokemon()));
     }
 
     @PostMapping("/sync")

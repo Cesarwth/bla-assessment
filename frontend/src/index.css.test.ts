@@ -12,23 +12,26 @@ const TYPES = [
 ] as const // prettier-ignore
 
 type Rgb = [number, number, number]
-const rgb = (hex: string): Rgb => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as Rgb
+const rgb = (hex: string): Rgb =>
+  [1, 3, 5].map((startIndex) => parseInt(hex.slice(startIndex, startIndex + 2), 16)) as Rgb
 
-function luminance([r, g, b]: Rgb): number {
-  const [lr, lg, lb] = [r, g, b].map((v) => {
-    const c = v / 255
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+function luminance([red, green, blue]: Rgb): number {
+  const [linearRed, linearGreen, linearBlue] = [red, green, blue].map((channel) => {
+    const fraction = channel / 255
+    return fraction <= 0.03928 ? fraction / 12.92 : ((fraction + 0.055) / 1.055) ** 2.4
   })
-  return 0.2126 * lr! + 0.7152 * lg! + 0.0722 * lb!
+  return 0.2126 * linearRed! + 0.7152 * linearGreen! + 0.0722 * linearBlue!
 }
 
-function contrast(a: Rgb, b: Rgb): number {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
-  return (hi! + 0.05) / (lo! + 0.05)
+function contrast(first: Rgb, second: Rgb): number {
+  const [lighter, darker] = [luminance(first), luminance(second)].sort(
+    (left, right) => right - left,
+  )
+  return (lighter! + 0.05) / (darker! + 0.05)
 }
 
-const mixWithWhite = (c: Rgb, share: number): Rgb =>
-  c.map((v) => Math.round(v * (1 - share) + 255 * share)) as Rgb
+const mixWithWhite = (color: Rgb, share: number): Rgb =>
+  color.map((channel) => Math.round(channel * (1 - share) + 255 * share)) as Rgb
 
 describe('type palette', () => {
   it.each(TYPES)('%s has a gradient pair, a pill color and an ink', (type) => {
@@ -69,7 +72,7 @@ function schemeColor(scheme: keyof typeof schemes, name: string): Rgb {
 }
 
 const over = (top: Rgb, bottom: Rgb, alpha: number): Rgb =>
-  top.map((v, i) => Math.round(v * alpha + bottom[i]! * (1 - alpha))) as Rgb
+  top.map((channel, index) => Math.round(channel * alpha + bottom[index]! * (1 - alpha))) as Rgb
 
 describe.each(['light', 'dark'] as const)('%s scheme: text on the forest backdrop', (scheme) => {
   const color = (name: string) => schemeColor(scheme, `color-${name}`)

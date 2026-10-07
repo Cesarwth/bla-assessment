@@ -51,19 +51,19 @@ class PasswordRecoveryFlowIT {
         }
     }
 
-    @Autowired MockMvc mvc;
+    @Autowired MockMvc mockMvc;
     @Autowired JsonMapper json;
     @Autowired CapturingNotifier mail;
     @Autowired JwtDecoder jwtDecoder;
 
     private void register(String username, String email, String password) throws Exception {
-        mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"" + username + "\",\"email\":\"" + email + "\",\"password\":\"" + password + "\"}"))
                 .andExpect(status().isCreated());
     }
 
     private String login(String username, String password, int expectedStatus) throws Exception {
-        String body = mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+        String body = mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
                 .andExpect(status().is(expectedStatus))
                 .andReturn().getResponse().getContentAsString();
@@ -71,14 +71,14 @@ class PasswordRecoveryFlowIT {
     }
 
     private void forgot(String email) throws Exception {
-        mvc.perform(post("/api/v1/auth/forgot-password").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/auth/forgot-password").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"" + email + "\"}"))
                 .andExpect(status().isAccepted())
                 .andExpect(content().string(""));
     }
 
     private int reset(String token, String password) throws Exception {
-        return mvc.perform(post("/api/v1/auth/reset-password").contentType(MediaType.APPLICATION_JSON)
+        return mockMvc.perform(post("/api/v1/auth/reset-password").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\":\"" + token + "\",\"newPassword\":\"" + password + "\"}"))
                 .andReturn().getResponse().getStatus();
     }
@@ -125,12 +125,12 @@ class PasswordRecoveryFlowIT {
 
     @Test
     void anInvalidTokenAndAWeakPasswordUseTheirOwnCodes() throws Exception {
-        mvc.perform(post("/api/v1/auth/reset-password").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/auth/reset-password").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\":\"nope\",\"newPassword\":\"Torterra99\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_RESET_TOKEN"))
                 .andExpect(jsonPath("$.message").value("This reset link is invalid or has expired"));
-        mvc.perform(post("/api/v1/auth/reset-password").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/auth/reset-password").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\":\"nope\",\"newPassword\":\"weak\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("WEAK_PASSWORD"));
@@ -141,11 +141,11 @@ class PasswordRecoveryFlowIT {
         register("barry", "barry@twinleaf.town", "Infernape2024");
         String oldToken = login("barry", "Infernape2024", 200);
 
-        mvc.perform(get("/api/v1/users/me").header("Authorization", "Bearer " + oldToken))
+        mockMvc.perform(get("/api/v1/users/me").header("Authorization", "Bearer " + oldToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("barry"));
 
-        String body = mvc.perform(patch("/api/v1/users/me").header("Authorization", "Bearer " + oldToken)
+        String body = mockMvc.perform(patch("/api/v1/users/me").header("Authorization", "Bearer " + oldToken)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"username\":\"  Barry-Jr \"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
@@ -155,7 +155,7 @@ class PasswordRecoveryFlowIT {
         String newToken = json.readTree(body).get("token").asString();
 
         assertThat(jwtDecoder.decode(newToken).getSubject()).isEqualTo("barry-jr");
-        mvc.perform(get("/api/v1/users/me").header("Authorization", "Bearer " + newToken))
+        mockMvc.perform(get("/api/v1/users/me").header("Authorization", "Bearer " + newToken))
                 .andExpect(jsonPath("$.username").value("barry-jr"));
         login("barry-jr", "Infernape2024", 200);
         login("barry", "Infernape2024", 401);
@@ -169,21 +169,21 @@ class PasswordRecoveryFlowIT {
 
         for (String payload : List.of("{\"email\":\"new@sinnoh.region\"}",
                 "{\"email\":\"new@sinnoh.region\",\"currentPassword\":\"wrong-pass1\"}")) {
-            mvc.perform(patch("/api/v1/users/me").header("Authorization", "Bearer " + token)
+            mockMvc.perform(patch("/api/v1/users/me").header("Authorization", "Bearer " + token)
                             .contentType(MediaType.APPLICATION_JSON).content(payload))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("INVALID_CURRENT_PASSWORD"));
         }
-        mvc.perform(patch("/api/v1/users/me").header("Authorization", "Bearer " + token)
+        mockMvc.perform(patch("/api/v1/users/me").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"cyrus@sinnoh.region\",\"currentPassword\":\"Garchomp2024\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("EMAIL_TAKEN"));
-        mvc.perform(patch("/api/v1/users/me").header("Authorization", "Bearer " + token)
+        mockMvc.perform(patch("/api/v1/users/me").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"username\":\"cyrus\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("USERNAME_TAKEN"));
-        mvc.perform(patch("/api/v1/users/me").header("Authorization", "Bearer " + token)
+        mockMvc.perform(patch("/api/v1/users/me").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"champion@sinnoh.region\",\"currentPassword\":\"Garchomp2024\"}"))
                 .andExpect(status().isOk())
@@ -200,12 +200,12 @@ class PasswordRecoveryFlowIT {
         register("serena", "serena@kalos.region", "Braixen2024");
         String token = login("serena", "Braixen2024", 200);
 
-        mvc.perform(post("/api/v1/users/me/password").header("Authorization", "Bearer " + token)
+        mockMvc.perform(post("/api/v1/users/me/password").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"currentPassword\":\"wrong-pass1\",\"newPassword\":\"Delphox2024\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_CURRENT_PASSWORD"));
-        mvc.perform(post("/api/v1/users/me/password").header("Authorization", "Bearer " + token)
+        mockMvc.perform(post("/api/v1/users/me/password").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"currentPassword\":\"Braixen2024\",\"newPassword\":\"Delphox2024\"}"))
                 .andExpect(status().isNoContent());
@@ -216,6 +216,6 @@ class PasswordRecoveryFlowIT {
 
     @Test
     void theUsersRoutesRejectAnonymousCallers() throws Exception {
-        mvc.perform(get("/api/v1/users/me")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/users/me")).andExpect(status().isUnauthorized());
     }
 }

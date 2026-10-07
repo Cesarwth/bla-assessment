@@ -61,8 +61,8 @@ public class SyncSelectedPokemon implements SyncSelectedPokemonUseCase {
                 break;
             }
             try {
-                SyncResult result = syncOne.sync(String.valueOf(id), actor);
-                if (result.outcome() == SyncOutcome.CREATED) {
+                SyncResult syncResult = syncOne.sync(String.valueOf(id), actor);
+                if (syncResult.outcome() == SyncOutcome.CREATED) {
                     created++;
                 } else {
                     updated++;

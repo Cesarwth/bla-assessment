@@ -27,9 +27,9 @@ function InvalidLink({ reason }: { reason?: string }) {
 export function ResetPasswordPage() {
   useDocumentTitle('Choose a new password')
   const navigate = useNavigate()
-  const [params] = useSearchParams()
+  const [searchParams] = useSearchParams()
   // Read once into state: the address is cleaned right after, and the token must not stay in the history.
-  const [token] = useState(() => params.get('token'))
+  const [token] = useState(() => searchParams.get('token'))
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [errors, setErrors] = useState<FormErrors>({ fields: {} })

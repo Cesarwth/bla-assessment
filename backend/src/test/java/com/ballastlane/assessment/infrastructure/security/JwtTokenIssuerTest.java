@@ -43,7 +43,7 @@ class JwtTokenIssuerTest {
 
         AuthToken token = issuer(now, Duration.ofMinutes(30)).issue(ASH);
 
-        Jwt jwt = decoder(SECRET).decode(token.value());
+        Jwt jwt = decoder(SECRET).decode(token.jwt());
         assertThat(jwt.getSubject()).isEqualTo("ash");
         assertThat(jwt.<String>getClaim("role")).isEqualTo("USER");
         assertThat(token.expiresAt()).isEqualTo(now.plus(Duration.ofMinutes(30)));
@@ -54,7 +54,7 @@ class JwtTokenIssuerTest {
     void rejectsATokenSignedWithAnotherSecret() {
         AuthToken token = issuer(Instant.now(), Duration.ofMinutes(5)).issue(ASH);
 
-        assertThatThrownBy(() -> decoder("another-secret-another-secret-32by").decode(token.value()))
+        assertThatThrownBy(() -> decoder("another-secret-another-secret-32by").decode(token.jwt()))
                 .isInstanceOf(JwtException.class);
     }
 
@@ -62,6 +62,6 @@ class JwtTokenIssuerTest {
     void rejectsAnExpiredToken() {
         AuthToken token = issuer(Instant.now().minus(Duration.ofHours(1)), Duration.ofMinutes(5)).issue(ASH);
 
-        assertThatThrownBy(() -> decoder(SECRET).decode(token.value())).isInstanceOf(JwtException.class);
+        assertThatThrownBy(() -> decoder(SECRET).decode(token.jwt())).isInstanceOf(JwtException.class);
     }
 }

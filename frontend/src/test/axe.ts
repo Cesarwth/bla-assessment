@@ -8,11 +8,11 @@ import { expect } from 'vitest'
  * visible text, e.g. "Next page" for a link that reads "Next").
  */
 export async function expectNoA11yViolations(container: HTMLElement): Promise<void> {
-  const results = await axe(container, {
+  const axeResults = await axe(container, {
     rules: {
       'color-contrast': { enabled: false },
       'label-content-name-mismatch': { enabled: false },
     },
   })
-  expect(results).toHaveNoViolations()
+  expect(axeResults).toHaveNoViolations()
 }

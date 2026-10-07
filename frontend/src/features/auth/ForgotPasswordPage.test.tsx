@@ -27,7 +27,7 @@ async function submit(email: string) {
 describe('ForgotPasswordPage', () => {
   it('sends the e-mail and shows the neutral confirmation', async () => {
     let body: unknown
-    accepted((b) => (body = b))
+    accepted((requestBody) => (body = requestBody))
     renderApp(<App />, { route: '/forgot-password' })
 
     await submit('ash@example.com')

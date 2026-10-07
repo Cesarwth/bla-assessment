@@ -111,14 +111,14 @@ class PokeApiCachingTest {
     @EnableCaching
     static class Config {
 
-        private final PokeApiProperties props =
+        private final PokeApiProperties properties =
                 new PokeApiProperties(BASE, Duration.ofSeconds(2), Duration.ofSeconds(5), Duration.ofHours(1), 100);
-        private final RestClient.Builder builder = PokeApiConfig.restClientBuilder(props);
+        private final RestClient.Builder builder = PokeApiConfig.restClientBuilder(properties);
         private final MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
 
         @Bean MockRestServiceServer mockServer() { return server; }
 
-        @Bean CacheManager cacheManager() { return PokeApiConfig.cacheManager(props); }
+        @Bean CacheManager cacheManager() { return PokeApiConfig.cacheManager(properties); }
 
         @Bean PokeApiClient pokeApiClient() { return new PokeApiClient(builder.build()); }
     }

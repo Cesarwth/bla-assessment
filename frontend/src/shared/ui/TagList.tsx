@@ -1,9 +1,9 @@
-import { cx } from './cx'
+import { classNames } from './classNames'
 
 /** The trainer's tags as small labels. Text only: tags are user input and never rendered as HTML. */
 export function TagList({ tags, className }: { tags: string[]; className?: string }) {
   return (
-    <ul className={cx('flex flex-wrap gap-1', className)} aria-label="Tags">
+    <ul className={classNames('flex flex-wrap gap-1', className)} aria-label="Tags">
       {tags.map((tag) => (
         <li
           key={tag}

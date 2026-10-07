@@ -50,8 +50,8 @@ class UpdateProfileTest {
 
     private void updateEchoesAndTokenIsIssued() {
         // the repository answers with the stored row, whose hash is whatever is current in the database
-        when(users.updateProfile(eq(1L), anyString(), anyString())).thenAnswer(inv ->
-                new User(1L, inv.getArgument(1), inv.getArgument(2), "stored-hash", Role.USER));
+        when(users.updateProfile(eq(1L), anyString(), anyString())).thenAnswer(invocation ->
+                new User(1L, invocation.getArgument(1), invocation.getArgument(2), "stored-hash", Role.USER));
         when(tokens.issue(any(User.class))).thenReturn(TOKEN);
     }
 
@@ -59,14 +59,14 @@ class UpdateProfileTest {
     void changesTheUsernameWithoutAPasswordAndIssuesATokenForTheNewName() {
         updateEchoesAndTokenIsIssued();
 
-        UpdatedProfile result = updateProfile.update(new UpdateProfileCommand(1L, "  Red ", null, null));
+        UpdatedProfile updatedProfile = updateProfile.update(new UpdateProfileCommand(1L, "  Red ", null, null));
 
         verify(users).updateProfile(1L, "red", "ash@pallet.town");
         // never the whole-row save: it would write back the password hash read earlier
         verify(users, never()).save(any());
-        assertThat(result.user().username()).isEqualTo("red");
-        assertThat(result.token()).isEqualTo(TOKEN);
-        verify(tokens).issue(result.user());
+        assertThat(updatedProfile.user().username()).isEqualTo("red");
+        assertThat(updatedProfile.token()).isEqualTo(TOKEN);
+        verify(tokens).issue(updatedProfile.user());
     }
 
     @Test
@@ -74,10 +74,10 @@ class UpdateProfileTest {
         updateEchoesAndTokenIsIssued();
         when(hasher.matches("Pikachu123", "stored-hash")).thenReturn(true);
 
-        UpdatedProfile result = updateProfile.update(new UpdateProfileCommand(1L, null, " NEW@Pallet.Town", "Pikachu123"));
+        UpdatedProfile updatedProfile = updateProfile.update(new UpdateProfileCommand(1L, null, " NEW@Pallet.Town", "Pikachu123"));
 
-        assertThat(result.user().email()).isEqualTo("new@pallet.town");
-        assertThat(result.user().username()).isEqualTo("ash");
+        assertThat(updatedProfile.user().email()).isEqualTo("new@pallet.town");
+        assertThat(updatedProfile.user().username()).isEqualTo("ash");
     }
 
     @Test
@@ -108,9 +108,9 @@ class UpdateProfileTest {
     void resubmittingTheCurrentEmailIsNotAChangeAndNeedsNoPassword() {
         updateEchoesAndTokenIsIssued();
 
-        UpdatedProfile result = updateProfile.update(new UpdateProfileCommand(1L, "red", "ASH@pallet.town", null));
+        UpdatedProfile updatedProfile = updateProfile.update(new UpdateProfileCommand(1L, "red", "ASH@pallet.town", null));
 
-        assertThat(result.user().email()).isEqualTo("ash@pallet.town");
+        assertThat(updatedProfile.user().email()).isEqualTo("ash@pallet.town");
         verify(users, never()).existsByEmail(any());
     }
 

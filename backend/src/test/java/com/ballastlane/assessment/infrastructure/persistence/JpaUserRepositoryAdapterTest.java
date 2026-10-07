@@ -110,11 +110,11 @@ class JpaUserRepositoryAdapterTest {
     @Test
     void updateProfileMapsUniqueViolationsToTheDomainExceptions() {
         adapter.save(user("ash", "ash@pallet.town"));
-        User other = adapter.save(user("misty", "misty@cerulean.city"));
+        User otherUser = adapter.save(user("misty", "misty@cerulean.city"));
 
-        assertThatThrownBy(() -> adapter.updateProfile(other.id(), "ash", "misty@cerulean.city"))
+        assertThatThrownBy(() -> adapter.updateProfile(otherUser.id(), "ash", "misty@cerulean.city"))
                 .isInstanceOf(UsernameAlreadyExistsException.class);
-        assertThatThrownBy(() -> adapter.updateProfile(other.id(), "misty", "ash@pallet.town"))
+        assertThatThrownBy(() -> adapter.updateProfile(otherUser.id(), "misty", "ash@pallet.town"))
                 .isInstanceOf(EmailAlreadyExistsException.class);
     }
 

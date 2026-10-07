@@ -50,7 +50,7 @@ class UpdateStoredPokemonTest {
 
     private StoredPokemon update(String nickname, String region, List<String> tags) {
         when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.of(EXISTING));
-        when(repository.updateNotes(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(repository.updateNotes(any())).thenAnswer(invocation -> invocation.getArgument(0));
         return updateStoredPokemon.update(command(VERSION, TRAINER, nickname, region, tags));
     }
 

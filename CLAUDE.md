@@ -103,6 +103,7 @@ cd frontend && npm run dev     # Vite on :5173, proxies /api to localhost:8080
 - Bean Validation on request DTOs (`@Valid`); domain invariants re-checked in the domain/use case.
 - No secrets in code or in git: JWT secret, DB password come from env vars; demo credentials live only in seed data documented in README (SOC2/PCI: least privilege, no hardcoded secrets, passwords hashed with BCrypt).
 - Comments explain *why*, not *what*. No dead code, no TODO without reason.
+- **Names say what they hold or do**: no one-letter or cryptic names (`e`, `x`, `s`, `tmp`, `res`, `val`), no vague `data`/`info`/`result` when a specific noun exists (`syncResult`, `tokenInfo`, `searchParams`); names imposed by a framework or an external contract are the only exceptions. **Enforced:** Checkstyle (`backend/config/checkstyle/checkstyle.xml`, part of `./gradlew build`) and ESLint `id-length` in the frontend fail the build on one-letter identifiers; `knip` (`npx knip`) must report no unused files, exports or dependencies.
 - PokeAPI calls: timeouts, graceful mapping of 404/5xx to domain errors, cache responses.
 
 ## Workflow skills

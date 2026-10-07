@@ -30,16 +30,16 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // stateless bearer-token API: no cookies, no CSRF surface
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
+                .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/v1/auth/**", "/actuator/health/**", "/actuator/health", "/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/pokemon", "/api/v1/pokemon/**").permitAll()
                         .requestMatchers("/api/v1/users/**").authenticated()
                         .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth -> oauth
+                .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
                         .authenticationEntryPoint(errors)
                         .accessDeniedHandler(errors))
-                .exceptionHandling(handling -> handling.authenticationEntryPoint(errors).accessDeniedHandler(errors))
+                .exceptionHandling(exceptionHandling -> exceptionHandling.authenticationEntryPoint(errors).accessDeniedHandler(errors))
                 .build();
     }
 

@@ -62,7 +62,7 @@ class CollectionControllerTest {
             new LocalAttributes("Pika", "Kanto", List.of("starter")));
     private static final String JSON = MediaType.APPLICATION_JSON_VALUE;
 
-    @Autowired MockMvc mvc;
+    @Autowired MockMvc mockMvc;
     @Autowired TokenIssuer tokens;
     @MockitoBean ListStoredPokemonUseCase listStored;
     @MockitoBean ListStoredPokemonIdsUseCase listIds;
@@ -75,7 +75,7 @@ class CollectionControllerTest {
     private static final Actor USER_ACTOR = new Actor(1L, "someone", Role.USER);
 
     private String bearer(Role role) {
-        return "Bearer " + tokens.issue(new User(1L, "someone", "someone@pallet.town", "hash", role)).value();
+        return "Bearer " + tokens.issue(new User(1L, "someone", "someone@pallet.town", "hash", role)).jwt();
     }
 
     // ---- reads: the caller's own collection ----
@@ -84,7 +84,7 @@ class CollectionControllerTest {
     void idsReturnsAPlainArrayOfTheCallersPokeApiIdsAndIsNotParsedAsAnId() throws Exception {
         when(listIds.list(USER_ACTOR)).thenReturn(List.of(1, 4, 25));
 
-        mvc.perform(get("/api/v1/collection/ids").header("Authorization", bearer(Role.USER)))
+        mockMvc.perform(get("/api/v1/collection/ids").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(3))
                 .andExpect(jsonPath("$[0]").value(1))
@@ -96,14 +96,14 @@ class CollectionControllerTest {
     void idsOfAnEmptyCollectionIsAnEmptyArray() throws Exception {
         when(listIds.list(USER_ACTOR)).thenReturn(List.of());
 
-        mvc.perform(get("/api/v1/collection/ids").header("Authorization", bearer(Role.USER)))
+        mockMvc.perform(get("/api/v1/collection/ids").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
     }
 
     @Test
     void idsNeedsAToken() throws Exception {
-        mvc.perform(get("/api/v1/collection/ids")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/collection/ids")).andExpect(status().isUnauthorized());
         verifyNoInteractions(listIds);
     }
 
@@ -114,7 +114,7 @@ class CollectionControllerTest {
                 STORED.localAttributes(), STORED.syncedAt());
         when(listStored.list(null, null, USER_ACTOR)).thenReturn(new PageResult<>(List.of(noImage), 0, 12, 1));
 
-        mvc.perform(get("/api/v1/collection").header("Authorization", bearer(Role.USER)))
+        mockMvc.perform(get("/api/v1/collection").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].imageUrl").value(org.hamcrest.Matchers.nullValue()));
     }
@@ -123,7 +123,7 @@ class CollectionControllerTest {
     void listReturnsTheCallersEntriesWithTheirNotesAndNoOwnerId() throws Exception {
         when(listStored.list(null, null, USER_ACTOR)).thenReturn(new PageResult<>(List.of(STORED), 0, 12, 1));
 
-        mvc.perform(get("/api/v1/collection").header("Authorization", bearer(Role.USER)))
+        mockMvc.perform(get("/api/v1/collection").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(25))
                 .andExpect(jsonPath("$.items[0].name").value("pikachu"))
@@ -139,7 +139,7 @@ class CollectionControllerTest {
     void getReturnsTheFullEntryOfTheCaller() throws Exception {
         when(getStored.get(25, USER_ACTOR)).thenReturn(STORED);
 
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", bearer(Role.USER)))
+        mockMvc.perform(get("/api/v1/collection/25").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(25))
                 .andExpect(jsonPath("$.version").value(2))
@@ -154,23 +154,23 @@ class CollectionControllerTest {
     void get404WhenTheCallerDoesNotHaveIt() throws Exception {
         when(getStored.get(99, USER_ACTOR)).thenThrow(new StoredPokemonNotFoundException(99));
 
-        mvc.perform(get("/api/v1/collection/99").header("Authorization", bearer(Role.USER)))
+        mockMvc.perform(get("/api/v1/collection/99").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
     }
 
     @Test
     void get400WhenTheIdIsNotANumber() throws Exception {
-        mvc.perform(get("/api/v1/collection/abc").header("Authorization", bearer(Role.USER)))
+        mockMvc.perform(get("/api/v1/collection/abc").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
     }
 
     @Test
     void readsRequireAToken() throws Exception {
-        mvc.perform(get("/api/v1/collection")).andExpect(status().isUnauthorized())
+        mockMvc.perform(get("/api/v1/collection")).andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
-        mvc.perform(get("/api/v1/collection/25")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/collection/25")).andExpect(status().isUnauthorized());
         verifyNoInteractions(listStored, getStored);
     }
 
@@ -181,10 +181,10 @@ class CollectionControllerTest {
         when(syncOne.sync(eq("pikachu"), any())).thenReturn(new SyncResult(SyncOutcome.CREATED, STORED));
         when(syncOne.sync(eq("raichu"), any())).thenReturn(new SyncResult(SyncOutcome.UPDATED, STORED));
 
-        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", bearer(Role.USER)))
+        mockMvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(25));
-        mvc.perform(post("/api/v1/collection/raichu/sync").header("Authorization", bearer(Role.USER)))
+        mockMvc.perform(post("/api/v1/collection/raichu/sync").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isOk());
     }
 
@@ -192,7 +192,7 @@ class CollectionControllerTest {
     void syncSelectedReturnsTheReport() throws Exception {
         when(syncSelected.sync(eq(List.of(1, 2, 3)), any())).thenReturn(new SyncReport(2, 0, List.of(new SyncReport.Failure("3", "Not found upstream"))));
 
-        mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"ids\":[1,2,3]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.created").value(2))
@@ -206,7 +206,7 @@ class CollectionControllerTest {
     void syncSelectedTellsTheClientWhenTheRunWasCutShort() throws Exception {
         when(syncSelected.sync(eq(List.of(1, 4, 7)), any())).thenReturn(new SyncReport(1, 0, List.of(), "Catalog unavailable at id 2"));
 
-        mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"ids\":[1,4,7]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.created").value(1))
@@ -215,8 +215,8 @@ class CollectionControllerTest {
 
     @Test
     void syncRequiresAToken() throws Exception {
-        mvc.perform(post("/api/v1/collection/pikachu/sync")).andExpect(status().isUnauthorized());
-        mvc.perform(post("/api/v1/collection/sync").contentType(JSON).content("{\"ids\":[1,2,3]}"))
+        mockMvc.perform(post("/api/v1/collection/pikachu/sync")).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/v1/collection/sync").contentType(JSON).content("{\"ids\":[1,2,3]}"))
                 .andExpect(status().isUnauthorized());
         verifyNoInteractions(syncOne, syncSelected);
     }
@@ -225,7 +225,7 @@ class CollectionControllerTest {
     void syncSelected400WhenTheUseCaseRejectsTheSelection() throws Exception {
         when(syncSelected.sync(eq(List.of(1, 2)), any())).thenThrow(new InvalidSyncSelectionException("too many"));
 
-        mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"ids\":[1,2]}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_SYNC_SELECTION"))
@@ -236,7 +236,7 @@ class CollectionControllerTest {
     @ValueSource(strings = {"{}", "{\"ids\":null}", "{\"ids\":[]}", "{\"ids\":[1,null]}", "{\"ids\":[0]}",
             "{\"ids\":[3,-1]}"})
     void syncSelected400WhenTheIdsFailTheShapeCheck(String body) throws Exception {
-        mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
@@ -248,7 +248,7 @@ class CollectionControllerTest {
     void syncSelected400WhenMoreThanFiftyIdsAreSent() throws Exception {
         String ids = IntStream.rangeClosed(1, 51).mapToObj(String::valueOf).collect(Collectors.joining(","));
 
-        mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"ids\":[" + ids + "]}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
@@ -258,10 +258,10 @@ class CollectionControllerTest {
 
     @Test
     void syncSelected400WhenTheBodyIsNotTheExpectedShape() throws Exception {
-        mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"from\":1,\"to\":3}"))
                 .andExpect(status().isBadRequest());
-        mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"ids\":[\"a\"]}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"));
@@ -274,7 +274,7 @@ class CollectionControllerTest {
     void patchUpdatesTheCallersNotes() throws Exception {
         when(updateStored.update(any())).thenReturn(STORED);
 
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"version\":2,\"nickname\":\"Pika\",\"region\":\"Kanto\",\"tags\":[\"starter\"]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nickname").value("Pika"));
@@ -286,7 +286,7 @@ class CollectionControllerTest {
     void patchPassesAbsentFieldsAsNullSoTheyStayUnchanged() throws Exception {
         when(updateStored.update(any())).thenReturn(STORED);
 
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"version\":2,\"region\":\"Johto\"}"))
                 .andExpect(status().isOk());
 
@@ -297,7 +297,7 @@ class CollectionControllerTest {
     void patch400WhenThereIsNothingToUpdate() throws Exception {
         when(updateStored.update(any())).thenThrow(new InvalidStoredPokemonUpdateException("nothing"));
 
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"version\":2}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_UPDATE"));
@@ -307,7 +307,7 @@ class CollectionControllerTest {
     void patch400WhenAttributesBreakTheRules() throws Exception {
         when(updateStored.update(any())).thenThrow(new InvalidLocalAttributesException("nickname too long"));
 
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"version\":2,\"nickname\":\"" + "x".repeat(80) + "\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_LOCAL_ATTRIBUTES"));
@@ -315,11 +315,11 @@ class CollectionControllerTest {
 
     @Test
     void patch400OnMalformedJsonOrWrongTypes() throws Exception {
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{not json"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"));
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"version\":2,\"tags\":\"not-a-list\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"));
@@ -333,11 +333,11 @@ class CollectionControllerTest {
         when(updateStored.update(new UpdateStoredPokemonCommand(25, 2L, "x", null, null, USER_ACTOR)))
                 .thenThrow(new StaleStoredPokemonException(25));
 
-        mvc.perform(patch("/api/v1/collection/99").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(patch("/api/v1/collection/99").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"version\":2,\"nickname\":\"x\"}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"version\":2,\"nickname\":\"x\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONCURRENT_MODIFICATION"));
@@ -345,7 +345,7 @@ class CollectionControllerTest {
 
     @Test
     void patchRequiresAToken() throws Exception {
-        mvc.perform(patch("/api/v1/collection/25").contentType(JSON).content("{\"version\":2,\"nickname\":\"x\"}"))
+        mockMvc.perform(patch("/api/v1/collection/25").contentType(JSON).content("{\"version\":2,\"nickname\":\"x\"}"))
                 .andExpect(status().isUnauthorized());
         verifyNoInteractions(updateStored);
     }
@@ -354,7 +354,7 @@ class CollectionControllerTest {
 
     @Test
     void deleteReturns204ForAnyAuthenticatedTrainerAndUsesTheActorFromTheToken() throws Exception {
-        mvc.perform(delete("/api/v1/collection/25").header("Authorization", bearer(Role.USER)))
+        mockMvc.perform(delete("/api/v1/collection/25").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isNoContent());
 
         verify(deleteStored).delete(25, USER_ACTOR);
@@ -362,7 +362,7 @@ class CollectionControllerTest {
 
     @Test
     void deleteReturns401WhenAnonymous() throws Exception {
-        mvc.perform(delete("/api/v1/collection/25")).andExpect(status().isUnauthorized());
+        mockMvc.perform(delete("/api/v1/collection/25")).andExpect(status().isUnauthorized());
         verifyNoInteractions(deleteStored);
     }
 
@@ -370,7 +370,7 @@ class CollectionControllerTest {
     void delete404WhenTheCallerDoesNotHaveIt() throws Exception {
         doThrow(new StoredPokemonNotFoundException(99)).when(deleteStored).delete(org.mockito.ArgumentMatchers.eq(99), any());
 
-        mvc.perform(delete("/api/v1/collection/99").header("Authorization", bearer(Role.USER)))
+        mockMvc.perform(delete("/api/v1/collection/99").header("Authorization", bearer(Role.USER)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
     }
@@ -382,9 +382,9 @@ class CollectionControllerTest {
         when(syncOne.sync(eq("pikachu"), any())).thenReturn(new SyncResult(SyncOutcome.CREATED, STORED));
         when(syncSelected.sync(eq(List.of(1, 2)), any())).thenReturn(new SyncReport(2, 0, List.of()));
 
-        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", bearer(Role.ADMIN)))
+        mockMvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", bearer(Role.ADMIN)))
                 .andExpect(status().isCreated());
-        mvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(post("/api/v1/collection/sync").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"ids\":[1,2]}"))
                 .andExpect(status().isOk());
 
@@ -394,7 +394,7 @@ class CollectionControllerTest {
 
     @Test
     void patchRequiresTheVersionTheClientRead() throws Exception {
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"nickname\":\"x\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
@@ -407,9 +407,9 @@ class CollectionControllerTest {
         when(syncOne.sync(eq("pikachu"), any())).thenReturn(new SyncResult(SyncOutcome.CREATED, STORED));
         when(updateStored.update(any())).thenReturn(STORED);
 
-        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", bearer(Role.USER)))
+        mockMvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", bearer(Role.USER)))
                 .andExpect(jsonPath("$.ownerId").doesNotExist());
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", bearer(Role.USER))
                         .contentType(JSON).content("{\"version\":2,\"nickname\":\"x\"}"))
                 .andExpect(jsonPath("$.ownerId").doesNotExist());
     }

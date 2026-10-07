@@ -21,11 +21,11 @@ public record LocalAttributes(String nickname, String region, List<String> tags)
         return new LocalAttributes(null, null, List.of());
     }
 
-    private static String cleanText(String value, String field) {
-        if (value == null || value.isBlank()) {
+    private static String cleanText(String rawText, String field) {
+        if (rawText == null || rawText.isBlank()) {
             return null;
         }
-        String clean = value.strip();
+        String clean = rawText.strip();
         if (clean.length() > MAX_TEXT_LENGTH) {
             throw new InvalidLocalAttributesException(field + " must have at most " + MAX_TEXT_LENGTH + " characters");
         }

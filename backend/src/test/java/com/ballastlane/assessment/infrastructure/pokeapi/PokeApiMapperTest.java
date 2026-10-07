@@ -29,8 +29,8 @@ class PokeApiMapperTest {
                 new NamedRef("bulbasaur", "https://pokeapi.co/api/v2/pokemon-species/1/"));
     }
 
-    private static EvolutionDetail detail(String trigger, String item, Integer level, Integer happiness, String time) {
-        return new EvolutionDetail(new NamedRef(trigger, null), item == null ? null : new NamedRef(item, null), level, happiness, time);
+    private static EvolutionDetail detail(String trigger, String itemName, Integer level, Integer happiness, String time) {
+        return new EvolutionDetail(new NamedRef(trigger, null), itemName == null ? null : new NamedRef(itemName, null), level, happiness, time);
     }
 
     private static ChainLink link(String name, int id, List<EvolutionDetail> details, ChainLink... next) {

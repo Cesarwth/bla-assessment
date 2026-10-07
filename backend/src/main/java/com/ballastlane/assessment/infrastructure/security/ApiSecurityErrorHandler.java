@@ -22,13 +22,13 @@ class ApiSecurityErrorHandler implements AuthenticationEntryPoint, AccessDeniedH
     }
 
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
+    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception)
             throws IOException {
         write(response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Authentication is required");
     }
 
     @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException ex)
+    public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException exception)
             throws IOException {
         write(response, HttpStatus.FORBIDDEN, "FORBIDDEN", "You do not have permission to do this");
     }

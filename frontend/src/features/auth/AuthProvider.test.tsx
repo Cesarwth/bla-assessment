@@ -18,7 +18,9 @@ function Probe() {
       <p>admin: {String(isAdmin)}</p>
       <p>expired: {String(sessionExpired)}</p>
       <p>error: {error}</p>
-      <button onClick={() => login('ash', 'Pikachu123').catch((e: Error) => setError(e.message))}>
+      <button
+        onClick={() => login('ash', 'Pikachu123').catch((error: Error) => setError(error.message))}
+      >
         login
       </button>
       <button onClick={logout}>logout</button>
@@ -29,8 +31,8 @@ function Probe() {
         onClick={() => {
           try {
             adoptSession('garbage')
-          } catch (e) {
-            setError((e as Error).message)
+          } catch (error) {
+            setError((error as Error).message)
           }
         }}
       >

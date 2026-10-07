@@ -26,22 +26,27 @@ export function decodeToken(token: string): TokenInfo | null {
   try {
     const claims: unknown = JSON.parse(decodeBase64Url(parts[1] ?? ''))
     if (typeof claims !== 'object' || claims === null) return null
-    const { uid, sub, role, exp } = claims as Record<string, unknown>
+    const {
+      uid: userId,
+      sub: username,
+      role,
+      exp: expiresAtSeconds,
+    } = claims as Record<string, unknown>
     if (
-      !Number.isInteger(uid) ||
-      typeof sub !== 'string' ||
-      sub === '' ||
+      !Number.isInteger(userId) ||
+      typeof username !== 'string' ||
+      username === '' ||
       !isRole(role) ||
-      typeof exp !== 'number'
+      typeof expiresAtSeconds !== 'number'
     ) {
       return null
     }
-    return { user: { id: uid as number, username: sub, role }, expiresAt: exp * 1000 }
+    return { user: { id: userId as number, username, role }, expiresAt: expiresAtSeconds * 1000 }
   } catch {
     return null
   }
 }
 
-export function isExpired(info: TokenInfo, now: number = Date.now()): boolean {
-  return info.expiresAt <= now
+export function isExpired(tokenInfo: TokenInfo, now: number = Date.now()): boolean {
+  return tokenInfo.expiresAt <= now
 }

@@ -17,9 +17,9 @@ export function TagInput({ tags, onChange, text, onTextChange }: Props) {
   const { error } = addTag(tags, text)
 
   function add() {
-    const result = addTag(tags, text)
-    if (!result.error) {
-      onChange(result.tags)
+    const addition = addTag(tags, text)
+    if (!addition.error) {
+      onChange(addition.tags)
       onTextChange('')
     }
   }

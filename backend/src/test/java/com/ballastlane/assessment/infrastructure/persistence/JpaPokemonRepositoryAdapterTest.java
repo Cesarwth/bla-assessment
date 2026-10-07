@@ -35,16 +35,16 @@ class JpaPokemonRepositoryAdapterTest {
 
     @Autowired JpaPokemonRepositoryAdapter adapter;
     @Autowired JpaUserRepositoryAdapter users;
-    @Autowired EntityManager em;
+    @Autowired EntityManager entityManager;
 
     private Actor ash;
-    private Actor other;
+    private Actor otherTrainer;
 
     @BeforeEach
     void createTwoTrainers() {
         // user_id is a foreign key to users, so the trainers have to be real rows
         ash = trainer("ash");
-        other = trainer("other");
+        otherTrainer = trainer("other");
     }
 
     private Actor trainer(String username) {
@@ -65,13 +65,13 @@ class JpaPokemonRepositoryAdapterTest {
     }
 
     private Object count(String table) {
-        return em.createNativeQuery("select count(*) from " + table).getSingleResult();
+        return entityManager.createNativeQuery("select count(*) from " + table).getSingleResult();
     }
 
     /** Forces the next read to hit the database instead of the persistence context. */
     private void reloadFromDatabase() {
-        em.flush();
-        em.clear();
+        entityManager.flush();
+        entityManager.clear();
     }
 
     @Test
@@ -106,8 +106,8 @@ class JpaPokemonRepositoryAdapterTest {
         adapter.save(newPokemon(25, "pikachu").withLocalAttributes(new LocalAttributes(null, null, List.of("a"))));
         reloadFromDatabase();
 
-        em.createNativeQuery("delete from users where id = :id").setParameter("id", ash.userId()).executeUpdate();
-        em.clear();
+        entityManager.createNativeQuery("delete from users where id = :id").setParameter("id", ash.userId()).executeUpdate();
+        entityManager.clear();
 
         assertThat(count("trainer_pokemon")).isEqualTo(0L);
         assertThat(count("trainer_pokemon_tags")).isEqualTo(0L);
@@ -118,7 +118,7 @@ class JpaPokemonRepositoryAdapterTest {
     void twoTrainersKeepTheSamePokemonWithTheirOwnNotesOverOneSharedRow() {
         StoredPokemon mine = adapter.save(newPokemon(ash, 25, "pikachu")
                 .withLocalAttributes(new LocalAttributes("Sparky", "Kanto", List.of("mine"))));
-        StoredPokemon theirs = adapter.save(newPokemon(other, 25, "pikachu")
+        StoredPokemon theirs = adapter.save(newPokemon(otherTrainer, 25, "pikachu")
                 .withLocalAttributes(new LocalAttributes("Zap", null, List.of())));
         reloadFromDatabase();
 
@@ -126,7 +126,7 @@ class JpaPokemonRepositoryAdapterTest {
         assertThat(count("trainer_pokemon")).isEqualTo(2L);
         assertThat(mine.id()).isNotEqualTo(theirs.id());
         assertThat(find(25).orElseThrow().localAttributes().nickname()).isEqualTo("Sparky");
-        assertThat(adapter.findByTrainerAndPokeApiId(other.userId(), 25).orElseThrow().localAttributes().nickname())
+        assertThat(adapter.findByTrainerAndPokeApiId(otherTrainer.userId(), 25).orElseThrow().localAttributes().nickname())
                 .isEqualTo("Zap");
     }
 
@@ -143,8 +143,8 @@ class JpaPokemonRepositoryAdapterTest {
         adapter.save(newPokemon(25, "pikachu"));
         reloadFromDatabase();
 
-        assertThat(adapter.findByTrainerAndPokeApiId(other.userId(), 25)).isEmpty();
-        assertThat(adapter.findPage(other.userId(), 0, 10).items()).isEmpty();
+        assertThat(adapter.findByTrainerAndPokeApiId(otherTrainer.userId(), 25)).isEmpty();
+        assertThat(adapter.findPage(otherTrainer.userId(), 0, 10).items()).isEmpty();
     }
 
     @Test
@@ -153,7 +153,7 @@ class JpaPokemonRepositoryAdapterTest {
         PokemonDetail partial = new PokemonDetail(25, "pikachu", "img/25", "sprite/25", List.of("electric"), 6.0, 0.4,
                 List.of("static"), List.of(new PokemonStat("hp", 35)), null, null, null);
 
-        adapter.save(StoredPokemon.fromDetail(partial, TestData.NOW.plusSeconds(60), other));
+        adapter.save(StoredPokemon.fromDetail(partial, TestData.NOW.plusSeconds(60), otherTrainer));
         reloadFromDatabase();
 
         StoredPokemon shared = find(25).orElseThrow();
@@ -167,7 +167,7 @@ class JpaPokemonRepositoryAdapterTest {
     void savingNotesFromAnOlderCopyNeverRollsTheSharedDataBack() {
         StoredPokemon mine = adapter.save(newPokemon(ash, 25, "pikachu"));
         PokemonDetail renamed = TestData.detail(25, "pikachu-v2");
-        adapter.save(StoredPokemon.fromDetail(renamed, TestData.NOW.plusSeconds(60), other));
+        adapter.save(StoredPokemon.fromDetail(renamed, TestData.NOW.plusSeconds(60), otherTrainer));
         reloadFromDatabase();
 
         adapter.save(mine.withLocalAttributes(new LocalAttributes("Sparky", null, List.of())));
@@ -192,7 +192,7 @@ class JpaPokemonRepositoryAdapterTest {
     void updatingNotesNeverTouchesTheSharedCatalogRow() {
         StoredPokemon mine = adapter.save(newPokemon(25, "pikachu"));
         reloadFromDatabase();
-        Object catalogVersion = em.createNativeQuery("select version from pokemon").getSingleResult();
+        Object catalogVersion = entityManager.createNativeQuery("select version from pokemon").getSingleResult();
         PokemonDetail different = new PokemonDetail(25, "renamed", "img", "sprite", List.of("fire", "water"), 1.0, 1.0,
                 List.of("other"), List.of(new PokemonStat("hp", 1)), null, null, null);
         // same syncedAt as the stored row: the old save() would rewrite the catalog from this copy
@@ -202,7 +202,7 @@ class JpaPokemonRepositoryAdapterTest {
         StoredPokemon updated = adapter.updateNotes(edited);
         reloadFromDatabase();
 
-        assertThat(em.createNativeQuery("select version from pokemon").getSingleResult()).isEqualTo(catalogVersion);
+        assertThat(entityManager.createNativeQuery("select version from pokemon").getSingleResult()).isEqualTo(catalogVersion);
         StoredPokemon loaded = find(25).orElseThrow();
         assertThat(loaded.name()).isEqualTo("pikachu");
         assertThat(loaded.types()).containsExactly("electric");
@@ -214,10 +214,10 @@ class JpaPokemonRepositoryAdapterTest {
 
     @Test
     void updatingNotesWithAStaleVersionIsRejected() {
-        StoredPokemon v0 = adapter.save(newPokemon(25, "pikachu"));
-        adapter.updateNotes(v0.withLocalAttributes(new LocalAttributes("first", null, List.of())));
+        StoredPokemon initialVersion = adapter.save(newPokemon(25, "pikachu"));
+        adapter.updateNotes(initialVersion.withLocalAttributes(new LocalAttributes("first", null, List.of())));
 
-        assertThatThrownBy(() -> adapter.updateNotes(v0.withLocalAttributes(new LocalAttributes("stale", null, List.of()))))
+        assertThatThrownBy(() -> adapter.updateNotes(initialVersion.withLocalAttributes(new LocalAttributes("stale", null, List.of()))))
                 .isInstanceOf(StaleStoredPokemonException.class);
     }
 
@@ -279,18 +279,18 @@ class JpaPokemonRepositoryAdapterTest {
 
     @Test
     void everyUpdateBumpsTheVersionAndAStaleWriteIsRejected() {
-        StoredPokemon v0 = adapter.save(newPokemon(25, "pikachu"));
-        StoredPokemon v1 = adapter.save(v0.withLocalAttributes(new LocalAttributes("first", null, List.of())));
+        StoredPokemon initialVersion = adapter.save(newPokemon(25, "pikachu"));
+        StoredPokemon versionAfterFirstEdit = adapter.save(initialVersion.withLocalAttributes(new LocalAttributes("first", null, List.of())));
 
-        assertThat(v0.version()).isZero();
-        assertThat(v1.version()).isEqualTo(1L);
-        assertThatThrownBy(() -> adapter.save(v0.withLocalAttributes(new LocalAttributes("stale", null, List.of()))))
+        assertThat(initialVersion.version()).isZero();
+        assertThat(versionAfterFirstEdit.version()).isEqualTo(1L);
+        assertThatThrownBy(() -> adapter.save(initialVersion.withLocalAttributes(new LocalAttributes("stale", null, List.of()))))
                 .isInstanceOf(StaleStoredPokemonException.class);
     }
 
     @Test
     void findPageOrdersByPokeApiIdAndReportsTheTotalOfTheTrainersOwnEntries() {
-        adapter.save(newPokemon(other, 4, "charmander"));
+        adapter.save(newPokemon(otherTrainer, 4, "charmander"));
         adapter.save(newPokemon(3, "venusaur"));
         adapter.save(newPokemon(1, "bulbasaur"));
         adapter.save(newPokemon(2, "ivysaur"));
@@ -309,17 +309,17 @@ class JpaPokemonRepositoryAdapterTest {
     void findPokeApiIdsListsOnlyTheTrainersOwnIdsInAscendingOrder() {
         adapter.save(newPokemon(25, "pikachu"));
         adapter.save(newPokemon(1, "bulbasaur"));
-        adapter.save(newPokemon(other, 4, "charmander"));
+        adapter.save(newPokemon(otherTrainer, 4, "charmander"));
         adapter.save(newPokemon(4, "charmander"));
         reloadFromDatabase();
 
         assertThat(adapter.findPokeApiIds(ash.userId())).containsExactly(1, 4, 25);
-        assertThat(adapter.findPokeApiIds(other.userId())).containsExactly(4);
+        assertThat(adapter.findPokeApiIds(otherTrainer.userId())).containsExactly(4);
     }
 
     @Test
     void findPokeApiIdsIsEmptyForATrainerWithoutEntries() {
-        assertThat(adapter.findPokeApiIds(other.userId())).isEmpty();
+        assertThat(adapter.findPokeApiIds(otherTrainer.userId())).isEmpty();
     }
 
     @Test
@@ -335,14 +335,14 @@ class JpaPokemonRepositoryAdapterTest {
     @Test
     void deleteRemovesOnlyTheTrainersEntryAndItsTagsAndKeepsTheSharedPokemon() {
         adapter.save(newPokemon(25, "pikachu").withLocalAttributes(new LocalAttributes(null, null, List.of("a"))));
-        adapter.save(newPokemon(other, 25, "pikachu"));
+        adapter.save(newPokemon(otherTrainer, 25, "pikachu"));
         reloadFromDatabase();
 
         assertThat(adapter.deleteByTrainerAndPokeApiId(ash.userId(), 25)).isTrue();
         reloadFromDatabase();
 
         assertThat(find(25)).isEmpty();
-        assertThat(adapter.findByTrainerAndPokeApiId(other.userId(), 25)).isPresent();
+        assertThat(adapter.findByTrainerAndPokeApiId(otherTrainer.userId(), 25)).isPresent();
         assertThat(count("trainer_pokemon")).isEqualTo(1L);
         assertThat(count("trainer_pokemon_tags")).isEqualTo(0L);
         assertThat(count("pokemon")).isEqualTo(1L);

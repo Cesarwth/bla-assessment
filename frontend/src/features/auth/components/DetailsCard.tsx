@@ -43,9 +43,9 @@ export function DetailsCard({ profile }: { profile: RegisteredUser }) {
     }
     setErrors({ fields: {} })
     try {
-      const result = await update.mutateAsync(changes)
-      setUsername(result.user.username)
-      setEmail(result.user.email)
+      const updatedProfile = await update.mutateAsync(changes)
+      setUsername(updatedProfile.user.username)
+      setEmail(updatedProfile.user.email)
       setCurrentPassword('')
       setSaved(true)
     } catch (error) {

@@ -24,31 +24,31 @@ public class PokeApiConfig {
     private static final String USER_AGENT = "bla-assessment/0.1 (interview exercise)";
 
     // Static factories so tests can build the exact production client and bind a stub server to it.
-    static RestClient.Builder restClientBuilder(PokeApiProperties props) {
+    static RestClient.Builder restClientBuilder(PokeApiProperties properties) {
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(
-                HttpClient.newBuilder().connectTimeout(props.connectTimeout()).build());
-        factory.setReadTimeout(props.readTimeout());
+                HttpClient.newBuilder().connectTimeout(properties.connectTimeout()).build());
+        factory.setReadTimeout(properties.readTimeout());
         return RestClient.builder()
-                .baseUrl(props.baseUrl())
+                .baseUrl(properties.baseUrl())
                 .defaultHeader(HttpHeaders.USER_AGENT, USER_AGENT)
                 .requestFactory(factory);
     }
 
-    static CacheManager cacheManager(PokeApiProperties props) {
-        CaffeineCacheManager manager = new CaffeineCacheManager(
+    static CacheManager cacheManager(PokeApiProperties properties) {
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager(
                 PokeApiCaches.PAGES, PokeApiCaches.NAME_INDEX, PokeApiCaches.POKEMON, PokeApiCaches.SPECIES, PokeApiCaches.EVOLUTION_CHAINS);
-        manager.setCaffeine(Caffeine.newBuilder().expireAfterWrite(props.cacheTtl()).maximumSize(props.cacheMaxSize()));
-        return manager;
+        cacheManager.setCaffeine(Caffeine.newBuilder().expireAfterWrite(properties.cacheTtl()).maximumSize(properties.cacheMaxSize()));
+        return cacheManager;
     }
 
     @Bean
-    CacheManager pokeApiCacheManager(PokeApiProperties props) {
-        return cacheManager(props);
+    CacheManager pokeApiCacheManager(PokeApiProperties properties) {
+        return cacheManager(properties);
     }
 
     @Bean
-    PokeApiClient pokeApiClient(PokeApiProperties props) {
-        return new PokeApiClient(restClientBuilder(props).build());
+    PokeApiClient pokeApiClient(PokeApiProperties properties) {
+        return new PokeApiClient(restClientBuilder(properties).build());
     }
 
     @Bean(destroyMethod = "close")

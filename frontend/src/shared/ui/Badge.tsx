@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { cx } from './cx'
+import { classNames } from './classNames'
 
 const tones = {
   primary: 'bg-primary px-2 py-0.5 text-primary-contrast',
@@ -16,6 +16,8 @@ export function Badge({
   children: ReactNode
 }) {
   return (
-    <span className={cx('rounded-full text-xs font-bold', tones[tone], className)}>{children}</span>
+    <span className={classNames('rounded-full text-xs font-bold', tones[tone], className)}>
+      {children}
+    </span>
   )
 }

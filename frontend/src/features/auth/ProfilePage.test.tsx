@@ -8,7 +8,7 @@ import { bulbasaur, pageOf } from '../../test/fixtures'
 import {
   apiUrl,
   failWith,
-  me,
+  signedInUser,
   mockCatalog,
   mockCollectionIds,
   mockProfile,
@@ -20,11 +20,11 @@ import { SESSION_KEY } from './storage'
 const session = () => makeToken({ uid: 1, sub: 'ash' })
 
 /** What PATCH /users/me answers: the saved trainer and a token carrying the new username. */
-const patched = (username: string, email = me.email) => ({
+const patched = (username: string, email = signedInUser.email) => ({
   token: makeToken({ uid: 1, sub: username }),
   tokenType: 'Bearer',
   expiresAt: '2030-01-01T00:00:00Z',
-  user: { ...me, username, email },
+  user: { ...signedInUser, username, email },
 })
 
 const details = () => screen.getByRole('region', { name: 'Your details' })

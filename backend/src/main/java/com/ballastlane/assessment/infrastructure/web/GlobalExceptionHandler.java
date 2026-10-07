@@ -43,123 +43,123 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(InvalidUserException.class)
-    ResponseEntity<ErrorResponse> invalidUser(InvalidUserException ex) {
-        return respond(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", ex.getMessage());
+    ResponseEntity<ErrorResponse> invalidUser(InvalidUserException exception) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", exception.getMessage());
     }
 
     @ExceptionHandler(WeakPasswordException.class)
-    ResponseEntity<ErrorResponse> weakPassword(WeakPasswordException ex) {
-        return respond(HttpStatus.BAD_REQUEST, "WEAK_PASSWORD", ex.getMessage());
+    ResponseEntity<ErrorResponse> weakPassword(WeakPasswordException exception) {
+        return respond(HttpStatus.BAD_REQUEST, "WEAK_PASSWORD", exception.getMessage());
     }
 
     @ExceptionHandler(UsernameAlreadyExistsException.class)
-    ResponseEntity<ErrorResponse> usernameTaken(UsernameAlreadyExistsException ex) {
-        return respond(HttpStatus.CONFLICT, "USERNAME_TAKEN", ex.getMessage());
+    ResponseEntity<ErrorResponse> usernameTaken(UsernameAlreadyExistsException exception) {
+        return respond(HttpStatus.CONFLICT, "USERNAME_TAKEN", exception.getMessage());
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
-    ResponseEntity<ErrorResponse> emailTaken(EmailAlreadyExistsException ex) {
-        return respond(HttpStatus.CONFLICT, "EMAIL_TAKEN", ex.getMessage());
+    ResponseEntity<ErrorResponse> emailTaken(EmailAlreadyExistsException exception) {
+        return respond(HttpStatus.CONFLICT, "EMAIL_TAKEN", exception.getMessage());
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)
-    ResponseEntity<ErrorResponse> invalidCredentials(InvalidCredentialsException ex) {
-        return respond(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", ex.getMessage());
+    ResponseEntity<ErrorResponse> invalidCredentials(InvalidCredentialsException exception) {
+        return respond(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", exception.getMessage());
     }
 
     // 400, not 401: the web client treats every 401 as "session expired" and would log the user out for a typo.
     @ExceptionHandler(InvalidCurrentPasswordException.class)
-    ResponseEntity<ErrorResponse> invalidCurrentPassword(InvalidCurrentPasswordException ex) {
-        return respond(HttpStatus.BAD_REQUEST, "INVALID_CURRENT_PASSWORD", ex.getMessage());
+    ResponseEntity<ErrorResponse> invalidCurrentPassword(InvalidCurrentPasswordException exception) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_CURRENT_PASSWORD", exception.getMessage());
     }
 
     @ExceptionHandler(InvalidResetTokenException.class)
-    ResponseEntity<ErrorResponse> invalidResetToken(InvalidResetTokenException ex) {
-        return respond(HttpStatus.BAD_REQUEST, "INVALID_RESET_TOKEN", ex.getMessage());
+    ResponseEntity<ErrorResponse> invalidResetToken(InvalidResetTokenException exception) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_RESET_TOKEN", exception.getMessage());
     }
 
     // A valid token for a deleted account: the session is no longer good for anything.
     @ExceptionHandler(UserNotFoundException.class)
-    ResponseEntity<ErrorResponse> userNotFound(UserNotFoundException ex) {
+    ResponseEntity<ErrorResponse> userNotFound(UserNotFoundException exception) {
         return respond(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Authentication is required");
     }
 
     @ExceptionHandler(PokemonNotFoundException.class)
-    ResponseEntity<ErrorResponse> pokemonNotFound(PokemonNotFoundException ex) {
-        return respond(HttpStatus.NOT_FOUND, "POKEMON_NOT_FOUND", ex.getMessage());
+    ResponseEntity<ErrorResponse> pokemonNotFound(PokemonNotFoundException exception) {
+        return respond(HttpStatus.NOT_FOUND, "POKEMON_NOT_FOUND", exception.getMessage());
     }
 
     @ExceptionHandler(StoredPokemonNotFoundException.class)
-    ResponseEntity<ErrorResponse> storedPokemonNotFound(StoredPokemonNotFoundException ex) {
-        return respond(HttpStatus.NOT_FOUND, "STORED_POKEMON_NOT_FOUND", ex.getMessage());
+    ResponseEntity<ErrorResponse> storedPokemonNotFound(StoredPokemonNotFoundException exception) {
+        return respond(HttpStatus.NOT_FOUND, "STORED_POKEMON_NOT_FOUND", exception.getMessage());
     }
 
     @ExceptionHandler(InvalidLocalAttributesException.class)
-    ResponseEntity<ErrorResponse> invalidLocalAttributes(InvalidLocalAttributesException ex) {
-        return respond(HttpStatus.BAD_REQUEST, "INVALID_LOCAL_ATTRIBUTES", ex.getMessage());
+    ResponseEntity<ErrorResponse> invalidLocalAttributes(InvalidLocalAttributesException exception) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_LOCAL_ATTRIBUTES", exception.getMessage());
     }
 
     @ExceptionHandler(InvalidStoredPokemonUpdateException.class)
-    ResponseEntity<ErrorResponse> invalidUpdate(InvalidStoredPokemonUpdateException ex) {
-        return respond(HttpStatus.BAD_REQUEST, "INVALID_UPDATE", ex.getMessage());
+    ResponseEntity<ErrorResponse> invalidUpdate(InvalidStoredPokemonUpdateException exception) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_UPDATE", exception.getMessage());
     }
 
     @ExceptionHandler(InvalidSyncSelectionException.class)
-    ResponseEntity<ErrorResponse> invalidSyncSelection(InvalidSyncSelectionException ex) {
-        return respond(HttpStatus.BAD_REQUEST, "INVALID_SYNC_SELECTION", ex.getMessage());
+    ResponseEntity<ErrorResponse> invalidSyncSelection(InvalidSyncSelectionException exception) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_SYNC_SELECTION", exception.getMessage());
     }
 
     @ExceptionHandler(DuplicateStoredPokemonException.class)
-    ResponseEntity<ErrorResponse> duplicateStoredPokemon(DuplicateStoredPokemonException ex) {
+    ResponseEntity<ErrorResponse> duplicateStoredPokemon(DuplicateStoredPokemonException exception) {
         return respond(HttpStatus.CONFLICT, "CONFLICT", "Resource already exists");
     }
 
     // Raised inside a controller (e.g. a token that does not identify a user): without this the catch-all makes it a 500.
     @ExceptionHandler(AuthenticationException.class)
-    ResponseEntity<ErrorResponse> authentication(AuthenticationException ex) {
+    ResponseEntity<ErrorResponse> authentication(AuthenticationException exception) {
         return respond(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Authentication is required");
     }
 
     @ExceptionHandler(StaleStoredPokemonException.class)
-    ResponseEntity<ErrorResponse> staleRecord(StaleStoredPokemonException ex) {
+    ResponseEntity<ErrorResponse> staleRecord(StaleStoredPokemonException exception) {
         return respond(HttpStatus.CONFLICT, "CONCURRENT_MODIFICATION",
                 "The record was modified by someone else; reload it and try again");
     }
 
     @ExceptionHandler(InvalidPaginationException.class)
-    ResponseEntity<ErrorResponse> invalidPagination(InvalidPaginationException ex) {
-        return respond(HttpStatus.BAD_REQUEST, "INVALID_PAGINATION", ex.getMessage());
+    ResponseEntity<ErrorResponse> invalidPagination(InvalidPaginationException exception) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_PAGINATION", exception.getMessage());
     }
 
     @ExceptionHandler(InvalidSearchQueryException.class)
-    ResponseEntity<ErrorResponse> invalidSearchQuery(InvalidSearchQueryException ex) {
-        return respond(HttpStatus.BAD_REQUEST, "INVALID_SEARCH_QUERY", ex.getMessage());
+    ResponseEntity<ErrorResponse> invalidSearchQuery(InvalidSearchQueryException exception) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_SEARCH_QUERY", exception.getMessage());
     }
 
     @ExceptionHandler(InvalidPokemonIdentifierException.class)
-    ResponseEntity<ErrorResponse> invalidIdentifier(InvalidPokemonIdentifierException ex) {
-        return respond(HttpStatus.BAD_REQUEST, "INVALID_POKEMON_IDENTIFIER", ex.getMessage());
+    ResponseEntity<ErrorResponse> invalidIdentifier(InvalidPokemonIdentifierException exception) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_POKEMON_IDENTIFIER", exception.getMessage());
     }
 
     // The upstream's own message stays in the logs: clients only learn that the catalog is unavailable.
     @ExceptionHandler(CatalogUnavailableException.class)
-    ResponseEntity<ErrorResponse> catalogUnavailable(CatalogUnavailableException ex) {
-        log.warn("Pokemon catalog unavailable (timeout={}): {}", ex.isTimeout(), ex.getMessage());
-        return ex.isTimeout()
+    ResponseEntity<ErrorResponse> catalogUnavailable(CatalogUnavailableException exception) {
+        log.warn("Pokemon catalog unavailable (timeout={}): {}", exception.isTimeout(), exception.getMessage());
+        return exception.isTimeout()
                 ? respond(HttpStatus.GATEWAY_TIMEOUT, "CATALOG_TIMEOUT", "The Pokemon catalog took too long to answer")
                 : respond(HttpStatus.BAD_GATEWAY, "CATALOG_UNAVAILABLE", "The Pokemon catalog is temporarily unavailable");
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    ResponseEntity<ErrorResponse> typeMismatch(MethodArgumentTypeMismatchException ex) {
-        return respond(HttpStatus.BAD_REQUEST, "INVALID_PARAMETER", "Parameter '" + ex.getName() + "' has an invalid value");
+    ResponseEntity<ErrorResponse> typeMismatch(MethodArgumentTypeMismatchException exception) {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_PARAMETER", "Parameter '" + exception.getName() + "' has an invalid value");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    ResponseEntity<ErrorResponse> validation(MethodArgumentNotValidException ex) {
+    ResponseEntity<ErrorResponse> validation(MethodArgumentNotValidException exception) {
         // One message per field keeps the response readable when several constraints fail on the same field.
         Map<String, String> firstPerField = new LinkedHashMap<>();
-        ex.getBindingResult().getFieldErrors()
+        exception.getBindingResult().getFieldErrors()
                 .forEach(error -> firstPerField.putIfAbsent(error.getField(), error.getDefaultMessage()));
         List<FieldViolation> violations = firstPerField.entrySet().stream()
                 .map(entry -> new FieldViolation(entry.getKey(), entry.getValue()))
@@ -169,22 +169,22 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    ResponseEntity<ErrorResponse> malformed(HttpMessageNotReadableException ex) {
+    ResponseEntity<ErrorResponse> malformed(HttpMessageNotReadableException exception) {
         return respond(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "Request body is missing or malformed");
     }
 
     // Race between the existence check and the insert: the DB constraint is the last line of defense.
     @ExceptionHandler(DataIntegrityViolationException.class)
-    ResponseEntity<ErrorResponse> integrity(DataIntegrityViolationException ex) {
+    ResponseEntity<ErrorResponse> integrity(DataIntegrityViolationException exception) {
         // The database message quotes the offending values (e.g. an email): log the kind of error, not its text.
-        log.warn("Data integrity violation rejected with 409 ({})", ex.getClass().getSimpleName());
+        log.warn("Data integrity violation rejected with 409 ({})", exception.getClass().getSimpleName());
         return respond(HttpStatus.CONFLICT, "CONFLICT", "Resource already exists");
     }
 
     @ExceptionHandler(Exception.class)
-    ResponseEntity<ErrorResponse> unexpected(Exception ex) {
+    ResponseEntity<ErrorResponse> unexpected(Exception exception) {
         // Spring MVC exceptions (404, 405, 415...) already know their status: keep it, don't turn it into a 500.
-        if (ex instanceof org.springframework.web.ErrorResponse frameworkError) {
+        if (exception instanceof org.springframework.web.ErrorResponse frameworkError) {
             HttpStatusCode code = frameworkError.getStatusCode();
             HttpStatus status = HttpStatus.resolve(code.value());
             String name = status != null ? status.name() : "ERROR";
@@ -192,7 +192,7 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(code).headers(frameworkError.getHeaders())
                     .body(ErrorResponse.of(code.value(), name, reason));
         }
-        log.error("Unhandled exception", ex);
+        log.error("Unhandled exception", exception);
         return respond(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Unexpected error");
     }
 

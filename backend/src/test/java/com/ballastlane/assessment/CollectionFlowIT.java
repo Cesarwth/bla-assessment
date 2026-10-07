@@ -52,13 +52,13 @@ class CollectionFlowIT {
         registry.add("app.pokeapi.base-url", UPSTREAM::baseUrl);
     }
 
-    @Autowired MockMvc mvc;
+    @Autowired MockMvc mockMvc;
     @Autowired JsonMapper json;
-    @Autowired JdbcTemplate jdbc;
+    @Autowired JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void emptyCollection() {
-        jdbc.update("delete from pokemon"); // child rows go with it (ON DELETE CASCADE)
+        jdbcTemplate.update("delete from pokemon"); // child rows go with it (ON DELETE CASCADE)
     }
 
     @AfterAll
@@ -69,7 +69,7 @@ class CollectionFlowIT {
     // ---- helpers ----
 
     private String login(String username, String password) throws Exception {
-        String body = mvc.perform(post("/api/v1/auth/login").contentType(JSON)
+        String body = mockMvc.perform(post("/api/v1/auth/login").contentType(JSON)
                         .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -86,13 +86,13 @@ class CollectionFlowIT {
 
     /** A second regular user, registered on first use (the database lives as long as the Spring context). */
     private String otherUser() throws Exception {
-        mvc.perform(post("/api/v1/auth/register").contentType(JSON)
+        mockMvc.perform(post("/api/v1/auth/register").contentType(JSON)
                 .content("{\"username\":\"other\",\"email\":\"other@pallet.town\",\"password\":\"Other12345\"}"));
         return login("other", "Other12345");
     }
 
     private long syncAs(String token, String idOrName) throws Exception {
-        String body = mvc.perform(post("/api/v1/collection/" + idOrName + "/sync").header("Authorization", token))
+        String body = mockMvc.perform(post("/api/v1/collection/" + idOrName + "/sync").header("Authorization", token))
                 .andReturn().getResponse().getContentAsString();
         return json.readTree(body).get("version").asLong();
     }
@@ -107,7 +107,7 @@ class CollectionFlowIT {
     void syncPatchResyncKeepsLocalEditsAndRefreshesTheRest() throws Exception {
         String token = user();
 
-        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", token))
+        mockMvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", token))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(25))
                 .andExpect(jsonPath("$.ownerId").doesNotExist())
@@ -115,7 +115,7 @@ class CollectionFlowIT {
                 .andExpect(jsonPath("$.nickname").isEmpty())
                 .andExpect(jsonPath("$.evolutionChain.name").value("pichu"));
 
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
                         .content(patchBody(0, "\"nickname\":\"Pika\",\"region\":\"Kanto\",\"tags\":[\"Starter\",\"ELECTRIC\",\"starter\"]")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.version").value(1))
@@ -125,15 +125,15 @@ class CollectionFlowIT {
                 .andExpect(jsonPath("$.tags[1]").value("electric"));
 
         // Same Pokemon requested by id this time: still the same entry, local edits intact.
-        mvc.perform(post("/api/v1/collection/25/sync").header("Authorization", token))
+        mockMvc.perform(post("/api/v1/collection/25/sync").header("Authorization", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nickname").value("Pika"))
                 .andExpect(jsonPath("$.region").value("Kanto"))
                 .andExpect(jsonPath("$.tags[0]").value("starter"))
                 .andExpect(jsonPath("$.weightKg").value(6.0));
 
-        assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(1);
     }
 
     @Test
@@ -143,16 +143,16 @@ class CollectionFlowIT {
         long version = syncAs(mine, "pikachu");
 
         for (String outsider : List.of(stranger, admin())) {
-            mvc.perform(get("/api/v1/collection/25").header("Authorization", outsider))
+            mockMvc.perform(get("/api/v1/collection/25").header("Authorization", outsider))
                     .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
-            mvc.perform(patch("/api/v1/collection/25").header("Authorization", outsider).contentType(JSON)
+            mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", outsider).contentType(JSON)
                             .content(patchBody(version, "\"nickname\":\"Stolen\"")))
                     .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
-            mvc.perform(delete("/api/v1/collection/25").header("Authorization", outsider)).andExpect(status().isNotFound());
-            mvc.perform(get("/api/v1/collection").header("Authorization", outsider))
+            mockMvc.perform(delete("/api/v1/collection/25").header("Authorization", outsider)).andExpect(status().isNotFound());
+            mockMvc.perform(get("/api/v1/collection").header("Authorization", outsider))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.totalItems").value(0));
         }
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", mine))
+        mockMvc.perform(get("/api/v1/collection/25").header("Authorization", mine))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.nickname").isEmpty());
     }
 
@@ -161,56 +161,56 @@ class CollectionFlowIT {
         String mine = user();
         String theirs = otherUser();
 
-        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", mine)).andExpect(status().isCreated());
-        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", theirs)).andExpect(status().isCreated());
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", mine).contentType(JSON)
+        mockMvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", mine)).andExpect(status().isCreated());
+        mockMvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", theirs)).andExpect(status().isCreated());
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", mine).contentType(JSON)
                         .content(patchBody(0, "\"nickname\":\"Sparky\",\"tags\":[\"mine\"]")))
                 .andExpect(status().isOk());
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", theirs).contentType(JSON)
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", theirs).contentType(JSON)
                         .content(patchBody(0, "\"nickname\":\"Zap\",\"region\":\"Johto\"")))
                 .andExpect(status().isOk());
 
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", mine))
+        mockMvc.perform(get("/api/v1/collection/25").header("Authorization", mine))
                 .andExpect(jsonPath("$.nickname").value("Sparky")).andExpect(jsonPath("$.region").isEmpty())
                 .andExpect(jsonPath("$.tags[0]").value("mine"));
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", theirs))
+        mockMvc.perform(get("/api/v1/collection/25").header("Authorization", theirs))
                 .andExpect(jsonPath("$.nickname").value("Zap")).andExpect(jsonPath("$.region").value("Johto"))
                 .andExpect(jsonPath("$.tags", hasSize(0)));
-        assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(2);
     }
 
     @Test
     void addingAPokemonTwiceRefreshesItWithoutTouchingTheNotesOrCreatingADuplicate() throws Exception {
         String token = user();
         long version = syncAs(token, "pikachu");
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
                 .content(patchBody(version, "\"nickname\":\"Pika\"")));
 
-        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", token))
+        mockMvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nickname").value("Pika"))
                 .andExpect(jsonPath("$.version").value(version + 1));
-        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(1);
     }
 
     @Test
     void aStaleVersionIsRejectedAndTheFreshOneBumpsTheVersionAgain() throws Exception {
         String token = user();
-        long v0 = syncAs(token, "pikachu");
+        long versionAfterSync = syncAs(token, "pikachu");
 
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
-                        .content(patchBody(v0, "\"nickname\":\"first\"")))
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
+                        .content(patchBody(versionAfterSync, "\"nickname\":\"first\"")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.version").value(v0 + 1));
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
-                        .content(patchBody(v0, "\"nickname\":\"second from a stale screen\"")))
+                .andExpect(jsonPath("$.version").value(versionAfterSync + 1));
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
+                        .content(patchBody(versionAfterSync, "\"nickname\":\"second from a stale screen\"")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONCURRENT_MODIFICATION"));
-        mvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
-                        .content(patchBody(v0 + 1, "\"nickname\":\"second\"")))
+        mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
+                        .content(patchBody(versionAfterSync + 1, "\"nickname\":\"second\"")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.version").value(v0 + 2))
+                .andExpect(jsonPath("$.version").value(versionAfterSync + 2))
                 .andExpect(jsonPath("$.nickname").value("second"));
     }
 
@@ -220,7 +220,7 @@ class CollectionFlowIT {
         String theirs = otherUser();
         long mineVersion = syncAs(mine, "pikachu");
         long theirVersion = syncAs(theirs, "pikachu");
-        Long catalogVersion = jdbc.queryForObject("select version from pokemon", Long.class);
+        Long catalogVersion = jdbcTemplate.queryForObject("select version from pokemon", Long.class);
 
         int rounds = 5;
         ExecutorService pool = Executors.newFixedThreadPool(2);
@@ -234,19 +234,19 @@ class CollectionFlowIT {
             pool.shutdownNow();
         }
 
-        assertThat(jdbc.queryForObject("select version from pokemon", Long.class)).isEqualTo(catalogVersion);
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", mine))
+        assertThat(jdbcTemplate.queryForObject("select version from pokemon", Long.class)).isEqualTo(catalogVersion);
+        mockMvc.perform(get("/api/v1/collection/25").header("Authorization", mine))
                 .andExpect(jsonPath("$.nickname").value("edit-" + rounds)).andExpect(jsonPath("$.version").value(mineVersion + rounds));
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", theirs))
+        mockMvc.perform(get("/api/v1/collection/25").header("Authorization", theirs))
                 .andExpect(jsonPath("$.nickname").value("edit-" + rounds)).andExpect(jsonPath("$.version").value(theirVersion + rounds));
     }
 
     /** Returns how many consecutive edits were accepted (each one carries the version the previous one returned). */
     private int editRepeatedly(String token, long firstVersion, int rounds) throws Exception {
         int accepted = 0;
-        for (int i = 1; i <= rounds; i++) {
-            mvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
-                            .content(patchBody(firstVersion + i - 1, "\"nickname\":\"edit-" + i + "\"")))
+        for (int round = 1; round <= rounds; round++) {
+            mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", token).contentType(JSON)
+                            .content(patchBody(firstVersion + round - 1, "\"nickname\":\"edit-" + round + "\"")))
                     .andExpect(status().isOk());
             accepted++;
         }
@@ -259,23 +259,23 @@ class CollectionFlowIT {
         long version = syncAs(token, "pikachu");
         String url = "/api/v1/collection/25";
 
-        mvc.perform(patch(url).header("Authorization", token).contentType(JSON).content("{\"nickname\":\"no version\"}"))
+        mockMvc.perform(patch(url).header("Authorization", token).contentType(JSON).content("{\"nickname\":\"no version\"}"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.fieldErrors[0].field").value("version"));
-        mvc.perform(patch(url).header("Authorization", token).contentType(JSON).content(patchBody(version, "")))
+        mockMvc.perform(patch(url).header("Authorization", token).contentType(JSON).content(patchBody(version, "")))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_UPDATE"));
-        mvc.perform(patch(url).header("Authorization", token).contentType(JSON)
+        mockMvc.perform(patch(url).header("Authorization", token).contentType(JSON)
                         .content(patchBody(version, "\"nickname\":\"" + "x".repeat(51) + "\"")))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_LOCAL_ATTRIBUTES"));
-        mvc.perform(patch(url).header("Authorization", token).contentType(JSON).content("{oops"))
+        mockMvc.perform(patch(url).header("Authorization", token).contentType(JSON).content("{oops"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"));
-        mvc.perform(patch("/api/v1/collection/999").header("Authorization", token).contentType(JSON)
+        mockMvc.perform(patch("/api/v1/collection/999").header("Authorization", token).contentType(JSON)
                         .content(patchBody(0, "\"nickname\":\"x\"")))
                 .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
-        mvc.perform(patch(url).contentType(JSON).content(patchBody(version, "\"nickname\":\"x\"")))
+        mockMvc.perform(patch(url).contentType(JSON).content(patchBody(version, "\"nickname\":\"x\"")))
                 .andExpect(status().isUnauthorized());
 
-        mvc.perform(patch(url).header("Authorization", token).contentType(JSON)
+        mockMvc.perform(patch(url).header("Authorization", token).contentType(JSON)
                         .content(patchBody(version, "\"nickname\":\"\",\"tags\":[]")))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.nickname").isEmpty()).andExpect(jsonPath("$.tags", hasSize(0)));
     }
@@ -283,23 +283,23 @@ class CollectionFlowIT {
     @Test
     void theCollectionRoutesNeedATokenButTheCatalogDoesNot() throws Exception {
         String mine = user();
-        mvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", mine)).andExpect(status().isCreated());
+        mockMvc.perform(post("/api/v1/collection/pikachu/sync").header("Authorization", mine)).andExpect(status().isCreated());
 
-        mvc.perform(get("/api/v1/collection")).andExpect(status().isUnauthorized());
-        mvc.perform(get("/api/v1/collection/25")).andExpect(status().isUnauthorized());
-        mvc.perform(get("/api/v1/pokemon/25")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/collection")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/collection/25")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/pokemon/25")).andExpect(status().isOk());
 
-        mvc.perform(get("/api/v1/collection").header("Authorization", mine))
+        mockMvc.perform(get("/api/v1/collection").header("Authorization", mine))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalItems").value(1))
                 .andExpect(jsonPath("$.items[0].id").value(25))
                 .andExpect(jsonPath("$.items[0].imageUrl").value(org.hamcrest.Matchers.endsWith("/official-artwork/25.png")))
                 .andExpect(jsonPath("$.items[0].ownerId").doesNotExist());
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", mine))
+        mockMvc.perform(get("/api/v1/collection/25").header("Authorization", mine))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.stats[0].name").value("hp"))
                 .andExpect(jsonPath("$.evolutionChain.evolvesTo[0].evolvesTo[0].name").value("raichu"));
-        mvc.perform(get("/api/v1/collection/404").header("Authorization", mine)).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/collection/404").header("Authorization", mine)).andExpect(status().isNotFound());
     }
 
     @Test
@@ -308,33 +308,33 @@ class CollectionFlowIT {
         syncAs(mine, "pikachu");
         syncAs(mine, "1");
 
-        mvc.perform(get("/api/v1/collection/ids")).andExpect(status().isUnauthorized());
-        mvc.perform(get("/api/v1/collection/ids").header("Authorization", mine))
+        mockMvc.perform(get("/api/v1/collection/ids")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/collection/ids").header("Authorization", mine))
                 .andExpect(status().isOk()).andExpect(content().json("[1,25]", true));
-        mvc.perform(get("/api/v1/collection/ids").header("Authorization", otherUser()))
+        mockMvc.perform(get("/api/v1/collection/ids").header("Authorization", otherUser()))
                 .andExpect(status().isOk()).andExpect(content().json("[]", true));
     }
 
     @Test
     void anyTrainerRemovesTheirOwnEntryAndTheSharedPokemonStaysForTheOthers() throws Exception {
         String mine = user();
-        String other = otherUser();
+        String otherToken = otherUser();
         syncAs(mine, "pikachu");
-        syncAs(other, "pikachu");
+        syncAs(otherToken, "pikachu");
 
-        mvc.perform(delete("/api/v1/collection/25")).andExpect(status().isUnauthorized());
-        mvc.perform(delete("/api/v1/collection/25").header("Authorization", mine)).andExpect(status().isNoContent());
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", mine)).andExpect(status().isNotFound());
-        mvc.perform(delete("/api/v1/collection/25").header("Authorization", mine)).andExpect(status().isNotFound());
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", other)).andExpect(status().isOk());
-        assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(1);
+        mockMvc.perform(delete("/api/v1/collection/25")).andExpect(status().isUnauthorized());
+        mockMvc.perform(delete("/api/v1/collection/25").header("Authorization", mine)).andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/v1/collection/25").header("Authorization", mine)).andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/v1/collection/25").header("Authorization", mine)).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/collection/25").header("Authorization", otherToken)).andExpect(status().isOk());
+        assertThat(jdbcTemplate.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(1);
     }
 
     @Test
     void selectionSyncReportsTheIdsMissingUpstreamAsFailuresAndAddsWhatItCreatesToTheCallersCollection() throws Exception {
         String token = user();
-        mvc.perform(post("/api/v1/collection/sync").header("Authorization", token).contentType(JSON)
+        mockMvc.perform(post("/api/v1/collection/sync").header("Authorization", token).contentType(JSON)
                         .content("{\"ids\":[1025,1026,1027,1025]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.created").value(1))
@@ -343,9 +343,9 @@ class CollectionFlowIT {
                 .andExpect(jsonPath("$.failures[0].identifier").value("1026"))
                 .andExpect(jsonPath("$.failures[0].reason").value("Not found upstream"))
                 .andExpect(jsonPath("$.abortedReason").isEmpty());
-        mvc.perform(get("/api/v1/collection/1025").header("Authorization", token)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/collection/1025").header("Authorization", token)).andExpect(status().isOk());
 
-        mvc.perform(post("/api/v1/collection/sync").header("Authorization", token).contentType(JSON)
+        mockMvc.perform(post("/api/v1/collection/sync").header("Authorization", token).contentType(JSON)
                         .content("{\"ids\":[]}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
@@ -353,14 +353,14 @@ class CollectionFlowIT {
 
     @Test
     void anUpstreamOutageDuringSyncIs502AndStoresNothing() throws Exception {
-        mvc.perform(post("/api/v1/collection/glitch/sync").header("Authorization", user()))
+        mockMvc.perform(post("/api/v1/collection/glitch/sync").header("Authorization", user()))
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.code").value("CATALOG_UNAVAILABLE"));
-        mvc.perform(post("/api/v1/collection/missingno/sync").header("Authorization", user()))
+        mockMvc.perform(post("/api/v1/collection/missingno/sync").header("Authorization", user()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("POKEMON_NOT_FOUND"));
 
-        assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isZero();
+        assertThat(jdbcTemplate.queryForObject("select count(*) from pokemon", Integer.class)).isZero();
     }
 
     @Test
@@ -372,20 +372,20 @@ class CollectionFlowIT {
         ExecutorService pool = Executors.newFixedThreadPool(threads);
         try {
             List<Callable<Integer>> edits = new ArrayList<>();
-            for (int i = 0; i < threads; i++) {
-                String body = patchBody(version, "\"nickname\":\"edit-" + i + "\"");
-                edits.add(() -> mvc.perform(patch("/api/v1/collection/25").header("Authorization", token)
+            for (int editNumber = 0; editNumber < threads; editNumber++) {
+                String body = patchBody(version, "\"nickname\":\"edit-" + editNumber + "\"");
+                edits.add(() -> mockMvc.perform(patch("/api/v1/collection/25").header("Authorization", token)
                         .contentType(JSON).content(body)).andReturn().getResponse().getStatus());
             }
             List<Integer> statuses = new ArrayList<>();
-            for (Future<Integer> result : pool.invokeAll(edits)) {
-                statuses.add(result.get());
+            for (Future<Integer> statusFuture : pool.invokeAll(edits)) {
+                statuses.add(statusFuture.get());
             }
 
             // Every edit started from the same version, so optimistic locking lets exactly one through: no 500, no lost update.
             assertThat(statuses).allMatch(status -> status == 200 || status == 409);
             assertThat(statuses.stream().filter(status -> status == 200).count()).isEqualTo(1);
-            assertThat(jdbc.queryForObject("select version from trainer_pokemon", Long.class))
+            assertThat(jdbcTemplate.queryForObject("select version from trainer_pokemon", Long.class))
                     .isEqualTo(version + 1);
         } finally {
             pool.shutdownNow();

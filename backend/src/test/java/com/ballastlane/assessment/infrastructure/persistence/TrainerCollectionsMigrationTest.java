@@ -16,26 +16,26 @@ import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 /** V4 runs on databases that already hold data written by V1-V3: every owned row must end up in its owner's collection. */
 class TrainerCollectionsMigrationTest {
 
-    private JdbcTemplate jdbc;
+    private JdbcTemplate jdbcTemplate;
     private Flyway flyway;
 
     @BeforeEach
-    void schemaAtVersion3() throws SQLException {
+    void migrateSchemaToVersion3() throws SQLException {
         String url = "jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1";
         Connection connection = DriverManager.getConnection(url, "sa", "");
         SingleConnectionDataSource dataSource = new SingleConnectionDataSource(connection, true);
-        jdbc = new JdbcTemplate(dataSource);
+        jdbcTemplate = new JdbcTemplate(dataSource);
         flyway = Flyway.configure().dataSource(url, "sa", "").locations("classpath:db/migration").target("3").load();
         flyway.migrate();
     }
 
     private void insertUser(long id, String username) {
-        jdbc.update("insert into users (id, username, email, password_hash, role) values (?, ?, ?, 'hash', 'USER')",
+        jdbcTemplate.update("insert into users (id, username, email, password_hash, role) values (?, ?, ?, 'hash', 'USER')",
                 id, username, username + "@pallet.town");
     }
 
     private void insertPokemon(long id, int pokeApiId, String name, Long ownerId, String nickname, String region) {
-        jdbc.update("insert into pokemon (id, pokeapi_id, name, weight_kg, height_m, nickname, region, owner_id, synced_at) "
+        jdbcTemplate.update("insert into pokemon (id, pokeapi_id, name, weight_kg, height_m, nickname, region, owner_id, synced_at) "
                 + "values (?, ?, ?, 1.0, 1.0, ?, ?, ?, TIMESTAMP WITH TIME ZONE '2026-01-02 03:04:05+00')",
                 id, pokeApiId, name, nickname, region, ownerId);
     }
@@ -49,11 +49,11 @@ class TrainerCollectionsMigrationTest {
     void ownedRowsBecomeEntriesOfTheirOwnerWithNotesAndOrderedTags() {
         insertUser(1, "ash");
         insertPokemon(10, 25, "pikachu", 1L, "Sparky", "Kanto");
-        jdbc.update("insert into pokemon_tags (pokemon_id, sort_order, tag) values (10, 0, 'electric'), (10, 1, 'favorite')");
+        jdbcTemplate.update("insert into pokemon_tags (pokemon_id, sort_order, tag) values (10, 0, 'electric'), (10, 1, 'favorite')");
 
         migrateToLatest();
 
-        assertThat(jdbc.queryForList("select user_id, pokemon_id, nickname, region, version from trainer_pokemon"))
+        assertThat(jdbcTemplate.queryForList("select user_id, pokemon_id, nickname, region, version from trainer_pokemon"))
                 .singleElement().satisfies(row -> {
                     assertThat(row.get("USER_ID")).isEqualTo(1L);
                     assertThat(row.get("POKEMON_ID")).isEqualTo(10L);
@@ -61,9 +61,9 @@ class TrainerCollectionsMigrationTest {
                     assertThat(row.get("REGION")).isEqualTo("Kanto");
                     assertThat(row.get("VERSION")).isEqualTo(0L);
                 });
-        assertThat(jdbc.queryForList("select tag from trainer_pokemon_tags order by sort_order", String.class))
+        assertThat(jdbcTemplate.queryForList("select tag from trainer_pokemon_tags order by sort_order", String.class))
                 .containsExactly("electric", "favorite");
-        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon where added_at = "
+        assertThat(jdbcTemplate.queryForObject("select count(*) from trainer_pokemon where added_at = "
                 + "TIMESTAMP WITH TIME ZONE '2026-01-02 03:04:05+00'", Integer.class)).isEqualTo(1);
     }
 
@@ -75,18 +75,18 @@ class TrainerCollectionsMigrationTest {
 
         migrateToLatest();
 
-        assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(2);
-        assertThat(jdbc.queryForList("select pokemon_id from trainer_pokemon", Long.class)).containsExactly(10L);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(2);
+        assertThat(jdbcTemplate.queryForList("select pokemon_id from trainer_pokemon", Long.class)).containsExactly(10L);
     }
 
     @Test
     void theCatalogLosesTheTrainerSpecificColumnsAndTables() {
         migrateToLatest();
 
-        List<String> columns = jdbc.queryForList(
+        List<String> columns = jdbcTemplate.queryForList(
                 "select lower(column_name) from information_schema.columns where lower(table_name) = 'pokemon'", String.class);
         assertThat(columns).doesNotContain("nickname", "region", "owner_id").contains("version", "pokeapi_id", "synced_at");
-        assertThat(jdbc.queryForObject(
+        assertThat(jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.tables where lower(table_name) = 'pokemon_tags'", Integer.class))
                 .isZero();
     }
@@ -95,21 +95,21 @@ class TrainerCollectionsMigrationTest {
     void aTrainerCannotHaveTheSamePokemonTwiceAndDeletingTheUserCascades() {
         migrateToLatest();
         insertUser(1, "ash");
-        insertPokemon10();
-        jdbc.update("insert into trainer_pokemon (user_id, pokemon_id, added_at) values (1, 10, CURRENT_TIMESTAMP)");
+        insertPikachuCatalogRow();
+        jdbcTemplate.update("insert into trainer_pokemon (user_id, pokemon_id, added_at) values (1, 10, CURRENT_TIMESTAMP)");
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> jdbc.update(
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> jdbcTemplate.update(
                 "insert into trainer_pokemon (user_id, pokemon_id, added_at) values (1, 10, CURRENT_TIMESTAMP)"))
                 .hasMessageContaining("UQ_TRAINER_POKEMON");
 
-        jdbc.update("delete from users where id = 1");
-        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isZero();
-        assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(1);
+        jdbcTemplate.update("delete from users where id = 1");
+        assertThat(jdbcTemplate.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isZero();
+        assertThat(jdbcTemplate.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(1);
     }
 
     // After V4 the old columns are gone, so the catalog row is inserted with the new, smaller shape.
-    private void insertPokemon10() {
-        jdbc.update("insert into pokemon (id, pokeapi_id, name, weight_kg, height_m, synced_at) "
+    private void insertPikachuCatalogRow() {
+        jdbcTemplate.update("insert into pokemon (id, pokeapi_id, name, weight_kg, height_m, synced_at) "
                 + "values (10, 25, 'pikachu', 1.0, 1.0, CURRENT_TIMESTAMP)");
     }
 }

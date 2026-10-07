@@ -50,7 +50,7 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         AuthToken token = authenticateUser.authenticate(new AuthenticateCommand(request.username(), request.password()));
-        return new AuthResponse(token.value(), "Bearer", token.expiresAt());
+        return new AuthResponse(token.jwt(), "Bearer", token.expiresAt());
     }
 
     // 202 with no body whether or not the account exists: status, body and message must not reveal it.

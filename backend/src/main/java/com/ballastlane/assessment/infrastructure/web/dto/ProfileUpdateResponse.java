@@ -8,6 +8,6 @@ public record ProfileUpdateResponse(String token, String tokenType, Instant expi
 
     public static ProfileUpdateResponse from(UpdatedProfile updated) {
         return new ProfileUpdateResponse(
-                updated.token().value(), "Bearer", updated.token().expiresAt(), UserResponse.from(updated.user()));
+                updated.token().jwt(), "Bearer", updated.token().expiresAt(), UserResponse.from(updated.user()));
     }
 }

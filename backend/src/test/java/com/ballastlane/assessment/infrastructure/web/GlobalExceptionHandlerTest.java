@@ -45,70 +45,70 @@ import org.springframework.web.bind.annotation.RestController;
 
 class GlobalExceptionHandlerTest {
 
-    MockMvc mvc;
+    MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.standaloneSetup(new ThrowingController())
+        mockMvc = MockMvcBuilders.standaloneSetup(new ThrowingController())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
 
     @Test
     void mapsDomainExceptionsToStatusAndStableCode() throws Exception {
-        mvc.perform(get("/boom/invalid-user")).andExpect(status().isBadRequest())
+        mockMvc.perform(get("/boom/invalid-user")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
-        mvc.perform(get("/boom/weak-password")).andExpect(status().isBadRequest())
+        mockMvc.perform(get("/boom/weak-password")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("WEAK_PASSWORD"));
-        mvc.perform(get("/boom/username-taken")).andExpect(status().isConflict())
+        mockMvc.perform(get("/boom/username-taken")).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("USERNAME_TAKEN"));
-        mvc.perform(get("/boom/email-taken")).andExpect(status().isConflict())
+        mockMvc.perform(get("/boom/email-taken")).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("EMAIL_TAKEN"));
-        mvc.perform(get("/boom/bad-credentials")).andExpect(status().isUnauthorized())
+        mockMvc.perform(get("/boom/bad-credentials")).andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
     }
 
     @Test
     void mapsAccountRecoveryExceptionsToStatusAndStableCode() throws Exception {
-        mvc.perform(get("/boom/bad-current-password")).andExpect(status().isBadRequest())
+        mockMvc.perform(get("/boom/bad-current-password")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_CURRENT_PASSWORD"))
                 .andExpect(jsonPath("$.message").value("The current password is incorrect"));
-        mvc.perform(get("/boom/bad-reset-token")).andExpect(status().isBadRequest())
+        mockMvc.perform(get("/boom/bad-reset-token")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_RESET_TOKEN"))
                 .andExpect(jsonPath("$.message").value("This reset link is invalid or has expired"));
-        mvc.perform(get("/boom/user-gone")).andExpect(status().isUnauthorized())
+        mockMvc.perform(get("/boom/user-gone")).andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
     @Test
     void mapsCatalogExceptionsToStatusAndStableCode() throws Exception {
-        mvc.perform(get("/boom/pokemon-missing")).andExpect(status().isNotFound())
+        mockMvc.perform(get("/boom/pokemon-missing")).andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("POKEMON_NOT_FOUND"));
-        mvc.perform(get("/boom/bad-pagination")).andExpect(status().isBadRequest())
+        mockMvc.perform(get("/boom/bad-pagination")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PAGINATION"));
-        mvc.perform(get("/boom/bad-query")).andExpect(status().isBadRequest())
+        mockMvc.perform(get("/boom/bad-query")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_SEARCH_QUERY"));
-        mvc.perform(get("/boom/bad-identifier")).andExpect(status().isBadRequest())
+        mockMvc.perform(get("/boom/bad-identifier")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_POKEMON_IDENTIFIER"));
-        mvc.perform(get("/boom/catalog-down")).andExpect(status().isBadGateway())
+        mockMvc.perform(get("/boom/catalog-down")).andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.code").value("CATALOG_UNAVAILABLE"));
-        mvc.perform(get("/boom/catalog-timeout")).andExpect(status().isGatewayTimeout())
+        mockMvc.perform(get("/boom/catalog-timeout")).andExpect(status().isGatewayTimeout())
                 .andExpect(jsonPath("$.code").value("CATALOG_TIMEOUT"));
     }
 
     @Test
     void mapsCollectionExceptionsToStatusAndStableCode() throws Exception {
-        mvc.perform(get("/boom/stored-missing")).andExpect(status().isNotFound())
+        mockMvc.perform(get("/boom/stored-missing")).andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
-        mvc.perform(get("/boom/bad-attributes")).andExpect(status().isBadRequest())
+        mockMvc.perform(get("/boom/bad-attributes")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_LOCAL_ATTRIBUTES"));
-        mvc.perform(get("/boom/bad-update")).andExpect(status().isBadRequest())
+        mockMvc.perform(get("/boom/bad-update")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_UPDATE"));
-        mvc.perform(get("/boom/bad-selection")).andExpect(status().isBadRequest())
+        mockMvc.perform(get("/boom/bad-selection")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_SYNC_SELECTION"));
-        mvc.perform(get("/boom/stale")).andExpect(status().isConflict())
+        mockMvc.perform(get("/boom/stale")).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONCURRENT_MODIFICATION"));
-        mvc.perform(get("/boom/duplicate")).andExpect(status().isConflict())
+        mockMvc.perform(get("/boom/duplicate")).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONFLICT"));
     }
 
@@ -119,7 +119,7 @@ class GlobalExceptionHandlerTest {
         appender.start();
         logger.addAppender(appender);
         try {
-            mvc.perform(get("/boom/integrity")).andExpect(status().isConflict())
+            mockMvc.perform(get("/boom/integrity")).andExpect(status().isConflict())
                     .andExpect(jsonPath("$.code").value("CONFLICT"));
 
             org.assertj.core.api.Assertions.assertThat(appender.list).isNotEmpty().allSatisfy(event -> {
@@ -133,20 +133,20 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void anAuthenticationErrorRaisedInsideTheAppIs401NotA500() throws Exception {
-        mvc.perform(get("/boom/auth")).andExpect(status().isUnauthorized())
+        mockMvc.perform(get("/boom/auth")).andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
                 .andExpect(jsonPath("$.message").value("Authentication is required"));
     }
 
     @Test
     void returns400WhenARequestParameterHasTheWrongType() throws Exception {
-        mvc.perform(get("/boom/typed").param("n", "abc")).andExpect(status().isBadRequest())
+        mockMvc.perform(get("/boom/typed").param("number", "abc")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
     }
 
     @Test
     void returnsFieldErrorsOnBeanValidationFailure() throws Exception {
-        mvc.perform(post("/boom/validate").contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"\"}"))
+        mockMvc.perform(post("/boom/validate").contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.fieldErrors[0].field").value("name"))
@@ -155,20 +155,20 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void returns400OnMalformedJson() throws Exception {
-        mvc.perform(post("/boom/validate").contentType(MediaType.APPLICATION_JSON).content("{not json"))
+        mockMvc.perform(post("/boom/validate").contentType(MediaType.APPLICATION_JSON).content("{not json"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"));
     }
 
     @Test
     void keepsFrameworkStatusCodes() throws Exception {
-        mvc.perform(post("/boom/invalid-user")).andExpect(status().isMethodNotAllowed())
+        mockMvc.perform(post("/boom/invalid-user")).andExpect(status().isMethodNotAllowed())
                 .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"));
     }
 
     @Test
     void neverLeaksInternalsOnUnexpectedErrors() throws Exception {
-        mvc.perform(get("/boom/unexpected")).andExpect(status().isInternalServerError())
+        mockMvc.perform(get("/boom/unexpected")).andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
                 .andExpect(jsonPath("$.message").value("Unexpected error"))
                 .andExpect(jsonPath("$.trace").doesNotExist());
@@ -179,30 +179,30 @@ class GlobalExceptionHandlerTest {
 
     @RestController
     static class ThrowingController {
-        @GetMapping("/boom/invalid-user") void a() { throw new InvalidUserException("bad"); }
-        @GetMapping("/boom/weak-password") void b() { throw new WeakPasswordException("weak"); }
-        @GetMapping("/boom/username-taken") void c() { throw new UsernameAlreadyExistsException("ash"); }
-        @GetMapping("/boom/email-taken") void d() { throw new EmailAlreadyExistsException("a@b.co"); }
-        @GetMapping("/boom/bad-credentials") void e() { throw new InvalidCredentialsException(); }
-        @GetMapping("/boom/bad-current-password") void y1() { throw new InvalidCurrentPasswordException(); }
-        @GetMapping("/boom/bad-reset-token") void y2() { throw new InvalidResetTokenException(); }
-        @GetMapping("/boom/user-gone") void y3() { throw new UserNotFoundException(); }
-        @GetMapping("/boom/unexpected") void f() { throw new IllegalStateException("secret internals"); }
-        @GetMapping("/boom/pokemon-missing") void h() { throw new PokemonNotFoundException("x"); }
-        @GetMapping("/boom/bad-pagination") void i() { throw new InvalidPaginationException("bad"); }
-        @GetMapping("/boom/bad-query") void s() { throw new InvalidSearchQueryException("q must be at most 50 characters"); }
-        @GetMapping("/boom/bad-identifier") void j() { throw new InvalidPokemonIdentifierException("bad"); }
-        @GetMapping("/boom/catalog-down") void k() { throw new CatalogUnavailableException("down", false, null); }
-        @GetMapping("/boom/catalog-timeout") void l() { throw new CatalogUnavailableException("slow", true, null); }
-        @GetMapping("/boom/stored-missing") void n() { throw new StoredPokemonNotFoundException(25); }
-        @GetMapping("/boom/bad-attributes") void o() { throw new InvalidLocalAttributesException("bad"); }
-        @GetMapping("/boom/bad-update") void q() { throw new InvalidStoredPokemonUpdateException("bad"); }
-        @GetMapping("/boom/bad-selection") void r() { throw new InvalidSyncSelectionException("bad"); }
-        @GetMapping("/boom/auth") void x() { throw new BadCredentialsException("token without uid"); }
-        @GetMapping("/boom/duplicate") void v() { throw new DuplicateStoredPokemonException(25); }
-        @GetMapping("/boom/stale") void t() { throw new StaleStoredPokemonException(25); }
-        @GetMapping("/boom/integrity") void u() { throw new DataIntegrityViolationException("Key (email)=(secret@pallet.town) already exists"); }
-        @GetMapping("/boom/typed") void m(@RequestParam int n) { }
-        @PostMapping("/boom/validate") void g(@Valid @RequestBody Payload payload) { }
+        @GetMapping("/boom/invalid-user") void invalidUser() { throw new InvalidUserException("bad"); }
+        @GetMapping("/boom/weak-password") void weakPassword() { throw new WeakPasswordException("weak"); }
+        @GetMapping("/boom/username-taken") void usernameTaken() { throw new UsernameAlreadyExistsException("ash"); }
+        @GetMapping("/boom/email-taken") void emailTaken() { throw new EmailAlreadyExistsException("a@b.co"); }
+        @GetMapping("/boom/bad-credentials") void badCredentials() { throw new InvalidCredentialsException(); }
+        @GetMapping("/boom/bad-current-password") void badCurrentPassword() { throw new InvalidCurrentPasswordException(); }
+        @GetMapping("/boom/bad-reset-token") void badResetToken() { throw new InvalidResetTokenException(); }
+        @GetMapping("/boom/user-gone") void userGone() { throw new UserNotFoundException(); }
+        @GetMapping("/boom/unexpected") void unexpected() { throw new IllegalStateException("secret internals"); }
+        @GetMapping("/boom/pokemon-missing") void pokemonMissing() { throw new PokemonNotFoundException("x"); }
+        @GetMapping("/boom/bad-pagination") void badPagination() { throw new InvalidPaginationException("bad"); }
+        @GetMapping("/boom/bad-query") void badQuery() { throw new InvalidSearchQueryException("q must be at most 50 characters"); }
+        @GetMapping("/boom/bad-identifier") void badIdentifier() { throw new InvalidPokemonIdentifierException("bad"); }
+        @GetMapping("/boom/catalog-down") void catalogDown() { throw new CatalogUnavailableException("down", false, null); }
+        @GetMapping("/boom/catalog-timeout") void catalogTimeout() { throw new CatalogUnavailableException("slow", true, null); }
+        @GetMapping("/boom/stored-missing") void storedMissing() { throw new StoredPokemonNotFoundException(25); }
+        @GetMapping("/boom/bad-attributes") void badAttributes() { throw new InvalidLocalAttributesException("bad"); }
+        @GetMapping("/boom/bad-update") void badUpdate() { throw new InvalidStoredPokemonUpdateException("bad"); }
+        @GetMapping("/boom/bad-selection") void badSelection() { throw new InvalidSyncSelectionException("bad"); }
+        @GetMapping("/boom/auth") void auth() { throw new BadCredentialsException("token without uid"); }
+        @GetMapping("/boom/duplicate") void duplicate() { throw new DuplicateStoredPokemonException(25); }
+        @GetMapping("/boom/stale") void stale() { throw new StaleStoredPokemonException(25); }
+        @GetMapping("/boom/integrity") void integrity() { throw new DataIntegrityViolationException("Key (email)=(secret@pallet.town) already exists"); }
+        @GetMapping("/boom/typed") void typed(@RequestParam int number) { }
+        @PostMapping("/boom/validate") void validate(@Valid @RequestBody Payload payload) { }
     }
 }

@@ -96,8 +96,8 @@ public class PokeApiMapper {
         return spriteOf(pokemon);
     }
 
-    private static <S> List<String> names(List<S> slots, java.util.function.Function<S, NamedRef> ref) {
-        return orEmpty(slots).stream().map(ref).filter(Objects::nonNull).map(NamedRef::name).toList();
+    private static <S> List<String> names(List<S> slots, java.util.function.Function<S, NamedRef> slotReference) {
+        return orEmpty(slots).stream().map(slotReference).filter(Objects::nonNull).map(NamedRef::name).toList();
     }
 
     private static String englishGenus(PokeApiSpecies species) {
@@ -117,11 +117,11 @@ public class PokeApiMapper {
                 .orElse(null);
     }
 
-    private static String requireName(NamedRef ref, String what) {
-        if (ref == null || ref.name() == null) {
+    private static String requireName(NamedRef slotReference, String what) {
+        if (slotReference == null || slotReference.name() == null) {
             throw new CatalogUnavailableException("PokeAPI returned a " + what + " without a name", false, null);
         }
-        return ref.name();
+        return slotReference.name();
     }
 
     private static boolean isEnglish(NamedRef language) {

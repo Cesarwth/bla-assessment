@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN" "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!-- Names must say what they hold: at least two characters for every variable, parameter, lambda and catch
+     parameter, so `e`, `x`, `s` or `tmp1` style names cannot come back. Everything else is left to the compiler and
+     to code review on purpose (no formatting rules). -->
+<module name="Checker">
+  <property name="severity" value="error"/>
+  <module name="TreeWalker">
+    <module name="LocalVariableName"><property name="format" value="^[a-z][a-zA-Z0-9]+$"/></module>
+    <module name="MemberName"><property name="format" value="^[a-z][a-zA-Z0-9]+$"/></module>
+    <module name="ParameterName"><property name="format" value="^[a-z][a-zA-Z0-9]+$"/></module>
+    <module name="LambdaParameterName"><property name="format" value="^[a-z][a-zA-Z0-9]+$"/></module>
+    <module name="CatchParameterName"><property name="format" value="^[a-z][a-zA-Z0-9]+$"/></module>
+    <module name="PatternVariableName"><property name="format" value="^[a-z][a-zA-Z0-9]+$"/></module>
+    <module name="RecordComponentName"><property name="format" value="^[a-z][a-zA-Z0-9]+$"/></module>
+    <module name="MethodName"><property name="format" value="^[a-z][a-zA-Z0-9]+$"/></module>
+  </module>
+</module>

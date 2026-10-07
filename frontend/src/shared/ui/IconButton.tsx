@@ -1,5 +1,5 @@
 import type { ComponentPropsWithoutRef } from 'react'
-import { cx } from './cx'
+import { classNames } from './classNames'
 
 interface Props extends Omit<ComponentPropsWithoutRef<'button'>, 'children'> {
   /** Required: the glyph is decoration, the label is the accessible name. */
@@ -13,7 +13,7 @@ export function IconButton({ glyph = '×', className, type = 'button', ...rest }
   return (
     <button
       type={type}
-      className={cx(
+      className={classNames(
         'inline-flex size-11 shrink-0 items-center justify-center rounded-full leading-none ' +
           'text-xl text-muted transition-colors not-disabled:hover:bg-border not-disabled:hover:text-fg ' +
           'disabled:opacity-60 sm:size-8',

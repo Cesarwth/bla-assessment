@@ -33,15 +33,15 @@ export function failWith(
 /** Answers GET /pokemon and records the query string of every request in `requests`. */
 export function mockCatalog(
   respond: (
-    params: URLSearchParams,
+    searchParams: URLSearchParams,
   ) => PageResponse<PokemonSummary> | Response | Promise<PageResponse<PokemonSummary> | Response>,
   requests: string[] = [],
 ): HttpHandler {
   const handler = http.get(apiUrl('/pokemon'), async ({ request }) => {
-    const params = new URL(request.url).searchParams
-    requests.push(params.toString())
-    const result = await respond(params)
-    return result instanceof Response ? result : HttpResponse.json(result)
+    const searchParams = new URL(request.url).searchParams
+    requests.push(searchParams.toString())
+    const handlerResult = await respond(searchParams)
+    return handlerResult instanceof Response ? handlerResult : HttpResponse.json(handlerResult)
   })
   server.use(handler)
   return handler
@@ -58,7 +58,7 @@ export function mockDetail(idOrName: string, detail: PokemonDetail | Response): 
 /** Answers GET /collection and records the query string of every request in `requests`. */
 export function mockCollection(
   respond: (
-    params: URLSearchParams,
+    searchParams: URLSearchParams,
   ) =>
     | PageResponse<StoredPokemonSummary>
     | Response
@@ -67,10 +67,10 @@ export function mockCollection(
 ): void {
   server.use(
     http.get(apiUrl('/collection'), async ({ request }) => {
-      const params = new URL(request.url).searchParams
-      requests.push(params.toString())
-      const result = await respond(params)
-      return result instanceof Response ? result : HttpResponse.json(result)
+      const searchParams = new URL(request.url).searchParams
+      requests.push(searchParams.toString())
+      const handlerResult = await respond(searchParams)
+      return handlerResult instanceof Response ? handlerResult : HttpResponse.json(handlerResult)
     }),
   )
 }
@@ -91,16 +91,21 @@ export function mockCollectionIds(
   server.use(
     http.get(apiUrl('/collection/ids'), () => {
       requests.push('ids')
-      const result = typeof ids === 'function' ? ids() : ids
-      return result instanceof Response ? result : HttpResponse.json(result)
+      const response = typeof ids === 'function' ? ids() : ids
+      return response instanceof Response ? response : HttpResponse.json(response)
     }),
   )
 }
 
-export const me = { id: 1, username: 'ash', email: 'ash@example.com', role: 'USER' as const }
+export const signedInUser = {
+  id: 1,
+  username: 'ash',
+  email: 'ash@example.com',
+  role: 'USER' as const,
+}
 
 /** Answers GET /users/me. */
-export function mockProfile(profile: typeof me | Response = me): void {
+export function mockProfile(profile: typeof signedInUser | Response = signedInUser): void {
   server.use(
     http.get(apiUrl('/users/me'), () =>
       profile instanceof Response ? profile : HttpResponse.json(profile),

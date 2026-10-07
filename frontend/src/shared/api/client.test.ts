@@ -58,7 +58,7 @@ describe('api client', () => {
       ),
     )
 
-    const error = await api.post('/things', {}).catch((e: unknown) => e)
+    const error = await api.post('/things', {}).catch((failure: unknown) => failure)
 
     expect(error).toBeInstanceOf(ApiError)
     expect(error).toMatchObject({
@@ -72,7 +72,7 @@ describe('api client', () => {
   it('maps a network failure to an ApiError with status 0', async () => {
     server.use(http.get('*/api/v1/ping', () => HttpResponse.error()))
 
-    const error = await api.get('/ping').catch((e: unknown) => e)
+    const error = await api.get('/ping').catch((failure: unknown) => failure)
 
     expect(error).toMatchObject({ status: 0, code: 'NETWORK_ERROR' })
   })
@@ -80,7 +80,7 @@ describe('api client', () => {
   it('copes with error responses that are not the API error shape', async () => {
     server.use(http.get('*/api/v1/ping', () => new HttpResponse('Bad Gateway', { status: 502 })))
 
-    const error = await api.get('/ping').catch((e: unknown) => e)
+    const error = await api.get('/ping').catch((failure: unknown) => failure)
 
     expect(error).toMatchObject({ status: 502, code: 'HTTP_502' })
   })

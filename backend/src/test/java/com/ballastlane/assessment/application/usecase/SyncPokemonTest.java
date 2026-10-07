@@ -51,11 +51,11 @@ class SyncPokemonTest {
     void addsToTheActorsCollectionWhenNotThereYetAndStampsSyncedAtFromTheClock() {
         when(gateway.findDetail("pikachu")).thenReturn(Optional.of(TestData.detail(25, "pikachu")));
         when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.empty());
-        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        SyncResult result = syncPokemon.sync("  Pikachu ", ACTOR);
+        SyncResult syncResult = syncPokemon.sync("  Pikachu ", ACTOR);
 
-        assertThat(result.outcome()).isEqualTo(SyncOutcome.CREATED);
+        assertThat(syncResult.outcome()).isEqualTo(SyncOutcome.CREATED);
         ArgumentCaptor<StoredPokemon> saved = ArgumentCaptor.forClass(StoredPokemon.class);
         verify(repository).save(saved.capture());
         assertThat(saved.getValue().id()).isNull();
@@ -71,15 +71,15 @@ class SyncPokemonTest {
         PokemonDetail changed = TestData.detail(25, "pikachu-v2");
         when(gateway.findDetail("25")).thenReturn(Optional.of(changed));
         when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.of(existing));
-        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        SyncResult result = syncPokemon.sync("25", ACTOR);
+        SyncResult syncResult = syncPokemon.sync("25", ACTOR);
 
-        assertThat(result.outcome()).isEqualTo(SyncOutcome.UPDATED);
-        assertThat(result.pokemon().id()).isEqualTo(7L);
-        assertThat(result.pokemon().version()).isEqualTo(3L);
-        assertThat(result.pokemon().name()).isEqualTo("pikachu-v2");
-        assertThat(result.pokemon().localAttributes()).isEqualTo(local);
+        assertThat(syncResult.outcome()).isEqualTo(SyncOutcome.UPDATED);
+        assertThat(syncResult.pokemon().id()).isEqualTo(7L);
+        assertThat(syncResult.pokemon().version()).isEqualTo(3L);
+        assertThat(syncResult.pokemon().name()).isEqualTo("pikachu-v2");
+        assertThat(syncResult.pokemon().localAttributes()).isEqualTo(local);
     }
 
     @Test
@@ -90,31 +90,31 @@ class SyncPokemonTest {
         when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.empty(), Optional.of(winner));
         when(repository.save(any()))
                 .thenThrow(new DuplicateStoredPokemonException(25))
-                .thenAnswer(inv -> inv.getArgument(0));
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        SyncResult result = syncPokemon.sync("25", ACTOR);
+        SyncResult syncResult = syncPokemon.sync("25", ACTOR);
 
-        assertThat(result.outcome()).isEqualTo(SyncOutcome.UPDATED);
-        assertThat(result.pokemon().id()).isEqualTo(7L);
-        assertThat(result.pokemon().localAttributes()).isEqualTo(local);
+        assertThat(syncResult.outcome()).isEqualTo(SyncOutcome.UPDATED);
+        assertThat(syncResult.pokemon().id()).isEqualTo(7L);
+        assertThat(syncResult.pokemon().localAttributes()).isEqualTo(local);
     }
 
     @Test
     void retriesWhenAnotherSyncRefreshedTheRowFirstBecauseSyncIsIdempotent() {
         LocalAttributes local = new LocalAttributes("Pika", null, List.of());
-        StoredPokemon v0 = TestData.stored(7, 0, 25, "pikachu", local);
-        StoredPokemon v1 = TestData.stored(7, 1, 25, "pikachu", local);
+        StoredPokemon versionBeforeRefresh = TestData.stored(7, 0, 25, "pikachu", local);
+        StoredPokemon versionAfterRefresh = TestData.stored(7, 1, 25, "pikachu", local);
         when(gateway.findDetail("25")).thenReturn(Optional.of(TestData.detail(25, "pikachu")));
-        when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.of(v0), Optional.of(v1));
+        when(repository.findByTrainerAndPokeApiId(5L, 25)).thenReturn(Optional.of(versionBeforeRefresh), Optional.of(versionAfterRefresh));
         when(repository.save(any()))
                 .thenThrow(new StaleStoredPokemonException(25))
-                .thenAnswer(inv -> inv.getArgument(0));
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        SyncResult result = syncPokemon.sync("25", ACTOR);
+        SyncResult syncResult = syncPokemon.sync("25", ACTOR);
 
-        assertThat(result.outcome()).isEqualTo(SyncOutcome.UPDATED);
-        assertThat(result.pokemon().version()).isEqualTo(1L);
-        assertThat(result.pokemon().localAttributes()).isEqualTo(local);
+        assertThat(syncResult.outcome()).isEqualTo(SyncOutcome.UPDATED);
+        assertThat(syncResult.pokemon().version()).isEqualTo(1L);
+        assertThat(syncResult.pokemon().localAttributes()).isEqualTo(local);
     }
 
     @Test

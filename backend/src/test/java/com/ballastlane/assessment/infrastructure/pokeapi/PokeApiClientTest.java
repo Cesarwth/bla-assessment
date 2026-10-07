@@ -35,8 +35,8 @@ class PokeApiClientTest {
 
     @BeforeEach
     void setUp() {
-        PokeApiProperties props = new PokeApiProperties(BASE, Duration.ofSeconds(2), Duration.ofSeconds(5), Duration.ofHours(1), 100);
-        RestClient.Builder builder = PokeApiConfig.restClientBuilder(props);
+        PokeApiProperties properties = new PokeApiProperties(BASE, Duration.ofSeconds(2), Duration.ofSeconds(5), Duration.ofHours(1), 100);
+        RestClient.Builder builder = PokeApiConfig.restClientBuilder(properties);
         server = MockRestServiceServer.bindTo(builder).build();
         client = new PokeApiClient(builder.build());
     }
@@ -46,9 +46,9 @@ class PokeApiClientTest {
         server.expect(requestTo(BASE + "/pokemon/25")).andExpect(method(HttpMethod.GET))
                 .andRespond(withSuccess(Fixtures.read("pokemon-25.json"), MediaType.APPLICATION_JSON));
 
-        Optional<PokeApiPokemon> result = client.getPokemon("25");
+        Optional<PokeApiPokemon> foundPokemon = client.getPokemon("25");
 
-        assertThat(result).hasValueSatisfying(pokemon -> {
+        assertThat(foundPokemon).hasValueSatisfying(pokemon -> {
             assertThat(pokemon.id()).isEqualTo(25);
             assertThat(pokemon.name()).isEqualTo("pikachu");
             assertThat(pokemon.weight()).isEqualTo(60);
@@ -101,7 +101,7 @@ class PokeApiClientTest {
     }
 
     @Test
-    void returnsEmptyOn404() {
+    void returnsEmptyWhenPokeApiAnswersNotFound() {
         server.expect(requestTo(BASE + "/pokemon/missingno")).andRespond(withStatus(HttpStatus.NOT_FOUND));
 
         assertThat(client.getPokemon("missingno")).isEmpty();
@@ -123,7 +123,7 @@ class PokeApiClientTest {
     }
 
     @Test
-    void flagsTimeoutsSoTheWebLayerCanAnswer504() {
+    void flagsTimeoutsSoTheWebLayerCanAnswerGatewayTimeout() {
         server.expect(requestTo(BASE + "/pokemon/25")).andRespond(withException(new SocketTimeoutException("Read timed out")));
 
         assertThatThrownBy(() -> client.getPokemon("25"))

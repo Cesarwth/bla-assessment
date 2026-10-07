@@ -1,4 +1,4 @@
-import { cx } from './cx'
+import { classNames } from './classNames'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'danger-outline'
 export type ButtonSize = 'md' | 'lg'
@@ -35,4 +35,4 @@ const sizes: Record<ButtonSize, string> = {
 
 /** Classes of a button, also for links that must look like one (header, pagination). */
 export const buttonClass = (variant: ButtonVariant = 'secondary', size: ButtonSize = 'md') =>
-  cx(base, variants[variant], sizes[size])
+  classNames(base, variants[variant], sizes[size])

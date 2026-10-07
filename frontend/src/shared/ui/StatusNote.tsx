@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { cx } from './cx'
+import { classNames } from './classNames'
 
 /**
  * A polite confirmation ("Saved") for screen readers. Like `Alert`, the live region is always rendered and only
@@ -15,7 +15,10 @@ export function StatusNote({
   className?: string
 }) {
   return (
-    <p role="status" className={cx('mb-0', children ? cx(boxClass, className) : 'sr-only')}>
+    <p
+      role="status"
+      className={classNames('mb-0', children ? classNames(boxClass, className) : 'sr-only')}
+    >
       {children}
     </p>
   )

@@ -12,10 +12,10 @@ describe('addTag', () => {
   })
 
   it('refuses tags that are too long, explaining why', () => {
-    const result = addTag([], 'x'.repeat(MAX_TAG_LENGTH + 1))
+    const addition = addTag([], 'x'.repeat(MAX_TAG_LENGTH + 1))
 
-    expect(result.tags).toEqual([])
-    expect(result.error).toBe(`Tags can have at most ${MAX_TAG_LENGTH} characters.`)
+    expect(addition.tags).toEqual([])
+    expect(addition.error).toBe(`Tags can have at most ${MAX_TAG_LENGTH} characters.`)
   })
 
   it('accepts a tag of exactly the maximum length', () => {
@@ -25,10 +25,10 @@ describe('addTag', () => {
   it('refuses an eleventh tag', () => {
     const full = Array.from({ length: MAX_TAGS }, (_, index) => `tag${index}`)
 
-    const result = addTag(full, 'one-more')
+    const addition = addTag(full, 'one-more')
 
-    expect(result.tags).toEqual(full)
-    expect(result.error).toBe(`You can have up to ${MAX_TAGS} tags.`)
+    expect(addition.tags).toEqual(full)
+    expect(addition.error).toBe(`You can have up to ${MAX_TAGS} tags.`)
   })
 
   it('does not mutate the list it was given', () => {

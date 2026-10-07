@@ -48,21 +48,21 @@ class UserControllerTest {
     private static final User ASH = new User(1L, "ash", "ash@pallet.town", "hashed", Role.USER);
     private static final String JSON = MediaType.APPLICATION_JSON_VALUE;
 
-    @Autowired MockMvc mvc;
+    @Autowired MockMvc mockMvc;
     @Autowired TokenIssuer tokens;
     @MockitoBean GetProfileUseCase getProfile;
     @MockitoBean UpdateProfileUseCase updateProfile;
     @MockitoBean ChangePasswordUseCase changePassword;
 
     private String bearer() {
-        return "Bearer " + tokens.issue(ASH).value();
+        return "Bearer " + tokens.issue(ASH).jwt();
     }
 
     @Test
     void meReturnsTheUserWithoutSecrets() throws Exception {
         when(getProfile.get(new Actor(1L, "ash", Role.USER))).thenReturn(ASH);
 
-        mvc.perform(get("/api/v1/users/me").header("Authorization", bearer()))
+        mockMvc.perform(get("/api/v1/users/me").header("Authorization", bearer()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.username").value("ash"))
@@ -73,7 +73,7 @@ class UserControllerTest {
 
     @Test
     void meNeedsAToken() throws Exception {
-        mvc.perform(get("/api/v1/users/me")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/users/me")).andExpect(status().isUnauthorized());
         verifyNoInteractions(getProfile);
     }
 
@@ -83,7 +83,7 @@ class UserControllerTest {
         when(updateProfile.update(any())).thenReturn(
                 new UpdatedProfile(renamed, new AuthToken("new-jwt", Instant.parse("2030-01-01T00:00:00Z"))));
 
-        mvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON)
+        mockMvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON)
                         .content("{\"username\":\"red\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("new-jwt"))
@@ -101,7 +101,7 @@ class UserControllerTest {
         when(updateProfile.update(any())).thenReturn(
                 new UpdatedProfile(ASH, new AuthToken("jwt", Instant.parse("2030-01-01T00:00:00Z"))));
 
-        mvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON)
+        mockMvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON)
                         .content("{\"email\":\"new@pallet.town\",\"currentPassword\":\"Pikachu123\"}"))
                 .andExpect(status().isOk());
         verify(updateProfile).update(new UpdateProfileCommand(1L, null, "new@pallet.town", "Pikachu123"));
@@ -111,14 +111,14 @@ class UserControllerTest {
     void patchWithNothingToUpdateIs400() throws Exception {
         doThrow(new InvalidUserException("Provide a username or an email to update")).when(updateProfile).update(any());
 
-        mvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON).content("{}"))
+        mockMvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON).content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
     }
 
     @Test
     void patchRejectsAMalformedEmailAndAShortUsername() throws Exception {
-        mvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON)
+        mockMvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON)
                         .content("{\"username\":\"ab\",\"email\":\"nope\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
@@ -130,7 +130,7 @@ class UserControllerTest {
     void patchWithAWrongCurrentPasswordIs400NotA401() throws Exception {
         doThrow(new InvalidCurrentPasswordException()).when(updateProfile).update(any());
 
-        mvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON)
+        mockMvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON)
                         .content("{\"email\":\"new@pallet.town\",\"currentPassword\":\"wrong\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_CURRENT_PASSWORD"));
@@ -139,21 +139,21 @@ class UserControllerTest {
     @Test
     void patchConflictsAre409() throws Exception {
         doThrow(new UsernameAlreadyExistsException("red")).when(updateProfile).update(any());
-        mvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON)
+        mockMvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON)
                         .content("{\"username\":\"red\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("USERNAME_TAKEN"));
 
         doThrow(new EmailAlreadyExistsException("x")).when(updateProfile).update(any());
-        mvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON)
+        mockMvc.perform(patch("/api/v1/users/me").header("Authorization", bearer()).contentType(JSON)
                         .content("{\"email\":\"red@pallet.town\",\"currentPassword\":\"Pikachu123\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("EMAIL_TAKEN"));
     }
 
     @Test
-    void changePassword204() throws Exception {
-        mvc.perform(post("/api/v1/users/me/password").header("Authorization", bearer()).contentType(JSON)
+    void changePasswordAnswersNoContent() throws Exception {
+        mockMvc.perform(post("/api/v1/users/me/password").header("Authorization", bearer()).contentType(JSON)
                         .content("{\"currentPassword\":\"Pikachu123\",\"newPassword\":\"Raichu456\"}"))
                 .andExpect(status().isNoContent())
                 .andExpect(content().string(""));
@@ -164,7 +164,7 @@ class UserControllerTest {
     void changePasswordWithAWrongCurrentPasswordIs400NotA401() throws Exception {
         doThrow(new InvalidCurrentPasswordException()).when(changePassword).change(any());
 
-        mvc.perform(post("/api/v1/users/me/password").header("Authorization", bearer()).contentType(JSON)
+        mockMvc.perform(post("/api/v1/users/me/password").header("Authorization", bearer()).contentType(JSON)
                         .content("{\"currentPassword\":\"wrong\",\"newPassword\":\"Raichu456\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_CURRENT_PASSWORD"));
@@ -174,7 +174,7 @@ class UserControllerTest {
     void changePasswordWithAWeakNewPasswordIs400() throws Exception {
         doThrow(new WeakPasswordException("weak")).when(changePassword).change(any());
 
-        mvc.perform(post("/api/v1/users/me/password").header("Authorization", bearer()).contentType(JSON)
+        mockMvc.perform(post("/api/v1/users/me/password").header("Authorization", bearer()).contentType(JSON)
                         .content("{\"currentPassword\":\"Pikachu123\",\"newPassword\":\"short\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("WEAK_PASSWORD"));
@@ -182,7 +182,7 @@ class UserControllerTest {
 
     @Test
     void changePasswordRequiresBothFields() throws Exception {
-        mvc.perform(post("/api/v1/users/me/password").header("Authorization", bearer()).contentType(JSON).content("{}"))
+        mockMvc.perform(post("/api/v1/users/me/password").header("Authorization", bearer()).contentType(JSON).content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.fieldErrors.length()").value(2));
@@ -190,7 +190,7 @@ class UserControllerTest {
 
     @Test
     void changePasswordNeedsAToken() throws Exception {
-        mvc.perform(post("/api/v1/users/me/password").contentType(JSON)
+        mockMvc.perform(post("/api/v1/users/me/password").contentType(JSON)
                         .content("{\"currentPassword\":\"a\",\"newPassword\":\"b\"}"))
                 .andExpect(status().isUnauthorized());
         verifyNoInteractions(changePassword);

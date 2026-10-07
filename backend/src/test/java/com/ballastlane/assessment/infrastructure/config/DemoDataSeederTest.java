@@ -50,7 +50,7 @@ class DemoDataSeederTest {
     @BeforeEach
     void noStoredPokemonYet() {
         org.mockito.Mockito.lenient().when(repository.findByTrainerAndPokeApiId(anyLong(), anyInt())).thenReturn(Optional.empty());
-        org.mockito.Mockito.lenient().when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        org.mockito.Mockito.lenient().when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test

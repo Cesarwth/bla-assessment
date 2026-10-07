@@ -13,25 +13,28 @@ function SelectionState({ children }: { children: ReactNode }) {
 
   const toggle = useCallback((pokemon: SelectedPokemon) => {
     setItems((current) => {
-      if (current.some((other) => other.id === pokemon.id))
-        return current.filter((other) => other.id !== pokemon.id)
+      if (current.some((selected) => selected.id === pokemon.id))
+        return current.filter((selected) => selected.id !== pokemon.id)
       return current.length >= MAX_SELECTION
         ? current
         : [...current, { id: pokemon.id, name: pokemon.name }]
     })
   }, [])
   const remove = useCallback(
-    (id: number) => setItems((current) => current.filter((other) => other.id !== id)),
+    (id: number) => setItems((current) => current.filter((selected) => selected.id !== id)),
     [],
   )
   const addMany = useCallback((more: SelectedPokemon[]) => {
     setItems((current) => {
-      const fresh = more.filter((pokemon) => !current.some((other) => other.id === pokemon.id))
+      const fresh = more.filter(
+        (pokemon) => !current.some((selected) => selected.id === pokemon.id),
+      )
       return [...current, ...fresh.map(({ id, name }) => ({ id, name }))].slice(0, MAX_SELECTION)
     })
   }, [])
   const removeMany = useCallback(
-    (ids: number[]) => setItems((current) => current.filter((other) => !ids.includes(other.id))),
+    (ids: number[]) =>
+      setItems((current) => current.filter((selected) => !ids.includes(selected.id))),
     [],
   )
   const clear = useCallback(() => setItems([]), [])

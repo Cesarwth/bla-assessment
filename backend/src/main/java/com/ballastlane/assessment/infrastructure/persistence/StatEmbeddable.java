@@ -24,8 +24,8 @@ class StatEmbeddable {
 
     // Value semantics let Hibernate see that an unchanged stat list needs no SQL when a sync rewrites it.
     @Override
-    public boolean equals(Object other) {
-        return other instanceof StatEmbeddable stat && baseValue == stat.baseValue && Objects.equals(name, stat.name);
+    public boolean equals(Object candidate) {
+        return candidate instanceof StatEmbeddable stat && baseValue == stat.baseValue && Objects.equals(name, stat.name);
     }
 
     @Override

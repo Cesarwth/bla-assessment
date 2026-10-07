@@ -38,10 +38,10 @@ describe('decodeToken', () => {
 
 describe('isExpired', () => {
   it('compares the expiry with the current time', () => {
-    const info = decodeToken(makeToken({ exp: 1_000 }))!
+    const tokenInfo = decodeToken(makeToken({ exp: 1_000 }))!
 
-    expect(isExpired(info, 999_999)).toBe(false)
-    expect(isExpired(info, 1_000_000)).toBe(true)
-    expect(isExpired(info, 2_000_000)).toBe(true)
+    expect(isExpired(tokenInfo, 999_999)).toBe(false)
+    expect(isExpired(tokenInfo, 1_000_000)).toBe(true)
+    expect(isExpired(tokenInfo, 2_000_000)).toBe(true)
   })
 })

@@ -167,10 +167,10 @@ describe('CollectionEntryPage', () => {
       const bodies = mockPatch()
       renderApp(<App />, asTrainer())
       await startEditing()
-      const input = await screen.findByLabelText('Add a tag')
+      const tagInput = await screen.findByLabelText('Add a tag')
 
-      await userEvent.type(input, '  Electric {Enter}')
-      await userEvent.type(input, 'ELECTRIC{Enter}')
+      await userEvent.type(tagInput, '  Electric {Enter}')
+      await userEvent.type(tagInput, 'ELECTRIC{Enter}')
       await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
       await screen.findByText(/Saved changes to Pikachu\./)

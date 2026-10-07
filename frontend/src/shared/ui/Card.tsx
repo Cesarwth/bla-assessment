@@ -1,5 +1,5 @@
 import type { ComponentPropsWithoutRef } from 'react'
-import { cx } from './cx'
+import { classNames } from './classNames'
 
 interface Props extends ComponentPropsWithoutRef<'div'> {
   as?: 'div' | 'article' | 'section'
@@ -24,7 +24,7 @@ export function Card({
 }: Props) {
   return (
     <Tag
-      className={cx(
+      className={classNames(
         'border border-border',
         glass ? 'bg-surface/80 backdrop-blur' : 'bg-surface',
         (raised || interactive) && 'shadow-sm',

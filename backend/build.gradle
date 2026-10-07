@@ -1,6 +1,7 @@
 plugins {
 	id 'java'
 	id 'jacoco'
+	id 'checkstyle'
 	id 'org.springframework.boot' version '4.1.1'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -90,4 +91,12 @@ tasks.named('jacocoTestCoverageVerification') {
 
 tasks.named('check') {
 	dependsOn 'jacocoTestCoverageVerification'
+}
+
+// Naming rules (config/checkstyle/checkstyle.xml): no one-letter variable, parameter, lambda or catch names. Runs as part
+// of `./gradlew build`.
+checkstyle {
+	toolVersion = '10.21.4'
+	configFile = file('config/checkstyle/checkstyle.xml')
+	maxWarnings = 0
 }

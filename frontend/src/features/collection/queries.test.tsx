@@ -50,19 +50,19 @@ describe('the ids of the collection', () => {
     [
       'adding one Pokémon',
       () => useSyncPokemon(),
-      (m: ReturnType<typeof useSyncPokemon>) => m.mutate(25),
+      (mutation: ReturnType<typeof useSyncPokemon>) => mutation.mutate(25),
     ],
     [
       'adding a selection',
       () => useSyncSelection(() => {}),
-      (m: ReturnType<typeof useSyncSelection>) => m.mutate([1, 3]),
+      (mutation: ReturnType<typeof useSyncSelection>) => mutation.mutate([1, 3]),
     ],
     [
       'removing an entry',
       () => useDeleteEntry(25),
-      (m: ReturnType<typeof useDeleteEntry>) => m.mutate(),
+      (mutation: ReturnType<typeof useDeleteEntry>) => mutation.mutate(),
     ],
-  ] as const)('are marked stale after %s', async (_name, useHook, run) => {
+  ] as const)('are marked stale after %s', async (_name, useHook, triggerMutation) => {
     server.use(
       http.post(apiUrl('/collection/25/sync'), () =>
         HttpResponse.json(stored(25, 'pikachu'), { status: 201 }),
@@ -76,7 +76,7 @@ describe('the ids of the collection', () => {
     queryClient.setQueryData(collectionKeys.ids(), [4])
     const { result } = renderHook(() => useHook() as never, { wrapper })
 
-    run(result.current as never)
+    triggerMutation(result.current as never)
 
     await waitFor(() =>
       expect(queryClient.getQueryState(collectionKeys.ids())?.isInvalidated).toBe(true),

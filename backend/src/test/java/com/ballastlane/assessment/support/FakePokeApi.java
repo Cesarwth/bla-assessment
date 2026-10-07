@@ -118,8 +118,8 @@ public final class FakePokeApi {
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().add("Content-Type", "application/json");
         exchange.sendResponseHeaders(status, bytes.length);
-        try (var out = exchange.getResponseBody()) {
-            out.write(bytes);
+        try (var responseBody = exchange.getResponseBody()) {
+            responseBody.write(bytes);
         }
     }
 }

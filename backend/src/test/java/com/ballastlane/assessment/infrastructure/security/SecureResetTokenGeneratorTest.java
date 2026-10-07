@@ -14,7 +14,7 @@ class SecureResetTokenGeneratorTest {
     @Test
     void tokensAreUrlSafeBase64Of32BytesAndDoNotRepeat() {
         Set<String> seen = new HashSet<>();
-        for (int i = 0; i < 100; i++) {
+        for (int attempt = 0; attempt < 100; attempt++) {
             String token = generator.generate();
             assertThat(token).matches("[A-Za-z0-9_-]{43}");
             assertThat(Base64.getUrlDecoder().decode(token)).hasSize(32);

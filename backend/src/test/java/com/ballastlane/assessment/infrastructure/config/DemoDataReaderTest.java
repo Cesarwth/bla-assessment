@@ -47,12 +47,12 @@ class DemoDataReaderTest {
 
     @Test
     void everyEntryIsAValidAggregateWithValidLocalFields() {
-        for (DemoEntry e : entries) {
+        for (DemoEntry entry : entries) {
             // building them runs the domain invariants (limits on nickname, region, tags)
-            LocalAttributes local = new LocalAttributes(e.nickname(), e.region(), e.tags());
-            StoredPokemon stored = StoredPokemon.fromDetail(e.detail(), TestData.NOW, TestData.user(1)).withLocalAttributes(local);
+            LocalAttributes local = new LocalAttributes(entry.nickname(), entry.region(), entry.tags());
+            StoredPokemon stored = StoredPokemon.fromDetail(entry.detail(), TestData.NOW, TestData.user(1)).withLocalAttributes(local);
 
-            assertThat(stored.name()).as("name of #%d", e.detail().id()).isNotBlank();
+            assertThat(stored.name()).as("name of #%d", entry.detail().id()).isNotBlank();
             assertThat(stored.types()).as("types of %s", stored.name()).isNotEmpty();
             assertThat(stored.stats()).as("stats of %s", stored.name()).hasSize(6);
             assertThat(stored.description()).as("description of %s", stored.name()).isNotBlank();

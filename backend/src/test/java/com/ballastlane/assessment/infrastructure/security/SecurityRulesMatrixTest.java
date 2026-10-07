@@ -55,7 +55,7 @@ class SecurityRulesMatrixTest {
 
     enum Outcome { UNAUTHORIZED_401, FORBIDDEN_403, REACHES_APP }
 
-    @Autowired MockMvc mvc;
+    @Autowired MockMvc mockMvc;
     @Autowired TokenIssuer tokens;
     @MockitoBean RegisterUserUseCase registerUser;
     @MockitoBean AuthenticateUserUseCase authenticateUser;
@@ -130,7 +130,7 @@ class SecurityRulesMatrixTest {
             return null;
         }
         Role role = caller == Caller.ADMIN ? Role.ADMIN : Role.USER;
-        return "Bearer " + tokens.issue(new User(1L, "someone", "someone@pallet.town", "hash", role)).value();
+        return "Bearer " + tokens.issue(new User(1L, "someone", "someone@pallet.town", "hash", role)).jwt();
     }
 
     @ParameterizedTest(name = "{0} {1} as {2} -> {3}")
@@ -142,7 +142,7 @@ class SecurityRulesMatrixTest {
             builder.header("Authorization", authorization);
         }
 
-        int status = mvc.perform(builder).andReturn().getResponse().getStatus();
+        int status = mockMvc.perform(builder).andReturn().getResponse().getStatus();
 
         switch (expected) {
             case UNAUTHORIZED_401 -> assertThat(status).isEqualTo(401);

@@ -36,7 +36,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import({SecurityConfig.class, JwtConfig.class, GlobalExceptionHandler.class})
 class PokemonControllerTest {
 
-    @Autowired MockMvc mvc;
+    @Autowired MockMvc mockMvc;
     @MockitoBean ListPokemonUseCase listPokemon;
     @MockitoBean GetPokemonDetailUseCase getPokemonDetail;
 
@@ -48,7 +48,7 @@ class PokemonControllerTest {
         PokemonSummary noImage = new PokemonSummary(25, "pikachu", null, null, List.of(), 6.0, List.of());
         when(listPokemon.list(null, null, null)).thenReturn(new PageResult<>(List.of(noImage), 0, 12, 1));
 
-        mvc.perform(get("/api/v1/pokemon"))
+        mockMvc.perform(get("/api/v1/pokemon"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].imageUrl").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.items[0].spriteUrl").value(org.hamcrest.Matchers.nullValue()));
@@ -58,7 +58,7 @@ class PokemonControllerTest {
     void listReturnsPagedSummariesWithoutAToken() throws Exception {
         when(listPokemon.list(1, 1, null)).thenReturn(new PageResult<>(List.of(PIKACHU), 1, 1, 1351));
 
-        mvc.perform(get("/api/v1/pokemon").param("page", "1").param("size", "1"))
+        mockMvc.perform(get("/api/v1/pokemon").param("page", "1").param("size", "1"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("max-age=60")))
                 .andExpect(jsonPath("$.items[0].id").value(25))
@@ -78,7 +78,7 @@ class PokemonControllerTest {
     void listLeavesDefaultsToTheUseCaseWhenParametersAreMissing() throws Exception {
         when(listPokemon.list(null, null, null)).thenReturn(new PageResult<>(List.of(), 0, 12, 0));
 
-        mvc.perform(get("/api/v1/pokemon")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/pokemon")).andExpect(status().isOk());
 
         verify(listPokemon).list(null, null, null);
     }
@@ -87,7 +87,7 @@ class PokemonControllerTest {
     void list400WhenPaginationIsInvalid() throws Exception {
         when(listPokemon.list(any(), any(), any())).thenThrow(new InvalidPaginationException("size must be between 1 and 50"));
 
-        mvc.perform(get("/api/v1/pokemon").param("size", "500"))
+        mockMvc.perform(get("/api/v1/pokemon").param("size", "500"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PAGINATION"))
                 // Errors must never inherit the 60s public cache that successful reads get.
@@ -98,7 +98,7 @@ class PokemonControllerTest {
     void listPassesTheFilterTextToTheUseCase() throws Exception {
         when(listPokemon.list(0, 12, " Mr Mime ")).thenReturn(new PageResult<>(List.of(PIKACHU), 0, 12, 1));
 
-        mvc.perform(get("/api/v1/pokemon").param("page", "0").param("size", "12").param("q", " Mr Mime "))
+        mockMvc.perform(get("/api/v1/pokemon").param("page", "0").param("size", "12").param("q", " Mr Mime "))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(25))
                 .andExpect(jsonPath("$.totalItems").value(1))
@@ -109,7 +109,7 @@ class PokemonControllerTest {
     void listWithoutMatchesIsAnEmpty200() throws Exception {
         when(listPokemon.list(null, null, "zzz")).thenReturn(new PageResult<>(List.of(), 0, 12, 0));
 
-        mvc.perform(get("/api/v1/pokemon").param("q", "zzz"))
+        mockMvc.perform(get("/api/v1/pokemon").param("q", "zzz"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isEmpty())
                 .andExpect(jsonPath("$.totalItems").value(0))
@@ -120,7 +120,7 @@ class PokemonControllerTest {
     void list400WhenTheFilterIsTooLong() throws Exception {
         when(listPokemon.list(any(), any(), any())).thenThrow(new InvalidSearchQueryException("q must be at most 50 characters"));
 
-        mvc.perform(get("/api/v1/pokemon").param("q", "a".repeat(51)))
+        mockMvc.perform(get("/api/v1/pokemon").param("q", "a".repeat(51)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_SEARCH_QUERY"))
                 .andExpect(jsonPath("$.message").value("q must be at most 50 characters"));
@@ -128,7 +128,7 @@ class PokemonControllerTest {
 
     @Test
     void list400WhenAParameterIsNotANumber() throws Exception {
-        mvc.perform(get("/api/v1/pokemon").param("size", "abc"))
+        mockMvc.perform(get("/api/v1/pokemon").param("size", "abc"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"))
                 .andExpect(jsonPath("$.message").value("Parameter 'size' has an invalid value"));
@@ -143,7 +143,7 @@ class PokemonControllerTest {
                 "Mouse Pokémon", "When several of these POKéMON gather...", pikachu);
         when(getPokemonDetail.get("25")).thenReturn(detail);
 
-        mvc.perform(get("/api/v1/pokemon/25"))
+        mockMvc.perform(get("/api/v1/pokemon/25"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("pikachu"))
                 .andExpect(jsonPath("$.imageUrl").value("https://img/art.png"))
@@ -162,7 +162,7 @@ class PokemonControllerTest {
         when(getPokemonDetail.get("25")).thenReturn(new PokemonDetail(25, "pikachu", null, null, List.of(), 6.0, 0.4,
                 List.of(), List.of(), null, null, null));
 
-        mvc.perform(get("/api/v1/pokemon/25"))
+        mockMvc.perform(get("/api/v1/pokemon/25"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.evolutionChain").isEmpty())
                 .andExpect(jsonPath("$.imageUrl").isEmpty());
@@ -172,7 +172,7 @@ class PokemonControllerTest {
     void detail404WhenThePokemonDoesNotExist() throws Exception {
         when(getPokemonDetail.get("missingno")).thenThrow(new PokemonNotFoundException("missingno"));
 
-        mvc.perform(get("/api/v1/pokemon/missingno"))
+        mockMvc.perform(get("/api/v1/pokemon/missingno"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("POKEMON_NOT_FOUND"));
     }
@@ -181,7 +181,7 @@ class PokemonControllerTest {
     void detail400WhenTheIdentifierIsInvalid() throws Exception {
         when(getPokemonDetail.get("bad!")).thenThrow(new InvalidPokemonIdentifierException("not valid"));
 
-        mvc.perform(get("/api/v1/pokemon/bad!"))
+        mockMvc.perform(get("/api/v1/pokemon/bad!"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_POKEMON_IDENTIFIER"));
     }
@@ -190,7 +190,7 @@ class PokemonControllerTest {
     void detail502WhenTheCatalogIsDownWithoutLeakingUpstreamDetails() throws Exception {
         when(getPokemonDetail.get("25")).thenThrow(new CatalogUnavailableException("PokeAPI answered 503", false, null));
 
-        mvc.perform(get("/api/v1/pokemon/25"))
+        mockMvc.perform(get("/api/v1/pokemon/25"))
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.code").value("CATALOG_UNAVAILABLE"))
                 .andExpect(jsonPath("$.message").value("The Pokemon catalog is temporarily unavailable"));
@@ -200,7 +200,7 @@ class PokemonControllerTest {
     void detail504WhenTheCatalogTimesOut() throws Exception {
         when(getPokemonDetail.get("25")).thenThrow(new CatalogUnavailableException("timeout", true, null));
 
-        mvc.perform(get("/api/v1/pokemon/25"))
+        mockMvc.perform(get("/api/v1/pokemon/25"))
                 .andExpect(status().isGatewayTimeout())
                 .andExpect(jsonPath("$.code").value("CATALOG_TIMEOUT"));
     }

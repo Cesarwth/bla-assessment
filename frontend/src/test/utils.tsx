@@ -15,8 +15,8 @@ interface TokenOptions {
 }
 
 /** UTF-8 first, like the server does: btoa alone would encode 'é' as one Latin-1 byte. */
-function base64Url(value: object): string {
-  const bytes = new TextEncoder().encode(JSON.stringify(value))
+function base64Url(payload: object): string {
+  const bytes = new TextEncoder().encode(JSON.stringify(payload))
   const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('')
   return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
 }
@@ -40,7 +40,10 @@ interface RenderOptions {
   token?: string
 }
 
-export function renderApp(ui: ReactElement, { route = '/', token, previous }: RenderOptions = {}) {
+export function renderApp(
+  pageElement: ReactElement,
+  { route = '/', token, previous }: RenderOptions = {},
+) {
   if (token) storeToken(token)
   const queryClient = createQueryClient({ retry: false })
   return render(
@@ -48,7 +51,7 @@ export function renderApp(ui: ReactElement, { route = '/', token, previous }: Re
       initialEntries={previous ? [previous, route] : [route]}
       initialIndex={previous ? 1 : 0}
     >
-      <AppProviders queryClient={queryClient}>{ui}</AppProviders>
+      <AppProviders queryClient={queryClient}>{pageElement}</AppProviders>
     </MemoryRouter>,
   )
 }

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { cx } from './cx'
+import { classNames } from './classNames'
 
 /**
  * An inline error announced to screen readers (form-level errors). The element is always in the page and only gets
@@ -10,7 +10,7 @@ export function Alert({ children, className }: { children?: ReactNode; className
   return (
     <p
       role="alert"
-      className={cx(
+      className={classNames(
         'mb-0',
         children ? 'rounded-sm border border-danger bg-danger-surface px-4 py-3' : 'sr-only',
         children ? className : undefined,

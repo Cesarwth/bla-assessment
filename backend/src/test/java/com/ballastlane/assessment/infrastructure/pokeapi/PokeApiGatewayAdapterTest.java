@@ -57,15 +57,15 @@ class PokeApiGatewayAdapterTest {
         when(client.getPage(3, 0)).thenReturn(Fixtures.page("list.json"));
         // Id 1 only finishes after 2 and 3 did, so completion order is the reverse of page order.
         CountDownLatch othersFinished = new CountDownLatch(2);
-        when(client.getPokemon("1")).thenAnswer(inv -> {
+        when(client.getPokemon("1")).thenAnswer(invocation -> {
             othersFinished.await(5, TimeUnit.SECONDS);
             return Optional.of(named(1, "bulbasaur"));
         });
-        when(client.getPokemon("2")).thenAnswer(inv -> {
+        when(client.getPokemon("2")).thenAnswer(invocation -> {
             othersFinished.countDown();
             return Optional.of(named(2, "ivysaur"));
         });
-        when(client.getPokemon("3")).thenAnswer(inv -> {
+        when(client.getPokemon("3")).thenAnswer(invocation -> {
             othersFinished.countDown();
             return Optional.of(named(3, "venusaur"));
         });
@@ -177,7 +177,7 @@ class PokeApiGatewayAdapterTest {
 
     private static PokeApiPage index(String... namesWithIds) {
         List<PokeApiPage.Entry> entries = java.util.Arrays.stream(namesWithIds)
-                .map(item -> item.split(":"))
+                .map(nameWithId -> nameWithId.split(":"))
                 .map(parts -> new PokeApiPage.Entry(parts[1], "https://pokeapi.co/api/v2/pokemon/" + parts[0] + "/"))
                 .toList();
         return new PokeApiPage(entries.size(), entries);
@@ -198,13 +198,13 @@ class PokeApiGatewayAdapterTest {
         when(client.getNameIndex()).thenReturn(index("3:venusaur", "25:pikachu", "1:bulbasaur", "2:ivysaur"));
         stubDetails(1, 2);
 
-        PageResult<PokemonSummary> result = adapter.search(query("SAUR"), 0, 2);
+        PageResult<PokemonSummary> searchPage = adapter.search(query("SAUR"), 0, 2);
 
-        assertThat(result.items()).extracting(PokemonSummary::id).containsExactly(1, 2);
-        assertThat(result.totalItems()).isEqualTo(3);
-        assertThat(result.totalPages()).isEqualTo(2);
-        assertThat(result.page()).isZero();
-        assertThat(result.size()).isEqualTo(2);
+        assertThat(searchPage.items()).extracting(PokemonSummary::id).containsExactly(1, 2);
+        assertThat(searchPage.totalItems()).isEqualTo(3);
+        assertThat(searchPage.totalPages()).isEqualTo(2);
+        assertThat(searchPage.page()).isZero();
+        assertThat(searchPage.size()).isEqualTo(2);
         verify(client, never()).getPokemon("3");
         verify(client, never()).getPokemon("25");
     }
@@ -214,10 +214,10 @@ class PokeApiGatewayAdapterTest {
         when(client.getNameIndex()).thenReturn(index("3:venusaur", "1:bulbasaur", "2:ivysaur"));
         stubDetails(3);
 
-        PageResult<PokemonSummary> result = adapter.search(query("saur"), 1, 2);
+        PageResult<PokemonSummary> searchPage = adapter.search(query("saur"), 1, 2);
 
-        assertThat(result.items()).extracting(PokemonSummary::id).containsExactly(3);
-        assertThat(result.totalItems()).isEqualTo(3);
+        assertThat(searchPage.items()).extracting(PokemonSummary::id).containsExactly(3);
+        assertThat(searchPage.totalItems()).isEqualTo(3);
     }
 
     @Test
@@ -225,21 +225,21 @@ class PokeApiGatewayAdapterTest {
         when(client.getNameIndex()).thenReturn(index("1:bulbasaur", "25:pikachu", "250:ho-oh"));
         stubDetails(25);
 
-        PageResult<PokemonSummary> result = adapter.search(query("25"), 0, 12);
+        PageResult<PokemonSummary> searchPage = adapter.search(query("25"), 0, 12);
 
-        assertThat(result.items()).extracting(PokemonSummary::id).containsExactly(25);
-        assertThat(result.items().get(0).imageUrl()).endsWith("/official-artwork/25.png");
-        assertThat(result.totalItems()).isEqualTo(1);
+        assertThat(searchPage.items()).extracting(PokemonSummary::id).containsExactly(25);
+        assertThat(searchPage.items().get(0).imageUrl()).endsWith("/official-artwork/25.png");
+        assertThat(searchPage.totalItems()).isEqualTo(1);
     }
 
     @Test
     void searchByAnIdMissingFromTheIndexIsEmpty() {
         when(client.getNameIndex()).thenReturn(index("1:bulbasaur"));
 
-        PageResult<PokemonSummary> result = adapter.search(query("99999"), 0, 12);
+        PageResult<PokemonSummary> searchPage = adapter.search(query("99999"), 0, 12);
 
-        assertThat(result.items()).isEmpty();
-        assertThat(result.totalItems()).isZero();
+        assertThat(searchPage.items()).isEmpty();
+        assertThat(searchPage.totalItems()).isZero();
         verify(client, never()).getPokemon(anyString());
     }
 
@@ -247,22 +247,22 @@ class PokeApiGatewayAdapterTest {
     void searchWithoutMatchesIsAnEmptyPage() {
         when(client.getNameIndex()).thenReturn(index("1:bulbasaur"));
 
-        PageResult<PokemonSummary> result = adapter.search(query("zzz"), 0, 12);
+        PageResult<PokemonSummary> searchPage = adapter.search(query("zzz"), 0, 12);
 
-        assertThat(result.items()).isEmpty();
-        assertThat(result.totalItems()).isZero();
-        assertThat(result.totalPages()).isZero();
+        assertThat(searchPage.items()).isEmpty();
+        assertThat(searchPage.totalItems()).isZero();
+        assertThat(searchPage.totalPages()).isZero();
     }
 
     @Test
     void searchBeyondTheLastPageKeepsTheTotalsOfTheMatches() {
         when(client.getNameIndex()).thenReturn(index("1:bulbasaur", "2:ivysaur", "3:venusaur"));
 
-        PageResult<PokemonSummary> result = adapter.search(query("saur"), 40, 2);
+        PageResult<PokemonSummary> searchPage = adapter.search(query("saur"), 40, 2);
 
-        assertThat(result.items()).isEmpty();
-        assertThat(result.totalItems()).isEqualTo(3);
-        assertThat(result.page()).isEqualTo(40);
+        assertThat(searchPage.items()).isEmpty();
+        assertThat(searchPage.totalItems()).isEqualTo(3);
+        assertThat(searchPage.page()).isEqualTo(40);
         verify(client, never()).getPokemon(anyString());
     }
 

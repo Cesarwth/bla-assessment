@@ -9,7 +9,7 @@ import { Header } from './Header'
 export function Layout() {
   const { sessionExpired, dismissSessionExpired } = useAuth()
   const { pathname } = useLocation()
-  const main = useRef<HTMLElement>(null)
+  const mainRef = useRef<HTMLElement>(null)
   const firstRender = useRef(true)
 
   // In a single-page app nothing tells assistive technology that the page changed: move the focus to the content
@@ -19,7 +19,7 @@ export function Layout() {
       firstRender.current = false
       return
     }
-    main.current?.focus()
+    mainRef.current?.focus()
   }, [pathname])
 
   return (
@@ -45,7 +45,7 @@ export function Layout() {
       )}
       <main
         id="main"
-        ref={main}
+        ref={mainRef}
         className="mx-auto w-full max-w-content flex-1 px-4 pt-6 pb-12 focus:outline-none"
         tabIndex={-1}
       >

@@ -29,19 +29,19 @@ class SecurityConfigTest {
 
     private static final User ASH = new User(1L, "ash", "ash@pallet.town", "hashed", Role.USER);
 
-    @Autowired MockMvc mvc;
+    @Autowired MockMvc mockMvc;
     @Autowired TokenIssuer tokenIssuer;
     @Autowired JwtEncoder encoder;
 
     @Test
     void publicRoutesAreOpen() throws Exception {
-        mvc.perform(get("/api/v1/pokemon")).andExpect(status().isOk());
-        mvc.perform(get("/actuator/health")).andExpect(status().is(org.hamcrest.Matchers.not(401)));
+        mockMvc.perform(get("/api/v1/pokemon")).andExpect(status().isOk());
+        mockMvc.perform(get("/actuator/health")).andExpect(status().is(org.hamcrest.Matchers.not(401)));
     }
 
     @Test
     void protectedRouteReturns401WithConsistentBodyWithoutToken() throws Exception {
-        mvc.perform(get("/api/v1/protected"))
+        mockMvc.perform(get("/api/v1/protected"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentTypeCompatibleWith("application/json"))
                 .andExpect(jsonPath("$.status").value(401))
@@ -50,7 +50,7 @@ class SecurityConfigTest {
 
     @Test
     void protectedRouteReturns401WithGarbageToken() throws Exception {
-        mvc.perform(get("/api/v1/protected").header("Authorization", "Bearer not-a-jwt"))
+        mockMvc.perform(get("/api/v1/protected").header("Authorization", "Bearer not-a-jwt"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
@@ -60,26 +60,26 @@ class SecurityConfigTest {
         TokenIssuer old = new JwtTokenIssuer(encoder, Duration.ofMinutes(1),
                 Clock.fixed(Instant.now().minus(Duration.ofHours(2)), ZoneOffset.UTC));
 
-        mvc.perform(get("/api/v1/protected").header("Authorization", "Bearer " + old.issue(ASH).value()))
+        mockMvc.perform(get("/api/v1/protected").header("Authorization", "Bearer " + old.issue(ASH).jwt()))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void protectedRouteReturns200WithValidToken() throws Exception {
-        mvc.perform(get("/api/v1/protected").header("Authorization", "Bearer " + tokenIssuer.issue(ASH).value()))
+        mockMvc.perform(get("/api/v1/protected").header("Authorization", "Bearer " + tokenIssuer.issue(ASH).jwt()))
                 .andExpect(status().isOk())
                 .andExpect(content().string("ash"));
     }
 
     @Test
     void corsPreflightAllowsOnlyTheConfiguredFrontendOrigin() throws Exception {
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/v1/auth/login")
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/v1/auth/login")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "POST"))
                 .andExpect(status().isOk())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
                         .string("Access-Control-Allow-Origin", "http://localhost:5173"));
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/v1/auth/login")
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/v1/auth/login")
                         .header("Origin", "http://evil.example")
                         .header("Access-Control-Request-Method", "POST"))
                 .andExpect(status().isForbidden());

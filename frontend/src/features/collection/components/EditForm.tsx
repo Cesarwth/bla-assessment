@@ -21,10 +21,14 @@ const toDraft = (entry: StoredPokemon): Draft => ({
   tags: entry.tags,
 })
 
-function sameValue(field: keyof Draft, a: Draft[keyof Draft], b: Draft[keyof Draft]): boolean {
+function sameValue(
+  field: keyof Draft,
+  current: Draft[keyof Draft],
+  saved: Draft[keyof Draft],
+): boolean {
   return field === 'tags'
-    ? (a as string[]).join('\n') === (b as string[]).join('\n')
-    : (a as string).trim() === (b as string).trim()
+    ? (current as string[]).join('\n') === (saved as string[]).join('\n')
+    : (current as string).trim() === (saved as string).trim()
 }
 
 /**
@@ -69,8 +73,8 @@ export function EditForm({ entry, onReload, onSaved, onCancel }: Props) {
   const dirty = Object.keys(changes).length > 0 && !pending.error
   const conflict = isApiError(update.error) && update.error.code === 'CONCURRENT_MODIFICATION'
 
-  const edit = <K extends keyof Draft>(field: K, value: Draft[K]) =>
-    setEdits((current) => ({ ...current, [field]: value }))
+  const edit = <K extends keyof Draft>(field: K, newValue: Draft[K]) =>
+    setEdits((current) => ({ ...current, [field]: newValue }))
 
   function submit(event: FormEvent) {
     event.preventDefault()

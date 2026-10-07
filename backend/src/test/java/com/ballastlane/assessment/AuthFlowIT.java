@@ -20,11 +20,11 @@ import tools.jackson.databind.json.JsonMapper;
 @ActiveProfiles("test")
 class AuthFlowIT {
 
-    @Autowired MockMvc mvc;
+    @Autowired MockMvc mockMvc;
     @Autowired JsonMapper json;
 
     private String loginAndGetToken(String username, String password) throws Exception {
-        String body = mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+        String body = mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -33,7 +33,7 @@ class AuthFlowIT {
 
     @Test
     void registerThenLoginThenAccessProtectedArea() throws Exception {
-        mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"misty\",\"email\":\"misty@cerulean.city\",\"password\":\"Starmie2024\"}"))
                 .andExpect(status().isCreated());
 
@@ -41,10 +41,10 @@ class AuthFlowIT {
 
         // No protected controller exists yet: an authenticated call gets past security and reaches MVC (404),
         // an anonymous one is stopped by security (401).
-        mvc.perform(get("/api/v1/anything").header("Authorization", "Bearer " + token))
+        mockMvc.perform(get("/api/v1/anything").header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
-        mvc.perform(get("/api/v1/anything")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/anything")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -55,11 +55,11 @@ class AuthFlowIT {
     @Test
     void duplicateRegistrationReturns409AndWrongPasswordReturns401() throws Exception {
         String body = "{\"username\":\"brock\",\"email\":\"brock@pewter.city\",\"password\":\"Onix12345\"}";
-        mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated());
-        mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isConflict());
-        mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"brock\",\"password\":\"wrong-pass1\"}"))
                 .andExpect(status().isUnauthorized());
     }

@@ -19,7 +19,7 @@ interface SpringDataTrainerPokemonRepository extends JpaRepository<TrainerPokemo
     Optional<TrainerPokemonEntity> findByUserIdAndPokemonPokeApiId(Long userId, int pokeApiId);
 
     // Scalar projection: no entities, so no lazy collections are touched.
-    @Query("select e.pokemon.pokeApiId from TrainerPokemonEntity e where e.userId = :userId order by e.pokemon.pokeApiId")
+    @Query("select trainerPokemon.pokemon.pokeApiId from TrainerPokemonEntity trainerPokemon where trainerPokemon.userId = :userId order by trainerPokemon.pokemon.pokeApiId")
     List<Integer> findPokeApiIdsByUserId(@Param("userId") Long userId);
 
     long countByUserId(Long userId);

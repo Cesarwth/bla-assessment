@@ -39,7 +39,7 @@ class RegisterUserTest {
     @Test
     void registersNewUserWithHashedPassword() {
         when(hasher.hash("Pikachu123")).thenReturn("hashed");
-        when(users.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(users.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         User saved = registerUser.register(new RegisterUserCommand("ash", "ash@pallet.town", "Pikachu123"));
 
@@ -53,7 +53,7 @@ class RegisterUserTest {
     @Test
     void registersTheNormalizedUsernameAndEmail() {
         when(hasher.hash("Pikachu123")).thenReturn("hashed");
-        when(users.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(users.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         User saved = registerUser.register(new RegisterUserCommand("  Alice ", "ALICE@Wonder.Land", "Pikachu123"));
 
@@ -84,7 +84,7 @@ class RegisterUserTest {
     void acceptsAPasswordOfExactlyTheMaximumByteLength() {
         String exactly72Bytes = "a1".repeat(36);
         when(hasher.hash(exactly72Bytes)).thenReturn("hashed");
-        when(users.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(users.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         assertThat(registerUser.register(new RegisterUserCommand("ash", "ash@pallet.town", exactly72Bytes)).username())
                 .isEqualTo("ash");

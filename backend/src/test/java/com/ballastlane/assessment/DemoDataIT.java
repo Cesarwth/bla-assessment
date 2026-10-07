@@ -30,13 +30,13 @@ class DemoDataIT {
 
     private static final String JSON = MediaType.APPLICATION_JSON_VALUE;
 
-    @Autowired MockMvc mvc;
+    @Autowired MockMvc mockMvc;
     @Autowired JsonMapper json;
-    @Autowired JdbcTemplate jdbc;
+    @Autowired JdbcTemplate jdbcTemplate;
     @Autowired DemoDataSeeder seeder;
 
     private String login(String username, String password) throws Exception {
-        String body = mvc.perform(post("/api/v1/auth/login").contentType(JSON)
+        String body = mockMvc.perform(post("/api/v1/auth/login").contentType(JSON)
                         .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -44,7 +44,7 @@ class DemoDataIT {
     }
 
     private long versionOf(String token, int pokeApiId) throws Exception {
-        String body = mvc.perform(get("/api/v1/collection/" + pokeApiId).header("Authorization", token))
+        String body = mockMvc.perform(get("/api/v1/collection/" + pokeApiId).header("Authorization", token))
                 .andReturn().getResponse().getContentAsString();
         return json.readTree(body).get("version").asLong();
     }
@@ -54,15 +54,15 @@ class DemoDataIT {
         String demo = login("demo", "Demo12345");
         String admin = login("demo-admin", "AdminPass123");
 
-        mvc.perform(get("/api/v1/collection").param("size", "48").header("Authorization", demo))
+        mockMvc.perform(get("/api/v1/collection").param("size", "48").header("Authorization", demo))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalItems").value(6))
                 .andExpect(jsonPath("$.items[*].name").value(hasItems("pikachu", "eevee", "bulbasaur")));
-        mvc.perform(get("/api/v1/collection").param("size", "48").header("Authorization", admin))
+        mockMvc.perform(get("/api/v1/collection").param("size", "48").header("Authorization", admin))
                 .andExpect(jsonPath("$.totalItems").value(12))
                 .andExpect(jsonPath("$.items[*].name").value(hasItems("pikachu", "mewtwo", "bulbasaur")));
-        assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(16);
-        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(18);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(16);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(18);
     }
 
     @Test
@@ -70,16 +70,16 @@ class DemoDataIT {
         String demo = login("demo", "Demo12345");
         String admin = login("demo-admin", "AdminPass123");
 
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", demo))
+        mockMvc.perform(get("/api/v1/collection/25").header("Authorization", demo))
                 .andExpect(jsonPath("$.nickname").value("Sparky"))
                 .andExpect(jsonPath("$.tags[0]").value("favorite"))
                 .andExpect(jsonPath("$.evolutionChain.name").value("pichu"));
-        mvc.perform(get("/api/v1/collection/25").header("Authorization", admin))
+        mockMvc.perform(get("/api/v1/collection/25").header("Authorization", admin))
                 .andExpect(jsonPath("$.nickname").isEmpty())
                 .andExpect(jsonPath("$.tags[0]").value("mascot"));
-        mvc.perform(get("/api/v1/collection/1").header("Authorization", demo))
+        mockMvc.perform(get("/api/v1/collection/1").header("Authorization", demo))
                 .andExpect(jsonPath("$.nickname").value("Bulby"));
-        mvc.perform(get("/api/v1/collection/1").header("Authorization", admin))
+        mockMvc.perform(get("/api/v1/collection/1").header("Authorization", admin))
                 .andExpect(jsonPath("$.nickname").value("Bulba Boss"));
     }
 
@@ -87,12 +87,12 @@ class DemoDataIT {
     void aTrainerCannotSeeOrEditThePokemonOnlyTheOtherOneHas() throws Exception {
         String demo = login("demo", "Demo12345");
 
-        mvc.perform(patch("/api/v1/collection/4").header("Authorization", demo).contentType(JSON)
+        mockMvc.perform(patch("/api/v1/collection/4").header("Authorization", demo).contentType(JSON)
                         .content("{\"version\":" + versionOf(demo, 4) + ",\"nickname\":\"Charmy\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nickname").value("Charmy"));
-        mvc.perform(get("/api/v1/collection/26").header("Authorization", demo)).andExpect(status().isNotFound());
-        mvc.perform(patch("/api/v1/collection/26").header("Authorization", demo).contentType(JSON)
+        mockMvc.perform(get("/api/v1/collection/26").header("Authorization", demo)).andExpect(status().isNotFound());
+        mockMvc.perform(patch("/api/v1/collection/26").header("Authorization", demo).contentType(JSON)
                         .content("{\"version\":0,\"nickname\":\"Mine\"}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("STORED_POKEMON_NOT_FOUND"));
@@ -102,26 +102,26 @@ class DemoDataIT {
     void editingASharedPokemonOnlyChangesTheEditorsNotes() throws Exception {
         String admin = login("demo-admin", "AdminPass123");
 
-        mvc.perform(patch("/api/v1/collection/1").header("Authorization", admin).contentType(JSON)
+        mockMvc.perform(patch("/api/v1/collection/1").header("Authorization", admin).contentType(JSON)
                         .content("{\"version\":" + versionOf(admin, 1) + ",\"region\":\"Cerulean City\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.region").value("Cerulean City"));
-        mvc.perform(get("/api/v1/collection/1").header("Authorization", login("demo", "Demo12345")))
+        mockMvc.perform(get("/api/v1/collection/1").header("Authorization", login("demo", "Demo12345")))
                 .andExpect(jsonPath("$.region").value("Pallet Town"));
     }
 
     @Test
     void runningTheSeederAgainNeitherDuplicatesNorUndoesEdits() throws Exception {
         String demo = login("demo", "Demo12345");
-        mvc.perform(patch("/api/v1/collection/133").header("Authorization", demo).contentType(JSON)
+        mockMvc.perform(patch("/api/v1/collection/133").header("Authorization", demo).contentType(JSON)
                         .content("{\"version\":" + versionOf(demo, 133) + ",\"nickname\":\"Edited by a user\"}"))
                 .andExpect(status().isOk());
 
         seeder.run(null);
 
-        assertThat(jdbc.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(16);
-        assertThat(jdbc.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(18);
-        mvc.perform(get("/api/v1/collection/133").header("Authorization", demo))
+        assertThat(jdbcTemplate.queryForObject("select count(*) from pokemon", Integer.class)).isEqualTo(16);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from trainer_pokemon", Integer.class)).isEqualTo(18);
+        mockMvc.perform(get("/api/v1/collection/133").header("Authorization", demo))
                 .andExpect(jsonPath("$.nickname").value("Edited by a user"));
     }
 }

@@ -35,11 +35,11 @@ class PokeApiConfigTest {
     @Test
     void bindsTheConfiguredTimeoutsAndCacheSize() {
         runner.run(context -> {
-            PokeApiProperties props = context.getBean(PokeApiProperties.class);
-            assertThat(props.baseUrl()).isEqualTo("http://localhost:9/api/v2");
-            assertThat(props.connectTimeout().toSeconds()).isEqualTo(2);
-            assertThat(props.readTimeout().toSeconds()).isEqualTo(5);
-            assertThat(props.cacheMaxSize()).isEqualTo(10);
+            PokeApiProperties properties = context.getBean(PokeApiProperties.class);
+            assertThat(properties.baseUrl()).isEqualTo("http://localhost:9/api/v2");
+            assertThat(properties.connectTimeout().toSeconds()).isEqualTo(2);
+            assertThat(properties.readTimeout().toSeconds()).isEqualTo(5);
+            assertThat(properties.cacheMaxSize()).isEqualTo(10);
         });
     }
 

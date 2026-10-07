@@ -44,10 +44,10 @@ public class JpaPokemonRepositoryAdapter implements PokemonRepository {
         if ((long) page * size > Integer.MAX_VALUE) {
             return new PageResult<>(List.of(), page, size, entries.countByUserId(trainerId));
         }
-        Page<TrainerPokemonEntity> result =
+        Page<TrainerPokemonEntity> trainerPokemonPage =
                 entries.findByUserId(trainerId, PageRequest.of(page, size, Sort.by("pokemon.pokeApiId")));
-        return new PageResult<>(result.getContent().stream().map(mapper::toDomain).toList(), page, size,
-                result.getTotalElements());
+        return new PageResult<>(trainerPokemonPage.getContent().stream().map(mapper::toDomain).toList(), page, size,
+                trainerPokemonPage.getTotalElements());
     }
 
     @Override

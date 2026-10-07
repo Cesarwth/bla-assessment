@@ -13,12 +13,13 @@ const pikachu = summary(25, 'pikachu', ['electric'])
 const everything = [bulbasaur, pikachu]
 
 /** Behaves like the API: no q lists everything, otherwise a case-insensitive match on the name or the exact number. */
-function filtering(params: URLSearchParams) {
-  const q = (params.get('q') ?? '').toLowerCase()
-  const items = everything.filter(
-    (p) => !q || (/^\d+$/.test(q) ? String(p.id) === q : p.name.includes(q)),
+function filtering(searchParams: URLSearchParams) {
+  const query = (searchParams.get('q') ?? '').toLowerCase()
+  const matches = everything.filter(
+    (pokemon) =>
+      !query || (/^\d+$/.test(query) ? String(pokemon.id) === query : pokemon.name.includes(query)),
   )
-  return pageOf(items, { totalItems: items.length })
+  return pageOf(matches, { totalItems: matches.length })
 }
 
 const field = () => screen.getByLabelText('Filter by name or number')
@@ -84,9 +85,9 @@ describe('filtering the catalog', () => {
 
   it('keeps the previous cards on screen while the matches load', async () => {
     const requests: string[] = []
-    mockCatalog(async (params) => {
-      if (params.get('q')) await delay(150)
-      return filtering(params)
+    mockCatalog(async (searchParams) => {
+      if (searchParams.get('q')) await delay(150)
+      return filtering(searchParams)
     }, requests)
     renderApp(<App />)
     await screen.findByText('Pikachu')

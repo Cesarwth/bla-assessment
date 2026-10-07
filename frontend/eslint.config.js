@@ -48,6 +48,9 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      // Names must say what they hold: no single-letter identifiers (`_` marks an intentionally unused parameter;
+      // single capitals are the conventional generic type parameters).
+      'id-length': ['error', { min: 2, properties: 'never', exceptions: ['_', 'T', 'K', 'V', 'R', 'S', 'U'] }],
     },
   },
   ...featureIsolation,
